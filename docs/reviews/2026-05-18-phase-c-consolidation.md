@@ -3,14 +3,7 @@ level: L0
 view: scenarios
 affects_level: L0
 affects_view: scenarios
-affects_artefact:
-  - ARCHITECTURE.md
-  - agent-platform/ARCHITECTURE.md
-  - agent-runtime/ARCHITECTURE.md
-  - docs/governance/architecture-status.yaml
-  - docs/governance/enforcers.yaml
-  - docs/governance/principle-coverage.yaml
-  - docs/governance/architecture-graph.yaml
+affects_artefact: [ARCHITECTURE.md, agent-platform/ARCHITECTURE.md, agent-runtime/ARCHITECTURE.md, docs/governance/architecture-status.yaml, docs/governance/enforcers.yaml, docs/governance/principle-coverage.yaml, docs/governance/architecture-graph.yaml]
 freeze_id_lifted: W1-russell-2026-05-14
 proposal_id: 2026-05-18-phase-c-consolidation
 status: accepted
