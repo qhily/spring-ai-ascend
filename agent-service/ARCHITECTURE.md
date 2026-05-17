@@ -538,14 +538,7 @@ values (keys: `spring-ai.version`, `temporal.version`, `mcp.version`,
   `observability/TenantTagMeterFilter` (strips forbidden
   high-cardinality tags from `springai_ascend_*` metrics). Runtime
   side — Telemetry Vertical TraceContext SPI (ADR-0061).
-- **Phase C (delivered 2026-05-18, ADR-0078)**: merger of
-  `agent-platform` + `agent-runtime` → `agent-service`. Package rename
-  `ascend.springai.platform.*` → `ascend.springai.service.platform.*`
-  and `ascend.springai.runtime.*` → `ascend.springai.service.runtime.*`.
-  Rule 21 retargeted; ArchUnit class renamed
-  `RuntimeMustNotDependOnPlatformTest` →
-  `ServiceRuntimeMustNotDependOnServicePlatformTest`. Old modules
-  deleted; reactor count decremented by 1.
+- **Phase C (delivered 2026-05-18, ADR-0078)**: merger of `agent-platform` + `agent-runtime` → `agent-service`. Package rename `ascend.springai.platform.*` → `ascend.springai.service.platform.*` and `ascend.springai.runtime.*` → `ascend.springai.service.runtime.*`. Rule 21 retargeted; ArchUnit class renamed `RuntimeMustNotDependOnPlatformTest` → `ServiceRuntimeMustNotDependOnServicePlatformTest`. Old modules deleted; reactor count decremented by 1.
 - **W2**: `config/`, tenant GUC + RLS, Spring Cloud Gateway routing,
   OTel auto-instrumentation, durable `RunRepository` (Postgres-backed
   beyond the L1 in-memory dev-posture wiring), streaming run event
