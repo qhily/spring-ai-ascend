@@ -5,6 +5,21 @@
 spring:
   application:
     name: spring-ai-ascend
+  ai:
+    # W1.x credential placeholders. The agent-service depends on
+    # spring-ai-starter-model-openai + spring-ai-starter-model-anthropic for
+    # compile-time access to the SPI types, but the W1.x runtime path does NOT
+    # invoke OpenAI/Anthropic audio-speech/transcription/image models. Spring
+    # Boot 4's Spring AI starters instantiate the model beans EAGERLY at context
+    # refresh and require a non-null credential at construction time. We
+    # satisfy that requirement with a dummy default so the context boots; real
+    # credentials still resolve from the OPENAI_API_KEY / ANTHROPIC_API_KEY env
+    # var when set. Calling these models without a real key produces a 401 at
+    # API time — by design.
+    openai:
+      api-key: ${OPENAI_API_KEY:dummy-no-call-expected}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:dummy-no-call-expected}
   autoconfigure:
     exclude:
       # Resilience4j 2.4.0 ships a SpringBoot3Verifier that hard-fails when run
