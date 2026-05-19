@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Rule 36.b — Cursor Flow Integration Test (Phase 8 / ADR-0070).
+ * Rule R-F.b — Cursor Flow Integration Test (Phase 8 / ADR-0070).
  *
  * <p>Asserts that {@code POST /v1/runs} returns HTTP 202 within 200 ms with a
  * {@code TaskCursor} payload, even when the registered {@link AsyncRunDispatcher}
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code CompletableFuture.runAsync(...)} so the HTTP response is never gated on
  * the dispatcher's runtime.
  *
- * <p>This test is the operational counterpart of Gate Rule 46
+ * <p>This test is the operational counterpart of Gate Rule R-M.d
  * ({@code cursor_flow_documented}, which checks the OpenAPI schema) and Gate
  * Rule 53 ({@code cursor_flow_integration_test_present}, which checks this test
  * exists).

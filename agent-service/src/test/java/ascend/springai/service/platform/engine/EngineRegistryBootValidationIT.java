@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>Each case drives the Spring context programmatically via
  * {@link SpringApplicationBuilder} - this keeps the test off the Postgres /
  * Flyway / OAuth2 stacks the full {@code PlatformApplication} would pull in,
- * and lets us assert hard-fail bootstrap behaviour. CLAUDE.md Rule 4: this
+ * and lets us assert hard-fail bootstrap behaviour. CLAUDE.md Rule D-4: this
  * is an integration test that exercises real Spring bean creation; there
  * are no mocks on the subsystem under test.
  *

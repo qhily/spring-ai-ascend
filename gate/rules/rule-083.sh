@@ -42,8 +42,8 @@ if [[ $_r83_fail -eq 0 ]]; then pass_rule "design_only_contract_registered_in_ca
 # ===========================================================================
 # 2026-05-18 rc5 post-response review response prevention wave -- Rules 84-85
 # Authority: docs/governance/rules/rule-84.md + rule-85.md
-#            + docs/reviews/2026-05-18-l0-rc5-post-response-architecture-review.en.md
-#            + docs/reviews/2026-05-18-l0-rc5-post-response-architecture-review-response.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc5-post-response-architecture-review.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc5-post-response-architecture-review-response.en.md
 # Closes finding families:
 #   P0-1 module-level ARCHITECTURE.md path claim drift after refactor   -> Rule 84
 #   P1-2 catalog SPI row not backed by module spi_packages metadata    -> Rule 85

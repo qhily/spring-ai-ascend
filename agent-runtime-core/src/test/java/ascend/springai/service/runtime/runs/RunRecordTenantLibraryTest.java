@@ -10,11 +10,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Library-mode SPI conformance test for the Rule 11 contract-spine — every
+ * Library-mode SPI conformance test for the Rule R-C.c contract-spine — every
  * persistent record under agent-runtime-core MUST require a non-null tenantId
  * via Objects.requireNonNull in its compact constructor.
  *
- * <p>This class is part of the Rule 79 evidence layer + the Rule 32.b TCK-promotion
+ * <p>This class is part of the Rule D-3.b evidence layer + the Rule R-D.a.b TCK-promotion
  * holding tank. Pure JUnit Jupiter — no Spring, no I/O.
  */
 class RunRecordTenantLibraryTest {

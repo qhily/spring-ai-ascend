@@ -144,7 +144,7 @@ class RunHttpContractIT {
 
     @Test
     void createReturns202WithCursor() throws Exception {
-        // Phase 8 / Rule 36 — Cursor Flow Mandate (ADR-0070).
+        // Phase 8 / Rule R-F — Cursor Flow Mandate (ADR-0070).
         // POST /v1/runs returns 202 + TaskCursor envelope (runId, status, cursor_url),
         // not 201 + full RunResponse.
         UUID tenant = UUID.randomUUID();
@@ -232,7 +232,7 @@ class RunHttpContractIT {
                         .POST(HttpRequest.BodyPublishers.ofString("{\"capabilityName\":\"a\"}"))
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-        // Phase 8 / Rule 36 — first call returns 202 + cursor envelope (was 201).
+        // Phase 8 / Rule R-F — first call returns 202 + cursor envelope (was 201).
         assertThat(first.statusCode()).isEqualTo(202);
 
         // Same idempotency key, DIFFERENT body — must trip the body-drift

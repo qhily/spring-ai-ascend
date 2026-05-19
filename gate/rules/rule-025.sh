@@ -36,7 +36,7 @@ while IFS= read -r _af25; do
     fi
   done < <(grep -nF 'Sidecar adapter —' "$_af25" 2>/dev/null || true)
 done < <(find . -name '*.md' \
-  ! -path './docs/archive/*' ! -path './docs/reviews/*' \
+  ! -path './docs/archive/*' ! -path './docs/logs/reviews/*' \
   ! -path './docs/adr/*' ! -path './docs/delivery/*' \
   ! -path './docs/v6-rationale/*' ! -path './docs/plans/*' \
   ! -path './third_party/*' ! -path './target/*' \

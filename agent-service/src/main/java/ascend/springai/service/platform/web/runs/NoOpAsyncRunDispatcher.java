@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * {@code @ConditionalOnMissingBean} on this {@code @Component} to gate registration;
  * that annotation is reliable only on {@code @Bean} methods inside
  * {@code @Configuration} classes — on {@code @Component} the evaluation is
- * order-dependent and excluded this bean on Linux CI (root cause of the rc4–rc8 red CI
+ * order-dependent and excluded this bean on Linux CI (root cause of the rc4
  * regression).
  */
 @Component

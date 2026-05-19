@@ -27,7 +27,7 @@ decision_one_liner: |
 
 triggering_inputs:
   external_reviews:
-    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+    - path: "docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
       authors: ["LucioIT architecture review team"]
       thesis: |
         Proposal section 7.2 verbatim: "The evolution plane consumes
@@ -40,7 +40,7 @@ triggering_inputs:
         server-sovereign boundary and creates implicit data-rights
         obligations the platform did not contract for."
   internal_signal:
-    - "Rule 39 (P-I, ADR-0069) introduced deployment_plane: evolution as a metadata-only label. There was no contract on what the evolution plane MAY ingest -- a Phase 4 silence that, if left to W2, would land as prose under family F1 (text-form drift, 79/158 historical defects)."
+    - "Rule R-I (P-I, ADR-0069) introduced deployment_plane: evolution as a metadata-only label. There was no contract on what the evolution plane MAY ingest -- a Phase 4 silence that, if left to W2, would land as prose under family F1 (text-form drift, 79/158 historical defects)."
     - "ADR-0022 declared a sealed RunEvent type but deferred implementation to W2. This phase makes the evolution-plane scope contract precede the RunEvent variants so every future variant is born with the per-variant declaration requirement, not retrofitted."
     - "P-M's structural invariant from ADR-0071 (yaml schema first, validated Java type second, runtime self-validate third) requires a YAML schema landing in the same wave as the discriminator enum. This ADR ships both."
 
@@ -63,7 +63,7 @@ context: |
         armed-but-empty ArchUnit test, so when RunEvent variants land in
         W2 the test starts asserting the per-variant declaration without
         any further governance edit.
-  This ADR chooses (b) per Rule 2 (surgical changes). The W2 plan now
+  This ADR chooses (b) per Rule D-2 (surgical changes). The W2 plan now
   carries an explicit acceptance criterion: "every record implements
   RunEvent declares evolutionExport() returning EvolutionExport".
 
@@ -91,7 +91,7 @@ decision: |
     telemetry-export contract by name. Self-tests positive + negative.
 
   - Enforcers E85 (gate) + E86 (archunit) added to enforcers.yaml and L1
-    plan section 11. Rule 47 lands in CLAUDE.md at Phase 7.
+    plan section 11. Rule R-M sub-clause .e lands in CLAUDE.md at Phase 7.
 
   - The full RunEvent integration (sealed interface gains
     EvolutionExport evolutionExport() accessor; every variant declares its
@@ -101,7 +101,7 @@ decision: |
 
 consequences:
   positive:
-    - "Server-sovereign boundary becomes machine-checked at the contract level (proposal section 7.2/7.3) -- no future ADR can silently widen the evolution surface to client-local state without first widening the YAML schema and triggering Rule 28 review."
+    - "Server-sovereign boundary becomes machine-checked at the contract level (proposal section 7.2/7.3) -- no future ADR can silently widen the evolution surface to client-local state without first widening the YAML schema and triggering Rule R-C.a review."
     - "EvolutionExport enum is born with three values that exactly mirror the YAML discriminators -- F1 text-form drift (79/158 historical defects) is structurally prevented for this contract."
     - "Pre-positioned ArchUnit test means W2 RunEvent landing does NOT also need a governance PR; the test starts asserting the moment a variant ships."
     - "Opt-in default: deny semantics force every future client-data export to ship a contract row first -- no implicit data-rights obligations."
@@ -112,8 +112,8 @@ consequences:
 
 alternatives_considered:
   - alternative: "Land RunEvent (sealed interface + 6 variants from ADR-0022) in this phase so EvolutionExport has a real consumer."
-    why_rejected: "Out of scope per Rule 2 surgical changes. ADR-0022 deferred RunEvent for substantive technical reasons (PayloadCodec SPI, Flux streaming, Postgres serialization) that this wave does not solve. Adding 6 record types just to satisfy the ArchUnit test would ship dead code that the W2 wave will rewrite."
-  - alternative: "Skip the ArchUnit test entirely; rely on Rule 9 self-audit at W2 to catch missing declarations."
+    why_rejected: "Out of scope per Rule D-2 surgical changes. ADR-0022 deferred RunEvent for substantive technical reasons (PayloadCodec SPI, Flux streaming, Postgres serialization) that this wave does not solve. Adding 6 record types just to satisfy the ArchUnit test would ship dead code that the W2 wave will rewrite."
+  - alternative: "Skip the ArchUnit test entirely; rely on Rule D-5 self-audit at W2 to catch missing declarations."
     why_rejected: "The 14 prior reviewer cycles document that prose acceptance criteria deferred to a future wave reproduce family F1 drift at a high rate. The armed-empty ArchUnit is a structural commitment that survives reviewer turnover."
   - alternative: "Define evolution scope inline in ADR-0075 as a prose enum (the historical default before W2.x)."
     why_rejected: "Direct violation of P-M's structural invariant (yaml first, validated Java type second). Reproduces the exact F1 defect family P-M was created to close."

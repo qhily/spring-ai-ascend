@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@link HookPoint#BEFORE_SUSPENSION}, {@link HookPoint#BEFORE_RESUME})
  * through registered {@link RuntimeMiddleware} instances.
  *
- * <p>Authority: ADR-0073; CLAUDE.md Rule 45.
+ * <p>Authority: ADR-0073; CLAUDE.md Rule R-M.c.
  * Enforcer row: {@code docs/governance/enforcers.yaml#E80}.
  */
 class RuntimeMiddlewareInterceptsHooksIT {

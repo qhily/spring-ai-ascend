@@ -1,6 +1,6 @@
 # Whitepaper Alignment Matrix
 
-> Last updated: 2026-05-13 (initial population per `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` finding P2-1)
+> Last updated: 2026-05-13 (initial population per `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` finding P2-1)
 >
 > **Purpose**: concept-level traceability from `docs/spring-ai-ascend-architecture-whitepaper-en.md` to active architecture artifacts. Per ADR-0049 + Gate Rule 29, every major whitepaper concept MUST appear here with an explicit status, wave, owner side, and gate-coverage marker. Any release note claiming "whitepaper alignment" MUST reference this matrix.
 >
@@ -45,8 +45,8 @@
 
 ## Companion artifacts
 
-- Reviewer source: `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`
-- Self-audit: `docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md`
+- Reviewer source: `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`
+- Self-audit: `docs/logs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md`
 - ADR-0049 / ADR-0050 / ADR-0051 / ADR-0052: the four whitepaper-alignment ADRs landing in this remediation cycle.
 - ARCHITECTURE.md §4 #47-#50: the four new architecture constraints anchored by the above ADRs.
 - `architecture-status.yaml`: the per-capability ledger; new rows for each L0 contract introduced in this cycle.

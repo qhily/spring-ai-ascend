@@ -14,7 +14,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * {@code ascend.springai.service.platform..}.
  *
  * <p>Strict generalisation of {@link TenantPropagationPurityTest} (which guards the
- * single {@code TenantContextHolder} class for Rule 21). At L1 we permit
+ * single {@code TenantContextHolder} class for Rule R-C.e). At L1 we permit
  * {@code agent-platform -> agent-runtime} (pre-Phase-C module-pair names; per
  * ADR-0078 both are now sub-packages of agent-service: platform.* -> runtime.*)
  * for the HTTP run handoff, but the reverse direction stays forbidden at both

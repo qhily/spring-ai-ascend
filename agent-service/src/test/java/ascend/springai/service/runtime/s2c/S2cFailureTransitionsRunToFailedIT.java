@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Post-review fix (plan C / P0-2): Rule 46 declares that S2C invalid-response,
+ * Post-review fix (plan C / P0-2): Rule R-M.d declares that S2C invalid-response,
  * client-error, timeout, transport-unavailable, and transport-failure
  * conditions transition the Run to {@link RunStatus#FAILED} and surface as
  * an {@link HookPoint#ON_ERROR} hook fire with a typed {@code reason} attr.
@@ -37,11 +37,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * from inside the (now-removed) {@code catch (S2cCallbackSignal)} branch,
  * leaving the Run stuck in {@link RunStatus#SUSPENDED}. Companion to
  * {@code S2cCallbackRoundTripIT}
- * (E82, which asserts only the happy path + exception-raising half of Rule 46).
+ * (E82, which asserts only the happy path + exception-raising half of Rule R-M.d).
  *
  * <p>Enforcer row: {@code docs/governance/enforcers.yaml#E90}.
  *
- * <p>Authority: ADR-0074; CLAUDE.md Rule 46.
+ * <p>Authority: ADR-0074; CLAUDE.md Rule R-M.d.
  */
 class S2cFailureTransitionsRunToFailedIT {
 

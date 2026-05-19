@@ -3,7 +3,7 @@
 - Status: Accepted (SPI + DFX active; TCK scaffolding deferred to W2)
 - Date: 2026-05-14
 - Authority: User directive — "Architecture design must strictly co-design with SPI; every module must have an SPI. Platform must be releasable, resilient, available, vulnerability-detected, DFX-clarified, spec-driven, test-driven (TCK)."
-- Scope: Mandate that every domain module exposes at least one SPI package, ships a DFX yaml covering five Design-for-X dimensions, and reserves the TCK module name for W2 conformance suites. Anchors CLAUDE.md Rule 32 and ARCHITECTURE.md §4 #63.
+- Scope: Mandate that every domain module exposes at least one SPI package, ships a DFX yaml covering five Design-for-X dimensions, and reserves the TCK module name for W2 conformance suites. Anchors CLAUDE.md Rule R-D sub-clause .a and ARCHITECTURE.md §4 #63.
 - Cross-link: ADR-0064 (Layer-0 governing principles), ADR-0066 (Independent Module Evolution), ARCHITECTURE.md §4.7 (SPI purity).
 
 ## Context
@@ -13,7 +13,7 @@ The platform already has SPI packages under `agent-runtime` (`orchestration/spi/
 1. **DFX clarity** — there's no per-module record of how each module addresses releasability, resilience, availability, vulnerability, and observability. Reviewers ask these questions on every release; the absence of a structured answer turns the audit into archaeology.
 2. **TCK contract** — alternative SPI implementations (Postgres Checkpointer, Temporal RunRepository, etc.) will land in W2/W4. Without a TCK, "conformant implementation" has no enforceable definition.
 
-Rule 28 requires the constraint and its enforcer ship in the same PR. The TCK conformance suites cannot be written today (no alternative implementations exist to test against), so the TCK module name + scaffolding requirement is deferred to W2. The SPI presence + DFX yaml requirements land active.
+Rule R-C.a requires the constraint and its enforcer ship in the same PR. The TCK conformance suites cannot be written today (no alternative implementations exist to test against), so the TCK module name + scaffolding requirement is deferred to W2. The SPI presence + DFX yaml requirements land active.
 
 ## Decision
 
@@ -54,8 +54,8 @@ Reserved name: `agent-runtime-tck` (sibling of `agent-runtime`). Adding it as a 
 
 ### 4. Enforcement
 
-- Gate Rule 35 `dfx_yaml_present_and_wellformed` (enforcer E53) — every `kind: platform | domain` module has `docs/dfx/<module>.yaml` with all 5 DFX dimensions present.
-- Gate Rule 36 `domain_module_has_spi_package` (enforcer E54) — every `kind: domain` module declares `spi_packages:` and each one resolves on disk.
+- Gate Rule R-E `dfx_yaml_present_and_wellformed` (enforcer E53) — every `kind: platform | domain` module has `docs/dfx/<module>.yaml` with all 5 DFX dimensions present.
+- Gate Rule R-F `domain_module_has_spi_package` (enforcer E54) — every `kind: domain` module declares `spi_packages:` and each one resolves on disk.
 - ArchUnit E48 `SpiPurityGeneralizedArchTest` — SPI purity (Spring/platform/inmemory/Micrometer/OTel-free).
 
 ### 5. Deferred sub-clauses
@@ -78,11 +78,11 @@ Reserved name: `agent-runtime-tck` (sibling of `agent-runtime`). Adding it as a 
 - **Negative**: Two new docs to maintain (`docs/dfx/agent-service.yaml`, `docs/dfx/agent-service.yaml`); the starter DFX is voluntary but its presence creates a maintenance expectation; TCK content is deferred so SPI compatibility is asserted only by direct tests until W2.
 - **Risk surfaced**: A `kind: domain` module added later without an `*.spi.*` package will fail the gate. Mitigation: the `module-metadata.yaml` `kind:` field is the contributor's commitment; choosing `kind: domain` means committing to SPI presence.
 
-## Enforcers (Rule 28)
+## Enforcers (Rule R-C.a)
 
 - E48 ArchUnit `SpiPurityGeneralizedArchTest`.
-- E53 Gate Rule 35 `dfx_yaml_present_and_wellformed`.
-- E54 Gate Rule 36 `domain_module_has_spi_package`.
+- E53 Gate Rule R-E `dfx_yaml_present_and_wellformed`.
+- E54 Gate Rule R-F `domain_module_has_spi_package`.
 
 ## §16 Review Checklist
 
@@ -91,4 +91,4 @@ Reserved name: `agent-runtime-tck` (sibling of `agent-runtime`). Adding it as a 
 - [x] Five DFX dimensions are enumerated.
 - [x] TCK module name (`<module>-tck`) is reserved; conformance content is deferred with explicit W2 trigger.
 - [x] Module count invariant interaction is acknowledged (E27 / Rule 28e — was hard-coded 4 at ADR-write; bumped to 9 by 2026-05-17 six-module materialization PR; will need further bumps when TCK lands and when Phase C collapses agent-platform + agent-runtime into agent-service).
-- [x] §4 #63 anchors Rule 32 in the architectural corpus.
+- [x] §4 #63 anchors Rule R-D sub-clause .a in the architectural corpus.

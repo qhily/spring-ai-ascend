@@ -104,7 +104,7 @@ defined here.
 
 ## References
 
-- Seventh reviewer P2.2: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Seventh reviewer P2.2: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
 - ADR-0022: PayloadCodec SPI (typed payload introduction at W2)
 - ADR-0028: CausalPayloadEnvelope and SemanticOntology (W3 typed envelope)
 - `ExecutorDefinition.java` — current `NodeFunction` and `Reasoner` with `Object` payloads

@@ -108,10 +108,10 @@ if [[ $_r85_fail -eq 0 ]]; then pass_rule "catalog_spi_row_matches_module_spi_me
 # 2026-05-18 rc6 post-response wave -- Rules 86-87 (E119, E120)
 # 2026-05-18 rc8 post-corrective wave -- Rules 88-89 (E121, E122) + Rule 86 fenced-tree-block extension
 # Authority cards: docs/governance/rules/rule-86.md, rule-87.md, rule-88.md, rule-89.md
-# Reviews:    docs/reviews/2026-05-18-l0-rc6-post-response-architecture-review.en.md
-#             docs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
-# Responses:  docs/reviews/2026-05-18-l0-rc6-post-response-architecture-review-response.en.md
-#             docs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review-response.en.md
+# Reviews:    docs/logs/reviews/2026-05-18-l0-rc6-post-response-architecture-review.en.md
+#             docs/logs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
+# Responses:  docs/logs/reviews/2026-05-18-l0-rc6-post-response-architecture-review-response.en.md
+#             docs/logs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review-response.en.md
 # Closes finding families:
 #   rc6 P0-2 root ARCHITECTURE.md 8-module + stale path claims  -> Rule 86 (rc7)
 #   rc6 P1-2 status_yaml allowed_claim stale module names        -> Rule 87 (rc7)

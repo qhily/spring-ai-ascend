@@ -2,7 +2,7 @@
 #
 # Authority: ADR-0072 (Engine Envelope + Strict Matching).
 # Wave: W2.x Phase 1.
-# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §3 + §4).
+# Driver review: docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §3 + §4).
 #
 # This file is the SINGLE SOURCE OF TRUTH for what an EngineEnvelope is. The
 # Java record ascend.springai.runtime.engine.EngineEnvelope mirrors this

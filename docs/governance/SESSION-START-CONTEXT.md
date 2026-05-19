@@ -77,7 +77,7 @@ To answer "which ADR superseded ADR-N?":
 Before editing any architectural artefact:
 
 1. **Read the front-matter.** Every architectural file declares `level:` + `view:`. Edits change semantics; declare the level/view your change applies to.
-2. **Write a `docs/reviews/` proposal first** if the artefact is L0 or L1 and is frozen (`freeze_id:` is set). Use `docs/reviews/_TEMPLATE.md`.
+2. **Write a `docs/logs/reviews/` proposal first** if the artefact is L0 or L1 and is frozen (`freeze_id:` is set). Use `docs/logs/reviews/_TEMPLATE.md`.
 3. **Update the graph inputs, never the graph file.** Edit `enforcers.yaml`, `principle-coverage.yaml`, ADR YAML, or `module-metadata.yaml`. Then run `bash gate/build_architecture_graph.sh` to regenerate the graph. Rule 34 forbids hand-editing the graph.
 4. **Run the gate.** `bash gate/check_architecture_sync.sh` exits 0. New Rule 33–34 gate rules (37–40) catch missing front-matter, broken edges, orphaned enforcers, and missing review-proposal tags.
 
@@ -87,7 +87,7 @@ These are part of the corpus but should NOT be read at session start:
 
 - Individual ADRs unless an edge in the graph points at one.
 - Archived plans under `docs/archive/`.
-- Historical review files under `docs/reviews/2026-05-1[23]-*.md` (they are frozen evidence, not active guidance).
+- Historical review files under `docs/logs/reviews/2026-05-1[23]-*.md` (they are frozen evidence, not active guidance).
 - `docs/CLAUDE-deferred.md` unless you are about to land a deferred rule.
 
 ## Mental model

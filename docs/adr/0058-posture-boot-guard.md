@@ -6,7 +6,7 @@
 
 ## Context
 
-Rule 10 (Posture-Aware Defaults) requires `research`/`prod` to fail closed when
+Rule D-6 (Posture-Aware Defaults) requires `research`/`prod` to fail closed when
 required configuration is absent. L0 ships a soft variant: individual beans log
 a warning in `dev` and throw `IllegalStateException` on first use in
 `research`/`prod`. That is not "fail closed" — startup completes, the
@@ -63,7 +63,7 @@ exception thrown from the listener propagates up and causes
 `SpringApplication.run(...)` to return a non-zero exit code (or throws to the
 caller in `@SpringBootTest`).
 
-### 4. Enforcers (per Rule 28)
+### 4. Enforcers (per Rule R-C.a)
 
 - **E11** (`JwtDevLocalModeGuardIT`) — `app.auth.dev-local-mode=true` outside
   `dev` posture aborts startup.
@@ -79,7 +79,7 @@ caller in `@SpringBootTest`).
 
 - Single, mechanical place to read the posture contract.
 - Boot-time failure surfaces misconfiguration before traffic arrives — matches
-  "Posture-Aware Defaults" Rule 10 literally.
+  "Posture-Aware Defaults" Rule D-6 literally.
 - Adding a new requirement is one method on the guard plus one test case.
 
 ### Negative
@@ -124,7 +124,7 @@ just property values.
 - [x] Tests cover unit, integration, and public contract layers (E11, E21, E22).
 - [x] `architecture-status.yaml` truth matches implementation (row line 268
       promoted in Phase J).
-- [x] The design does not weaken existing Rule 20, Rule 21, or Rule 25 constraints.
+- [x] The design does not weaken existing Rule R-C.d, Rule R-C.e, or Rule G-2 sub-clause .a constraints.
 
 ## References
 
@@ -132,4 +132,4 @@ just property values.
 - Architect guidance §6.3, §9.2, §10.
 - ADR-0056 (AuthProperties consumed here).
 - ADR-0057 (IdempotencyStore beans consumed here).
-- ADR-0059 (Rule 28).
+- ADR-0059 (Rule R-C.a).

@@ -61,7 +61,12 @@ _r82_phrases=(
   "graph edges|architecture_graph_edges"
   "ADRs|adr_count"
 )
-_r82_marker_re='historical|rc[0-9]+ baseline|pre-rc[0-9]+|previous|prior|deprecated|superseded|formerly|was [0-9]'
+_r82_vocab="gate/baseline-snapshot-marker-vocabulary.txt"
+if [[ ! -f "$_r82_vocab" ]]; then
+  fail_rule "baseline_metrics_single_source" "$_r82_vocab missing -- Rule 82 / E115 (Wave 2 vocabulary externalisation)"
+  _r82_fail=1
+fi
+_r82_marker_re="$(grep -vE '^[[:space:]]*(#|$)' "$_r82_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 for _r82_pointer_file in README.md gate/README.md; do
   [[ -f "$_r82_pointer_file" ]] || continue
   _r82_in_code=0

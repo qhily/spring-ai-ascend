@@ -9,8 +9,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Generalised SPI purity enforcer for CLAUDE.md Rule 29 (Business/Platform Decoupling)
- * and Rule 32 (SPI + DFX + TCK Co-Design). Authority: ADR-0064, ADR-0067.
+ * Generalised SPI purity enforcer for CLAUDE.md Rule R-A (Business/Platform Decoupling)
+ * and Rule R-D.a (SPI + DFX + TCK Co-Design). Authority: ADR-0064, ADR-0067.
  *
  * <p>Existing test MemorySpiArchTest covers runtime.memory.spi only and OrchestrationSpiArchTest
  * covers runtime.orchestration.spi only. This test generalises the contract: ANY package under

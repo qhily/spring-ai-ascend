@@ -31,8 +31,8 @@ if [[ $_r79_fail -eq 0 ]]; then pass_rule "rule_79_runbook_present_and_cited"; f
 # ===========================================================================
 # 2026-05-18 rc4 cross-constraint review response prevention wave -- Rules 80-83
 # Authority: docs/governance/rules/rule-80.md ... rule-83.md
-#            + docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
-#            + docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
 # Closes finding families:
 #   P0-1 ADR-vs-code drift after rc3 S2C refactor          -> Rule 80
 #   P0-2 module-status drift after engine extraction         -> Rule 81

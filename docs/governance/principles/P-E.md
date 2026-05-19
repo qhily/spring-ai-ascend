@@ -12,7 +12,7 @@ kernel: |
   highest priority), `data` (in-band heavy-load payload bodies),
   and `rhythm` (heartbeat / liveness pulses).
   No congestion on one channel can paralyse another.
-  Enforced by Rule 35.
+  Enforced by Rule R-E.
 ---
 
 ## Motivation
@@ -21,7 +21,7 @@ This principle exists because a single shared bus channel under load **paralyses
 
 ## Operationalising rules
 
-- Rule 35 — Three-Track Channel Isolation ([`docs/governance/rules/rule-35.md`](../rules/rule-35.md))
+- Rule R-E — Three-Track Channel Isolation ([`docs/governance/rules/rule-R-E.md`](../rules/rule-R-E.md))
 
 ## Cross-references
 

@@ -50,9 +50,9 @@
 #  23.  active_doc_internal_links_resolve             -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
 #  24.  shipped_row_evidence_paths_exist              -- l2_documents: and latest_delivery_file: on shipped rows must exist on disk (ADR-0045)
 #  25.  peripheral_wave_qualifier                     -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
-#  26.  release_note_shipped_surface_truth            -- docs/releases/*.md must not overclaim RunLifecycle/RunContext.posture/ApiCompatibilityTest-as-OpenAPI/AppPostureGate-scope (ADR-0046)
+#  26.  release_note_shipped_surface_truth            -- docs/logs/releases/*.md must not overclaim RunLifecycle/RunContext.posture/ApiCompatibilityTest-as-OpenAPI/AppPostureGate-scope (ADR-0046)
 #  27.  active_entrypoint_baseline_truth              -- root README.md baseline counts must match architecture-status.yaml.architecture_sync_gate.allowed_claim (ADR-0047)
-#  28.  release_note_baseline_truth                   -- docs/releases/*.md baseline counts must match canonical YAML unless marked "Historical artifact frozen at SHA" (ADR-0049, whitepaper-alignment P0-1)
+#  28.  release_note_baseline_truth                   -- docs/logs/releases/*.md baseline counts must match canonical YAML unless marked "Historical artifact frozen at SHA" (ADR-0049, whitepaper-alignment P0-1)
 #  29.  whitepaper_alignment_matrix_present           -- docs/governance/whitepaper-alignment-matrix.md must exist and list all 20 required whitepaper concepts (ADR-0049, whitepaper-alignment P2-1)
 #  --- L1 Rule-28 sub-checks (ADR-0059) ---
 #  28a. tenant_column_present                          -- every CREATE TABLE in db/migration declares tenant_id (enforcer E15)
@@ -78,12 +78,12 @@
 #  --- W1 Layered 4+1 + Architecture Graph (ADR-0068) ---
 #  37.  architecture_artefact_front_matter             -- every ARCH/L2/ADR.yaml carries level: + view: front-matter (Rule 33, enforcer E55)
 #  38.  architecture_graph_well_formed                 -- generated architecture-graph.yaml builds + validates (Rule 34, enforcer E56)
-#  39.  review_proposal_front_matter                   -- docs/reviews/*.md declare affects_level: + affects_view: (Rule 33, enforcer E57)
+#  39.  review_proposal_front_matter                   -- docs/logs/reviews/*.md declare affects_level: + affects_view: (Rule 33, enforcer E57)
 #  40.  enforcer_reachable_from_principle              -- every enforcer has at least one rule-edge (Rule 34, enforcer E58)
 #  41.  enforcer_anchor_resolves                       -- every artifact: anchor resolves to real method/heading (Phase M, enforcer E60)
 #  42.  architecture_graph_idempotent                  -- twice-run graph build is byte-identical (Phase M, enforcer E61)
 #  43.  new_adr_must_be_yaml                           -- highest-numbered ADR is .yaml not .md (Phase M, enforcer E62)
-#  44.  frozen_doc_edit_path_compliance                -- freeze_id-tagged file edits require docs/reviews/*.md proposal (Phase M, enforcer E63)
+#  44.  frozen_doc_edit_path_compliance                -- freeze_id-tagged file edits require docs/logs/reviews/*.md proposal (Phase M, enforcer E63)
 #  --- W1.x L0 ironclad-rule enforcers (ADR-0069) ---
 #  45.  bus_channels_three_track_present               -- bus-channels.yaml declares 3 channels with unique physical_channel (Rule 35 / P-E, enforcer E64)
 #  46.  cursor_flow_documented                         -- openapi-v1.yaml declares TaskCursor schema + x-cursor-flow annotation (Rule 36 / P-F, enforcer E65)
@@ -111,7 +111,7 @@
 #  --- v2.0.0-rc2 second-pass review closure (F-α / F-β / F-γ category audit) ---
 #  61.  legacy_powershell_gate_deprecated               -- gate/check_architecture_sync.ps1 contains DEPRECATED header AND is absent from architecture-status.yaml#architecture_sync_gate.implementation: (F-α P0-1)
 #  62.  contract_yaml_declares_status                   -- every docs/contracts/*.v1.yaml + 3 governance YAMLs declare top-level status: with allowed enum value (F-β structural prevention)
-#  63.  release_note_retracted_tag_qualified            -- every line in docs/releases/*.md mentioning a tag listed in docs/governance/retracted-tags.txt MUST contain "(retracted)" OR appear under a heading matching "Historical" / "Superseded" (F-γ structural prevention)
+#  63.  release_note_retracted_tag_qualified            -- every line in docs/logs/releases/*.md mentioning a tag listed in docs/governance/retracted-tags.txt MUST contain "(retracted)" OR appear under a heading matching "Historical" / "Superseded" (F-γ structural prevention)
 #  --- 2026-05-17 cross-corpus consistency audit prevention rules (G1/G2/G3 closure, enforcers E94-E96) ---
 #  64.  module_count_data_driven                        -- root pom.xml <module> count equals docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules (G1 prevention; canonical count lives in one place)
 #  65.  module_metadata_pom_dep_parity                  -- every ascend.springai <dependency> in <module>/pom.xml appears in <module>/module-metadata.yaml allowed_dependencies (G2 prevention; metadata cannot lag behind pom)
@@ -543,7 +543,7 @@ while IFS= read -r _mdf15; do
   done
 done < <(find . -name '*.md' \
   ! -path './docs/archive/*' \
-  ! -path './docs/reviews/*' \
+  ! -path './docs/logs/reviews/*' \
   ! -path './docs/adr/*' \
   ! -path './docs/delivery/*' \
   ! -path './docs/v6-rationale/*' \
@@ -571,7 +571,7 @@ while IFS= read -r _mdf16; do
   fi
 done < <(find . -name '*.md' \
   ! -path './docs/archive/*' \
-  ! -path './docs/reviews/*' \
+  ! -path './docs/logs/reviews/*' \
   ! -path './docs/adr/*' \
   ! -path './third_party/*' \
   ! -path './target/*' \
@@ -667,7 +667,7 @@ while IFS= read -r _t18; do
       _r18_fail=1
     fi
   done
-done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/reviews/' | \
+done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/logs/reviews/' | \
   grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
   grep -v '/docs/plans/' | grep -v '/third_party/' | grep -v '/target/' | grep -v '/.git/' | sort 2>/dev/null || true)
 if [[ $_r18_fail -eq 0 ]]; then pass_rule "deleted_spi_starter_names_outside_catalog"; fi
@@ -852,7 +852,7 @@ while IFS= read -r _af22; do
     fail_rule "lowercase_metrics_in_contract_docs" "$_af22 contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 (widened) metric names must use lowercase springai_ascend_ prefix."
     _r22_fail=1
   fi
-done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/reviews/' | \
+done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/logs/reviews/' | \
   grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
   grep -v '/docs/plans/' | grep -v '/third_party/' | grep -v '/target/' | grep -v '/.git/' | sort 2>/dev/null || true)
 if [[ $_r22_fail -eq 0 ]]; then pass_rule "lowercase_metrics_in_contract_docs"; fi
@@ -880,7 +880,7 @@ while IFS= read -r _af23; do
     fi
   done < <(grep -oE '\]\([^)]+\)' "$_af23" 2>/dev/null | sed 's/^](//;s/)$//' || true)
 done < <(find . -name '*.md' \
-  ! -path './docs/archive/*' ! -path './docs/reviews/*' \
+  ! -path './docs/archive/*' ! -path './docs/logs/*' \
   ! -path './docs/adr/*' ! -path './docs/delivery/*' \
   ! -path './docs/v6-rationale/*' ! -path './docs/plans/*' \
   ! -path './third_party/*' ! -path './target/*' \
@@ -997,7 +997,7 @@ while IFS= read -r _af25; do
     fi
   done < <(grep -nF 'Sidecar adapter —' "$_af25" 2>/dev/null || true)
 done < <(find . -name '*.md' \
-  ! -path './docs/archive/*' ! -path './docs/reviews/*' \
+  ! -path './docs/archive/*' ! -path './docs/logs/reviews/*' \
   ! -path './docs/adr/*' ! -path './docs/delivery/*' \
   ! -path './docs/v6-rationale/*' ! -path './docs/plans/*' \
   ! -path './third_party/*' ! -path './target/*' \
@@ -1007,7 +1007,7 @@ if [[ $_r25_fail -eq 0 ]]; then pass_rule "peripheral_wave_qualifier"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 26 — release_note_shipped_surface_truth
-# ADR-0046: docs/releases/*.md must not overclaim shipped surfaces.
+# ADR-0046: docs/logs/releases/*.md must not overclaim shipped surfaces.
 #   26a — RunLifecycle name guard: line containing 'RunLifecycle' must be in a one-line
 #         context window with a wave qualifier W1/W2/W3/W4, OR the same line must contain
 #         one of: design-only|deferred|not shipped|remains design|materialised at W.
@@ -1020,7 +1020,7 @@ if [[ $_r25_fail -eq 0 ]]; then pass_rule "peripheral_wave_qualifier"; fi
 # Closes GATE-SCOPE-GAP for release artifact class.
 # ---------------------------------------------------------------------------
 _r26_fail=0
-if [[ -d docs/releases ]]; then
+if [[ -d docs/logs/releases ]]; then
   while IFS= read -r _rf26; do
     [[ -z "$_rf26" ]] && continue
     # Pre-read file into an array of lines for context-window 26a.
@@ -1101,7 +1101,7 @@ if [[ -d docs/releases ]]; then
         _r26_fail=1
       fi
     done
-  done < <(find docs/releases -name '*.md' -type f 2>/dev/null | sort || true)
+  done < <(find docs/logs/releases -name '*.md' -type f 2>/dev/null | sort || true)
 fi
 if [[ $_r26_fail -eq 0 ]]; then pass_rule "release_note_shipped_surface_truth"; fi
 
@@ -1148,7 +1148,7 @@ if [[ $_r27_fail -eq 0 ]]; then pass_rule "active_entrypoint_baseline_truth"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 28 — release_note_baseline_truth
-# ADR-0049 (whitepaper-alignment remediation P0-1): every docs/releases/*.md
+# ADR-0049 (whitepaper-alignment remediation P0-1): every docs/logs/releases/*.md
 # baseline table MUST match the canonical architecture_sync_gate.allowed_claim
 # counts, UNLESS the release note declares itself a historical artifact via
 # the marker "Historical artifact frozen at SHA". Closes GATE-SCOPE-GAP for
@@ -1189,7 +1189,7 @@ if [[ -f docs/governance/architecture-status.yaml ]]; then
       _check_baseline28 'ADRs' '[0-9]+[[:space:]]+ADRs' '(Active[[:space:]]+)?ADRs[[:space:]]*\|[[:space:]]*[0-9]+'
       _check_baseline28 'gate rules' '[0-9]+[[:space:]]+active[[:space:]]+gate[[:space:]]+rules' '(Active[[:space:]]+)?gate[[:space:]]+rules[[:space:]]*\|[[:space:]]*[0-9]+'
       _check_baseline28 'self-tests' '[0-9]+[[:space:]]+gate[[:space:]]+self-tests' '(Gate[[:space:]]+)?self-test[[:space:]]+cases[[:space:]]*\|[[:space:]]*[0-9]+'
-    done < <(find docs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort || true)
+    done < <(find docs/logs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort || true)
   fi
 fi
 if [[ $_r28_fail -eq 0 ]]; then pass_rule "release_note_baseline_truth"; fi
@@ -1755,11 +1755,11 @@ if [[ $_r32_fail -eq 0 ]]; then pass_rule "competitive_baselines_present_and_wel
 # ---------------------------------------------------------------------------
 # Rule 33 — release_note_references_four_pillars (enforcer E51, ADR-0065)
 #
-# The most recent release note under docs/releases/ MUST mention all four
+# The most recent release note under docs/logs/releases/ MUST mention all four
 # pillar names by name so reviewers see the dimensions tracked per release.
 # ---------------------------------------------------------------------------
 _r33_fail=0
-_latest_release="$(find docs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort | tail -1 || true)"
+_latest_release="$(find docs/logs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort | tail -1 || true)"
 if [[ -z "$_latest_release" ]]; then
   pass_rule "release_note_references_four_pillars"   # no release notes yet — vacuous pass
 else
@@ -1976,12 +1976,12 @@ if [[ $_r38_fail -eq 0 ]]; then pass_rule "architecture_graph_well_formed"; fi
 # ---------------------------------------------------------------------------
 # Rule 39 — review_proposal_front_matter (enforcer E57, ADR-0068)
 #
-# Every NEW (post-W1) proposal under docs/reviews/ MUST declare
+# Every NEW (post-W1) proposal under docs/logs/reviews/ MUST declare
 # affects_level: + affects_view: front-matter. Pre-W1 historical review
 # files are explicitly listed in the allow-list below and exempted.
 # ---------------------------------------------------------------------------
 _r39_fail=0
-# Allow-list of pre-W1 historical files (relative to docs/reviews/).
+# Allow-list of pre-W1 historical files (relative to docs/logs/reviews/).
 _r39_allow_re='^(2026-05-1[23]-|2026-05-14-(architecture-governance-in-vibe-coding-era|L0Architecture-LucioIT-wave-1-request|l1-architecture-expert-review)|spring-ai-ascend-implementation-guidelines|Architectural Perspective Review)'
 while IFS= read -r _f39; do
   [[ -z "$_f39" ]] && continue
@@ -1994,7 +1994,7 @@ while IFS= read -r _f39; do
   if ! grep -qE '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_f39" 2>/dev/null; then
     fail_rule "review_proposal_front_matter" "$_f39 missing 'affects_view:' front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r39_fail=1
   fi
-done < <(find docs/reviews -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort || true)
+done < <(find docs/logs/reviews -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort || true)
 if [[ $_r39_fail -eq 0 ]]; then pass_rule "review_proposal_front_matter"; fi
 
 # ---------------------------------------------------------------------------
@@ -2150,7 +2150,7 @@ if [[ $_r43_fail -eq 0 ]]; then pass_rule "new_adr_must_be_yaml"; fi
 #
 # For every architecture artefact declaring `freeze_id: <non-null>` in its
 # front-matter, any modification to that file in the working tree (vs the
-# merge base) MUST be accompanied by a NEW docs/reviews/*.md proposal in the
+# merge base) MUST be accompanied by a NEW docs/logs/reviews/*.md proposal in the
 # same commit naming the file under `affects_artefact:`. No-op today (all
 # freeze_id values are null); arms automatically when a doc is phase-released.
 # ---------------------------------------------------------------------------
@@ -2174,7 +2174,7 @@ done
 # If git is available and a base ref is reachable, check each frozen doc for
 # modifications without an accompanying review proposal.
 if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --verify "$_r44_base" >/dev/null 2>&1; then
-  _r44_changed_reviews="$(git diff --name-only --diff-filter=A "$_r44_base" -- 'docs/reviews/*.md' 2>/dev/null || true)"
+  _r44_changed_reviews="$(git diff --name-only --diff-filter=A "$_r44_base" -- 'docs/logs/reviews/*.md' 2>/dev/null || true)"
   while IFS= read -r _f44; do
     [[ -z "$_f44" ]] && continue
     if git diff --name-only "$_r44_base" -- "$_f44" 2>/dev/null | grep -q .; then
@@ -2188,7 +2188,7 @@ if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --
         fi
       done <<< "$_r44_changed_reviews"
       if [[ $_accompanied -eq 0 ]]; then
-        fail_rule "frozen_doc_edit_path_compliance" "$_f44 carries freeze_id but was modified without an accompanying docs/reviews/*.md proposal citing it under affects_artefact:"
+        fail_rule "frozen_doc_edit_path_compliance" "$_f44 carries freeze_id but was modified without an accompanying docs/logs/reviews/*.md proposal citing it under affects_artefact:"
         _r44_fail=1
       fi
     fi
@@ -2767,7 +2767,7 @@ if [[ $_r60_fail -eq 0 ]]; then pass_rule "schema_first_domain_contracts"; fi
 #
 # The PowerShell architecture-sync gate (gate/check_architecture_sync.ps1) was
 # frozen at Rule 29 in 2026-05 while the bash gate evolved to Rule 60+. The
-# second-pass review (docs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-review.en.md
+# second-pass review (docs/logs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-review.en.md
 # §P0-1) required choosing one of two postures. v2.0.0-rc2 picked the
 # canonical-bash posture per the response document. This rule asserts BOTH
 # halves of that posture:
@@ -2868,7 +2868,7 @@ if [[ $_r62_fail -eq 0 ]]; then pass_rule "contract_yaml_declares_status"; fi
 # Rule 63 — release_note_retracted_tag_qualified (v2.0.0-rc2 / second-pass review F-γ structural prevention)
 #
 # Every tag listed in docs/governance/retracted-tags.txt MUST, wherever it is
-# mentioned in an active release note under docs/releases/*.md, appear either
+# mentioned in an active release note under docs/logs/releases/*.md, appear either
 #   (a) on the same line as "(retracted)" (case-insensitive), OR
 #   (b) under a markdown heading (line starting with '#') containing
 #       "Historical" or "Superseded" (case-insensitive).
@@ -2896,7 +2896,7 @@ else
     pass_rule "release_note_retracted_tag_qualified"
   else
     shopt -s nullglob
-    for _r63_doc in docs/releases/*.md; do
+    for _r63_doc in docs/logs/releases/*.md; do
       [[ -f "$_r63_doc" ]] || continue
       while IFS= read -r _r63_tag; do
         [[ -z "$_r63_tag" ]] && continue
@@ -2938,7 +2938,7 @@ if [[ $_r63_fail -eq 0 ]]; then pass_rule "release_note_retracted_tag_qualified"
 
 # ===========================================================================
 # Cross-corpus consistency audit prevention rules (2026-05-17)
-# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# Authority: docs/logs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
 # Closes structural design flaws G1, G2, G3 surfaced by the audit:
 #   G1 — module count was hardcoded in 4 places
 #   G2 — no metadata-vs-pom dependency cross-check
@@ -3137,8 +3137,17 @@ else
   while IFS= read -r _r68_card; do
     [[ -z "$_r68_card" ]] && continue
     _r68_base=$(basename "$_r68_card" .md)
-    _r68_num=$(printf '%s\n' "$_r68_base" | sed -nE 's/^rule-0*([0-9]+)$/\1/p')
-    [[ -z "$_r68_num" ]] && continue
+    # Card id may be old integer form (rule-NN) or new namespaced form
+    # (rule-D-1 / rule-R-C.a / rule-G-3.f / rule-M-2.b). Extract the trailing
+    # identifier — everything after `rule-`.
+    _r68_id=$(printf '%s\n' "$_r68_base" | sed -nE 's/^rule-(.+)$/\1/p')
+    [[ -z "$_r68_id" ]] && continue
+    # For integer ids, strip leading zeros for heading-match symmetry.
+    if [[ "$_r68_id" =~ ^[0-9]+$ ]]; then
+      _r68_id_match=$(printf '%s\n' "$_r68_id" | sed -nE 's/^0*([0-9]+)$/\1/p')
+    else
+      _r68_id_match="$_r68_id"
+    fi
     # Extract the kernel: scalar from card front-matter (supports both '|' literal
     # block style and inline scalar). Stop at the next top-level key or '---'.
     _r68_kernel=$(awk '
@@ -3149,9 +3158,9 @@ else
       flag { sub(/^  /, ""); print }
     ' "$_r68_card" | tr -s ' \t' ' ' | tr -d '\r' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
     [[ -z "$_r68_kernel" ]] && continue
-    # Extract the body of "#### Rule NN" from CLAUDE.md: lines until the first
+    # Extract the body of "#### Rule <id>" from CLAUDE.md: lines until the first
     # blank-line + "Enforced" or until "---" or until the next heading.
-    _r68_body=$(awk -v n="$_r68_num" '
+    _r68_body=$(awk -v n="$_r68_id_match" '
       $0 ~ "^#### Rule " n "[[:space:]]" || $0 ~ "^#### Rule " n "$" { flag=1; next }
       flag && /^---$/ { exit }
       flag && /^#### / { exit }
@@ -3159,10 +3168,17 @@ else
       flag && NF { print }
     ' "$_r68_claude" | tr -s ' \t' ' ' | tr -d '\r' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
     if [[ -z "$_r68_body" ]]; then
-      _r68_drift+="Rule $_r68_num: card exists but no body in CLAUDE.md; "
+      # Deferred-only sub-clause cards (e.g. R-A.c, R-K.c) have no CLAUDE.md body —
+      # they live in docs/CLAUDE-deferred.md. Check that the deferred doc
+      # references the rule before failing.
+      _r68_deferred_doc='docs/CLAUDE-deferred.md'
+      if [[ -f "$_r68_deferred_doc" ]] && grep -qE "(^|[^a-zA-Z0-9])Rule[[:space:]]+${_r68_id_match}([^a-zA-Z0-9]|$)" "$_r68_deferred_doc"; then
+        continue  # deferred-only card; not a drift
+      fi
+      _r68_drift+="Rule $_r68_id_match: card exists but no body in CLAUDE.md; "
       _r68_fail=1
     elif [[ "$_r68_kernel" != "$_r68_body" ]]; then
-      _r68_drift+="Rule $_r68_num drift; "
+      _r68_drift+="Rule $_r68_id_match drift; "
       _r68_fail=1
     fi
   done < <(find "$_r68_cards_dir" -maxdepth 1 -name 'rule-*.md' -type f 2>/dev/null | sort)
@@ -3199,10 +3215,15 @@ else
   # failures on Linux CI even when local WSL passes consistently).
   _r69_active_f=$(mktemp 2>/dev/null || echo "/tmp/r69_active.$$")
   _r69_cards_f=$(mktemp 2>/dev/null || echo "/tmp/r69_cards.$$")
-  grep -oE '^#### Rule [0-9]+' "$_r69_claude" 2>/dev/null \
-    | grep -oE '[0-9]+' | sort -un > "$_r69_active_f"
+  # Active rule IDs: extract the identifier after `#### Rule ` (can be integer
+  # OR namespaced: D-1, R-C.a, G-3.f, M-2.b). Normalise zero-padding away for
+  # comparison with card filenames (which may also still have integer form during
+  # transition).
+  grep -oE '^#### Rule [A-Za-z0-9.-]+' "$_r69_claude" 2>/dev/null \
+    | sed -E 's/^#### Rule //; s/^0*([0-9])/\1/' | sort -u > "$_r69_active_f"
+  # Card filenames: rule-<id>.md where <id> may be integer or namespaced.
   find "$_r69_cards_dir" -maxdepth 1 -name 'rule-*.md' -type f 2>/dev/null \
-    | sed -E 's|.*/rule-0*([0-9]+)[a-z]?\.md|\1|' | sort -un > "$_r69_cards_f"
+    | sed -E 's|.*/rule-(.+)\.md$|\1|; s/^0*([0-9])/\1/' | sort -u > "$_r69_cards_f"
   # Missing cards: active - cards (set difference via comm).
   _r69_missing=$(comm -23 "$_r69_active_f" "$_r69_cards_f" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
   if [[ -n "$_r69_missing" ]]; then
@@ -3656,7 +3677,7 @@ if [[ $_r78_fail -eq 0 ]]; then pass_rule "dfx_spi_packages_match_module_metadat
 # Authority: docs/governance/rules/rule-79.md
 #            + D:/.claude/plans/d-chao-workspace-spring-ai-ascend-docs-shimmering-milner.md
 # Operationalises the "Telemetry-First Debugging" remediation proposal from
-# docs/reviews/spring-ai-ascend-beyond-sdd-en.md by requiring an executable
+# docs/logs/reviews/spring-ai-ascend-beyond-sdd-en.md by requiring an executable
 # debug-sequence runbook to exist on disk, cited by the rule card, with the
 # canonical title string present (so the file cannot drift to a different
 # topic while still passing the gate by name alone).
@@ -3690,8 +3711,8 @@ if [[ $_r79_fail -eq 0 ]]; then pass_rule "rule_79_runbook_present_and_cited"; f
 # ===========================================================================
 # 2026-05-18 rc4 cross-constraint review response prevention wave -- Rules 80-83
 # Authority: docs/governance/rules/rule-80.md ... rule-83.md
-#            + docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
-#            + docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
 # Closes finding families:
 #   P0-1 ADR-vs-code drift after rc3 S2C refactor          -> Rule 80
 #   P0-2 module-status drift after engine extraction         -> Rule 81
@@ -3711,7 +3732,12 @@ if [[ $_r79_fail -eq 0 ]]; then pass_rule "rule_79_runbook_present_and_cited"; f
 # S2cCallbackSignal are forbidden in authoritative docs.
 # ---------------------------------------------------------------------------
 _r80_fail=0
-_r80_marker_re='historical|deleted|refactored|rc3-unification|amendment|forClientCallback|prior parallel|2026-05-16 design|unifies|unified|rc3 unif'
+_r80_vocab="gate/historical-marker-vocabulary.txt"
+if [[ ! -f "$_r80_vocab" ]]; then
+  fail_rule "s2c_callback_signal_historical_only_in_authority" "$_r80_vocab missing -- Rule 80 / E113 (Wave 2 vocabulary externalisation)"
+  _r80_fail=1
+fi
+_r80_marker_re="$(grep -vE '^[[:space:]]*(#|$)' "$_r80_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 for _r80_file in CLAUDE.md README.md ARCHITECTURE.md docs/contracts/*.v1.yaml docs/adr/*.yaml docs/adr/*.md agent-*/ARCHITECTURE.md; do
   [[ -f "$_r80_file" ]] || continue
   while IFS= read -r _r80_match; do
@@ -3815,7 +3841,12 @@ _r82_phrases=(
   "graph edges|architecture_graph_edges"
   "ADRs|adr_count"
 )
-_r82_marker_re='historical|rc[0-9]+ baseline|pre-rc[0-9]+|previous|prior|deprecated|superseded|formerly|was [0-9]'
+_r82_vocab="gate/baseline-snapshot-marker-vocabulary.txt"
+if [[ ! -f "$_r82_vocab" ]]; then
+  fail_rule "baseline_metrics_single_source" "$_r82_vocab missing -- Rule 82 / E115 (Wave 2 vocabulary externalisation)"
+  _r82_fail=1
+fi
+_r82_marker_re="$(grep -vE '^[[:space:]]*(#|$)' "$_r82_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 for _r82_pointer_file in README.md gate/README.md; do
   [[ -f "$_r82_pointer_file" ]] || continue
   _r82_in_code=0
@@ -3914,8 +3945,8 @@ if [[ $_r83_fail -eq 0 ]]; then pass_rule "design_only_contract_registered_in_ca
 # ===========================================================================
 # 2026-05-18 rc5 post-response review response prevention wave -- Rules 84-85
 # Authority: docs/governance/rules/rule-84.md + rule-85.md
-#            + docs/reviews/2026-05-18-l0-rc5-post-response-architecture-review.en.md
-#            + docs/reviews/2026-05-18-l0-rc5-post-response-architecture-review-response.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc5-post-response-architecture-review.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc5-post-response-architecture-review-response.en.md
 # Closes finding families:
 #   P0-1 module-level ARCHITECTURE.md path claim drift after refactor   -> Rule 84
 #   P1-2 catalog SPI row not backed by module spi_packages metadata    -> Rule 85
@@ -4064,10 +4095,10 @@ if [[ $_r85_fail -eq 0 ]]; then pass_rule "catalog_spi_row_matches_module_spi_me
 # 2026-05-18 rc6 post-response wave -- Rules 86-87 (E119, E120)
 # 2026-05-18 rc8 post-corrective wave -- Rules 88-89 (E121, E122) + Rule 86 fenced-tree-block extension
 # Authority cards: docs/governance/rules/rule-86.md, rule-87.md, rule-88.md, rule-89.md
-# Reviews:    docs/reviews/2026-05-18-l0-rc6-post-response-architecture-review.en.md
-#             docs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
-# Responses:  docs/reviews/2026-05-18-l0-rc6-post-response-architecture-review-response.en.md
-#             docs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review-response.en.md
+# Reviews:    docs/logs/reviews/2026-05-18-l0-rc6-post-response-architecture-review.en.md
+#             docs/logs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
+# Responses:  docs/logs/reviews/2026-05-18-l0-rc6-post-response-architecture-review-response.en.md
+#             docs/logs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review-response.en.md
 # Closes finding families:
 #   rc6 P0-2 root ARCHITECTURE.md 8-module + stale path claims  -> Rule 86 (rc7)
 #   rc6 P1-2 status_yaml allowed_claim stale module names        -> Rule 87 (rc7)
@@ -4472,50 +4503,44 @@ if [[ $_r93_fail -eq 0 ]]; then pass_rule "dfx_stem_matches_module"; fi
 # and test Javadocs. Rule 94 widens the path-truth check to those surfaces.
 #
 # Scope: active `.md`, `.yaml`, and `*.java` files NOT under docs/archive/,
-# docs/reviews/, docs/releases/2026-05-1[0-7]-*.md (historical), and lines
+# docs/logs/reviews/, docs/logs/releases/2026-05-1[0-7]-*.md (historical), and lines
 # inside fenced code blocks OR yaml comments. Pattern: word-boundary
 # `agent-platform` OR `agent-runtime` (negative-filtered against
 # `agent-runtime-core`). Exemption: a historical marker on the same line OR
 # within ±3 lines.
 # ---------------------------------------------------------------------------
 _r94_fail=0
-_r94_markers='historical|pre-ADR-[0-9]+|pre-Phase-C|consolidated into|consolidation of|consolidated from|merged into|merged in|merger of|was rooted|formerly|superseded|deprecated|archived|moved|extracted per ADR-[0-9]+|Extracted from|extracted from|post-ADR-[0-9]+|post-Phase-C|after Phase C|Phase-C|Phase C|ADR-[0-9]+|subsumes prior|deleted module|stale|drift|prevented|prevents|widens Rule|Rule 87 \(rc7\)|forbidden_dependencies|forbidden imports|Forbidden imports'
+_r94_marker_vocab="gate/active-corpus-name-exemption-markers.txt"
+_r94_path_vocab="gate/active-corpus-name-exemption-paths.txt"
+if [[ ! -f "$_r94_marker_vocab" ]]; then
+  fail_rule "active_corpus_deleted_module_name_truth" "$_r94_marker_vocab missing -- Rule 94 / E129 (Wave 2 vocabulary externalisation)"
+  _r94_fail=1
+fi
+if [[ ! -f "$_r94_path_vocab" ]]; then
+  fail_rule "active_corpus_deleted_module_name_truth" "$_r94_path_vocab missing -- Rule 94 / E129 (Wave 2 vocabulary externalisation)"
+  _r94_fail=1
+fi
+_r94_markers="$(grep -vE '^[[:space:]]*(#|$)' "$_r94_marker_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
+# Load exempt path prefixes; one per non-comment, non-empty line.
+_r94_exempt_paths=()
+while IFS= read -r _r94_prefix || [[ -n "$_r94_prefix" ]]; do
+  [[ -z "$_r94_prefix" ]] && continue
+  case "$_r94_prefix" in '#'*) continue ;; esac
+  _r94_exempt_paths+=("$_r94_prefix")
+done < "$_r94_path_vocab" 2>/dev/null
 _r94_violations=""
 while IFS= read -r _r94_file; do
   [[ -z "$_r94_file" ]] && continue
+  # Test-resource fixtures (incl. pinned contract snapshots) are exempt across all modules.
   case "$_r94_file" in
-    docs/archive/*|docs/reviews/*) continue ;;
-    docs/releases/2026-05-1[0-8]-*) continue ;;        # rc11 widening: 2026-05-1[0-8] covers through rc8 + beyond-sdd-response (historical)
-    docs/releases/2026-05-1[0-8]/*) continue ;;
-    docs/releases/2026-05-19-l0-rc[1-9]-*) continue ;; # rc1-rc9 (single digit) historical
-    docs/releases/2026-05-19-l0-rc10-*) continue ;;    # rc10 retracted; release-note kept as historical artifact
-    docs/adr/*) continue ;;                      # frozen ADR artifacts
-    */src/test/resources/*) continue ;;          # test fixtures (incl. pinned contract snapshots)
-    docs/v6-rationale/*) continue ;;             # pre-Phase-C design rationale archive
-    docs/cross-cutting/*) continue ;;            # cross-cutting historical documentation (BoM, posture model, dev env)
-    docs/architecture-views/*) continue ;;       # 4+1 architecture-view explanatory docs
-    docs/CLAUDE-deferred.md) continue ;;         # deferred sub-clauses describe future / historical state
-    docs/contracts/openapi-v1.yaml) continue ;;  # live OpenAPI contract — separate update plan; carries x-contract-owner metadata
-    docs/quickstart.md) continue ;;              # quickstart copy — pre-Phase-C examples
-    docs/delivery/*) continue ;;                 # historical delivery logs (frozen reports of past wave deliveries)
-    docs/plans/*) continue ;;                    # historical plan documents (frozen archive)
-    docs/runbooks/*) continue ;;                 # operational runbooks — may reference historical paths in worked examples
-    docs/governance/architecture-graph.yaml) continue ;;  # GENERATED graph; source-of-truth is enforcers.yaml + module-metadata.yaml etc.
-    docs/governance/architecture-status.yaml) continue ;; # rc11: the allowed_claim narrative tracks wave history including module renames
-    docs/governance/enforcers.yaml) continue ;;  # rc11: enforcer descriptions necessarily name what they check (e.g. "agent-runtime ↛ agent-platform")
-    docs/governance/rule-history.md) continue ;; # rc11: rule history necessarily names pre-Phase-C rule scopes
-    docs/governance/principles/*) continue ;;    # rc11: principle cards reference deferred sub-clauses that name pre-Phase-C modules (e.g. P-G refers to Rule 37.c agent-platform JdbcTemplate migration)
-    docs/governance/whitepaper-alignment-matrix.md) continue ;;  # rc11: whitepaper alignment matrix predates Phase C
-    docs/governance/rules/rule-87.md|docs/governance/rules/rule-94.md|docs/governance/rules/rule-98.md|docs/governance/rules/rule-33.md|docs/governance/rules/rule-93.md|docs/governance/rules/rule-37.md|docs/governance/rules/rule-21.md) continue ;;  # rule cards that describe the prevention rule — they necessarily quote deleted module names to illustrate what they prevent or to describe pre-Phase-C invariants now retargeted
-    docs/telemetry/policy.md) continue ;;        # rc11: telemetry policy doc — historical service-name backward-compat preserved
-    ops/*) continue ;;                            # rc11: ops/ surfaces are Rule 98's domain (avoids duplicate-fail)
-    docs/contracts/*) continue ;;                # rc11: contract YAMLs (besides openapi-v1.yaml) — Rule 98's domain
-    agent-service/target/classes/*) continue ;;  # rc11: build artefact — generated from src/main/resources
-    spring-ai-ascend-dependencies/module-metadata.yaml) continue ;;  # rc11: BoM description names what it pins (already enforced by Rule 98)
-    docs/dfx/*) continue ;;                       # rc11: DFX yaml descriptions reference subsumed pre-Phase-C artifacts ("subsumes prior agent-platform + agent-runtime artifacts")
-    agent-runtime-core/ARCHITECTURE.md) continue ;; # rc11: ARCHITECTURE.md of kernel module names the legacy module loop it broke
-    perf/*) continue ;;                           # rc11: perf docs name pre-Phase-C tests as scheduled W4 targets (now under agent-service)
+    */src/test/resources/*) continue ;;
   esac
+  # Exempt-path prefix match (loaded from gate/active-corpus-name-exemption-paths.txt).
+  _r94_skip=0
+  for _r94_prefix in "${_r94_exempt_paths[@]}"; do
+    if [[ "$_r94_file" == "$_r94_prefix"* ]]; then _r94_skip=1; break; fi
+  done
+  [[ $_r94_skip -eq 1 ]] && continue
   # Within-file: lines containing word-boundary agent-platform or agent-runtime
   # (excluding agent-runtime-core), outside fenced code blocks, outside yaml
   # comment lines, no marker within ±3 lines.
@@ -4553,27 +4578,20 @@ while IFS= read -r _r94_file; do
     done <<< "$_r94_hits"
   fi
 done < <(
-  # rc11 widening (per ADR-0085 + rc10 post-corrective review user election):
-  # Rule 94 kernel says "every active .md / .yaml / .java file" — the rc9 implementation
-  # scanned only 3 narrow surfaces (ARCHITECTURE.md + rule cards + test Javadocs). rc11
-  # widens the find to every active .md/.yaml/.yml/.java in the repo MINUS the explicit
-  # exemption list above (case branches). The expanded exemption list includes the
-  # historical-by-location surfaces the J-β sweep surfaced + the rule-cards-about-the-rule
-  # pattern + the build-artifact pattern.
+  # Scan every active .md/.yaml/.yml/.java in the repo. Build artefacts and version control
+  # are excluded at find time for speed; per-file exemption is governed by the path-vocab
+  # check (gate/active-corpus-name-exemption-paths.txt) inside the loop above.
   find . -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.java' \) \
     -not -path './target/*' \
     -not -path './*/target/*' \
     -not -path './**/target/*' \
     -not -path './.git/*' \
     -not -path './node_modules/*' \
-    -not -path './docs/archive/*' \
-    -not -path './docs/adr/*' \
-    -not -path './docs/reviews/*' \
     2>/dev/null | sed 's|^\./||' | sort -u
 )
 if [[ -n "$_r94_violations" ]]; then
   _r94_first=$(printf '%b' "$_r94_violations" | head -5 | tr '\n' '|')
-  fail_rule "active_corpus_deleted_module_name_truth" "active corpus contains current-tense pre-Phase-C module name(s) without historical marker (first 5): ${_r94_first}-- Rule 94 / E129 (rc8 post-corrective P1-3 closure + rc11 widening per ADR-0085; widens Rule 87 from status-yaml allowed_claim to corpus-wide .md/.yaml/.java scan minus historical-by-location exemptions)"
+  fail_rule "active_corpus_deleted_module_name_truth" "active corpus contains current-tense pre-Phase-C module name(s) without historical marker (first 5): ${_r94_first}-- Rule 94 / E129 (markers loaded from gate/active-corpus-name-exemption-markers.txt; exempt paths from gate/active-corpus-name-exemption-paths.txt)"
   _r94_fail=1
 fi
 if [[ $_r94_fail -eq 0 ]]; then pass_rule "active_corpus_deleted_module_name_truth"; fi
@@ -4679,7 +4697,7 @@ if [[ $_r96_fail -eq 0 ]]; then pass_rule "kernel_deferred_clause_coherence"; fi
 # ---------------------------------------------------------------------------
 _r97_fail=0
 _r97_graph="docs/governance/architecture-graph.yaml"
-_r97_releases_dir="docs/releases"
+_r97_releases_dir="docs/logs/releases"
 if [[ ! -f "$_r97_graph" ]]; then
   fail_rule "release_note_numeric_truth" "$_r97_graph missing — Rule 97 / E135 (cannot establish live node/edge baseline)"
   _r97_fail=1
@@ -4756,13 +4774,21 @@ if [[ $_r97_fail -eq 0 ]]; then pass_rule "release_note_numeric_truth"; fi
 # file" but the implementation scanned a tiny subset.
 # ---------------------------------------------------------------------------
 _r98_fail=0
-_r98_markers='historical|pre-ADR-[0-9]+|pre-Phase-C|consolidated into|consolidation of|consolidated from|merged into|merged in|merger of|was rooted|formerly|superseded|deprecated|archived|moved|extracted per ADR-[0-9]+|Extracted from|extracted from|post-ADR-[0-9]+|post-Phase-C|after Phase C|Phase-C|Phase C|ADR-[0-9]+|subsumes prior|deleted module|stale|drift|prevented|prevents|widens Rule|forbidden_dependencies|forbidden imports|Forbidden imports'
+# Rule 98 reuses Rule 94's marker vocabulary (Wave 2 externalisation).
+_r98_marker_vocab="gate/active-corpus-name-exemption-markers.txt"
+if [[ ! -f "$_r98_marker_vocab" ]]; then
+  fail_rule "broad_corpus_deleted_module_name_truth" "$_r98_marker_vocab missing -- Rule 98 / E137 (Wave 2 vocabulary externalisation)"
+  _r98_fail=1
+fi
+_r98_markers="$(grep -vE '^[[:space:]]*(#|$)' "$_r98_marker_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 _r98_violations=""
 while IFS= read -r _r98_file; do
   [[ -z "$_r98_file" ]] && continue
+  # Rule 98 only scans ops/, docs/contracts/, **/module-metadata.yaml; the docs/logs/
+  # and docs/archive/ partitions are NEVER reached by the find pipeline below, so no
+  # per-file exemption needed beyond build-artefact paths (already excluded at find time).
   case "$_r98_file" in
-    docs/archive/*|docs/reviews/*) continue ;;
-    docs/releases/2026-05-1[0-7]-*) continue ;;
+    docs/archive/*|docs/logs/*) continue ;;
   esac
   _r98_hits=$(awk -v markers="$_r98_markers" '
     BEGIN {
@@ -4913,12 +4939,16 @@ else
   _r100_violations=""
   while IFS= read -r _r100_rule; do
     [[ -z "$_r100_rule" || "$_r100_rule" =~ ^[[:space:]]*# ]] && continue
-    _r100_card="docs/governance/rules/rule-$(printf '%02d' "$_r100_rule").md"
-    # Pad to 3 digits if 2-digit didn't work
-    [[ ! -f "$_r100_card" ]] && _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
-    # Extract CLAUDE.md kernel block
+    # Card path: integer id → zero-pad to 02d; namespaced id (D-1, G-3.d, ...) → literal.
+    if [[ "$_r100_rule" =~ ^[0-9]+$ ]]; then
+      _r100_card="docs/governance/rules/rule-$(printf '%02d' "$_r100_rule").md"
+      [[ ! -f "$_r100_card" ]] && _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
+    else
+      _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
+    fi
+    # Extract CLAUDE.md kernel block (heading matches either integer or namespaced id)
     _r100_block=$(awk -v rn="$_r100_rule" '
-      $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+      $0 ~ "^#### Rule "rn" " || $0 ~ "^#### Rule "rn"$" { in_block = 1; print; next }
       in_block && /^---$/ { exit }
       in_block { print }
     ' "$_r100_claude")

@@ -11,7 +11,7 @@ kernel: |
   restrictions (outbound IP whitelist, CPU cap, filesystem access).
   A logical grant cannot exceed what the physical sandbox enforces;
   otherwise the runtime authority is fictional.
-  Enforced by Rule 42.
+  Enforced by Rule R-L.
 ---
 
 ## Motivation
@@ -20,7 +20,7 @@ This principle exists because **a logical authorization issued by the bus to a d
 
 ## Operationalising rules
 
-- Rule 42 — Sandbox Permission Subsumption ([`docs/governance/rules/rule-42.md`](../rules/rule-42.md))
+- Rule R-L — Sandbox Permission Subsumption ([`docs/governance/rules/rule-R-L.md`](../rules/rule-R-L.md))
 
 ## Cross-references
 

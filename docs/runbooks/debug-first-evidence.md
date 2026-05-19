@@ -1,10 +1,10 @@
 # Evidence-First Debug Sequence
 
-**Authority:** [`docs/governance/rules/rule-79.md`](../governance/rules/rule-79.md). **Audience:** humans and AI agents debugging a failed Run, a regressed Maven test, a failed gate self-test, or any Rule 9 self-audit finding.
+**Authority:** [`docs/governance/rules/rule-D-3.md`](../governance/rules/rule-D-3.md). **Audience:** humans and AI agents debugging a failed Run, a regressed Maven test, a failed gate self-test, or any Rule D-5 self-audit finding.
 
 ## Why this runbook exists
 
-When an integration test fails, the natural reflex is to open `ARCHITECTURE.md`, find the constraint that describes the failing surface, and reason from the contract. This makes specs into a Narrative Shield: the AI cites the contract to defend the broken code. Rule 79 re-orders the steps — **evidence first, spec consultation afterwards** — so the spec is interpreted against the failure rather than the other way around.
+When an integration test fails, the natural reflex is to open `ARCHITECTURE.md`, find the constraint that describes the failing surface, and reason from the contract. This makes specs into a Narrative Shield: the AI cites the contract to defend the broken code. Rule D-3.b re-orders the steps — **evidence first, spec consultation afterwards** — so the spec is interpreted against the failure rather than the other way around.
 
 ## The sequence (6 steps, in order)
 
@@ -75,12 +75,12 @@ Only after steps 1–5 are recorded in the finding may you read:
 - `docs/adr/*.yaml` — decision records.
 - `CLAUDE.md` — governing principles.
 
-When you cite a constraint, you MUST quote the evidence from steps 1-5 that maps to it. A finding that names a constraint without quoting the evidence violates Rule 9 (self-audit ship gate) and Rule 79 (evidence-first sequence).
+When you cite a constraint, you MUST quote the evidence from steps 1-5 that maps to it. A finding that names a constraint without quoting the evidence violates Rule D-5 (self-audit ship gate) and Rule D-3.b (evidence-first sequence).
 
 ## Template (paste into the finding doc)
 
 ```markdown
-## Evidence (Rule 79)
+## Evidence (Rule D-3.b)
 
 1. **Failing FQN / location**: <FQN#method or bash:test_X>
 2. **Trace ID / method id**: <32-hex or #methodName>
@@ -105,13 +105,13 @@ When you cite a constraint, you MUST quote the evidence from steps 1-5 that maps
 ## What this runbook is NOT
 
 - It is not a prohibition on reading specs. The spec is consulted in step 6.
-- It is not a substitute for Rule 1 (Root-Cause + Strongest-Interpretation). Rule 79 produces the evidence; Rule 1 chooses which interpretation of the evidence survives.
+- It is not a substitute for Rule D-1 (Root-Cause + Strongest-Interpretation). Rule D-3.b produces the evidence; Rule D-1 chooses which interpretation of the evidence survives.
 - It is not a recipe for fixing the bug. It is a recipe for ensuring the bug is *seen* before it is *explained*.
 
 ## Cross-references
 
-- [`docs/governance/rules/rule-79.md`](../governance/rules/rule-79.md) — the rule card with the kernel statement and gate enforcement details.
-- [`docs/governance/rules/rule-01.md`](../governance/rules/rule-01.md) — Root-Cause + Strongest-Interpretation; the reasoning that runs on top of the evidence captured here.
-- [`docs/governance/rules/rule-09.md`](../governance/rules/rule-09.md) — Self-Audit ship gate; Rule 79 evidence is a precondition for any Rule 9 finding.
-- [`docs/reviews/spring-ai-ascend-beyond-sdd-en.md`](../reviews/spring-ai-ascend-beyond-sdd-en.md) — the architecture review that prompted Rule 79.
-- [`docs/reviews/spring-ai-ascend-beyond-sdd-response.en.md`](../reviews/spring-ai-ascend-beyond-sdd-response.en.md) — response to the review explaining the accept/reject decisions.
+- [`docs/governance/rules/rule-D-3.md`](../governance/rules/rule-D-3.md) — the rule card with the kernel statement and gate enforcement details.
+- [`docs/governance/rules/rule-D-1.md`](../governance/rules/rule-D-1.md) — Root-Cause + Strongest-Interpretation; the reasoning that runs on top of the evidence captured here.
+- [`docs/governance/rules/rule-D-5.md`](../governance/rules/rule-D-5.md) — Self-Audit ship gate; Rule D-3.b evidence is a precondition for any Rule D-5 finding.
+- [`docs/logs/reviews/spring-ai-ascend-beyond-sdd-en.md`](../logs/reviews/spring-ai-ascend-beyond-sdd-en.md) — the architecture review that prompted Rule D-3.b.
+- [`docs/logs/reviews/spring-ai-ascend-beyond-sdd-response.en.md`](../logs/reviews/spring-ai-ascend-beyond-sdd-response.en.md) — response to the review explaining the accept/reject decisions.

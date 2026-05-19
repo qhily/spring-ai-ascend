@@ -159,8 +159,8 @@ Medium — changing the suspend primitive requires updating all executor impleme
 
 ## References
 
-- Third-reviewer document: `docs/reviews/Architectural Perspective Review` (Issues 1, 2)
-- Response document: `docs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-A)
+- Third-reviewer document: `docs/logs/reviews/Architectural Perspective Review` (Issues 1, 2)
+- Response document: `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-A)
 - §4 #19 (fan-out, suspend-reason taxonomy, suspend-deadline contract)
 - `architecture-status.yaml` rows: `suspend_reason_taxonomy`, `parallel_child_dispatch`, `suspend_deadline_watchdog`
 - W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

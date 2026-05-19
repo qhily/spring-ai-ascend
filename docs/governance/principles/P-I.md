@@ -12,7 +12,7 @@ kernel: |
   Bus & State Hub (Bus + Middleware persistence),
   Sandbox Execution (untrusted code), and Evolution (Python ML).
   Workloads with different characteristics MUST NOT share infrastructure.
-  Enforced by Rule 39.
+  Enforced by Rule R-I.
 ---
 
 ## Motivation
@@ -21,7 +21,7 @@ This principle exists because **workloads with different characteristics — lat
 
 ## Operationalising rules
 
-- Rule 39 — Five-Plane Manifest ([`docs/governance/rules/rule-39.md`](../rules/rule-39.md))
+- Rule R-I — Five-Plane Manifest ([`docs/governance/rules/rule-R-I.md`](../rules/rule-R-I.md))
 
 ## Cross-references
 

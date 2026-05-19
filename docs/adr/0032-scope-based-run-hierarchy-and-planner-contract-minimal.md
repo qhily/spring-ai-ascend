@@ -24,7 +24,7 @@ future design.
 - Sixth reviewer L1: hierarchy should express scope (STEP_LOCAL vs SWARM), not just mode (GRAPH vs AGENT_LOOP).
 - Seventh reviewer P1.4: removing a false claim and naming the minimal planner contract prevents W2 surprise.
 - Hidden defects 1.1–1.8: `AgentLoopDefinition` accumulates 3 future-breaking changes (typed payload, plan-state, scope discriminator) without a unified migration plan.
-- Rule 25 (Architecture-Text Truth): claims in docs must reflect reality.
+- Rule G-2 sub-clause .a (Architecture-Text Truth): claims in docs must reflect reality.
 
 ## Considered Options
 
@@ -113,8 +113,8 @@ hierarchy principle by enabling callers to enumerate the root of each run tree.
 
 ## References
 
-- Sixth reviewer L1: `docs/reviews/2026-05-12-architecture-LucioIT-wave-1-request.en.md`
-- Seventh reviewer P1.4: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Sixth reviewer L1: `docs/logs/reviews/2026-05-12-architecture-LucioIT-wave-1-request.en.md`
+- Seventh reviewer P1.4: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
 - ADR-0019: SuspendReason taxonomy (SwarmDelegation variant deferred here)
 - ADR-0028: CausalPayloadEnvelope (initialContext + payload migration context)
 - ADR-0039: Payload migration adapter strategy (Object → Payload → CausalPayloadEnvelope)

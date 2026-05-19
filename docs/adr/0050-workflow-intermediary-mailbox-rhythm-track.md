@@ -3,9 +3,9 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer findings P0-3 and P0-4 (`docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper requires the Agent Bus to be a **workflow intermediary hub** with local supervisors, mailboxes, push-pull buffering, and backpressure — and to maintain **three physical channels** (Control / Data / Rhythm). ADR-0048 committed a transport split (data-P2P / control-event-bus) but did NOT define the local intermediary contract, mailbox semantics, or the "bus cannot force-start computation" rule. ADR-0048 also placed heartbeats on the centralized control event bus, collapsing the whitepaper's three-track design into two. This ADR closes both gaps by introducing the Workflow Intermediary contract and **restoring Rhythm as an independent third cross-service track**, with explicit `SleepDeclaration`, `WakeupPulse`, `TickEngine`, and `ChronosHydration` contracts.
+**Technical story:** Reviewer findings P0-3 and P0-4 (`docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper requires the Agent Bus to be a **workflow intermediary hub** with local supervisors, mailboxes, push-pull buffering, and backpressure — and to maintain **three physical channels** (Control / Data / Rhythm). ADR-0048 committed a transport split (data-P2P / control-event-bus) but did NOT define the local intermediary contract, mailbox semantics, or the "bus cannot force-start computation" rule. ADR-0048 also placed heartbeats on the centralized control event bus, collapsing the whitepaper's three-track design into two. This ADR closes both gaps by introducing the Workflow Intermediary contract and **restoring Rhythm as an independent third cross-service track**, with explicit `SleepDeclaration`, `WakeupPulse`, `TickEngine`, and `ChronosHydration` contracts.
 
-> **Post-impl note (2026-05-17 six-module materialization PR):** the Bus & State Hub plane materialized as the `agent-bus/` reactor module (skeleton — `pom.xml` + `module-metadata.yaml` with `deployment_plane: bus_state` + `ARCHITECTURE.md` + `docs/dfx/agent-bus.yaml` + `src/main/java/ascend/springai/bus/spi/package-info.java`). The concrete SPI surface this ADR specifies (`WorkflowIntermediary`, `Mailbox`, `AdmissionDecision`, `BackpressureSignal`, `WorkStateEvent`, `SleepDeclaration`, `WakeupPulse`, `TickEngine`) is the W2 contract; concrete interface declarations live in [`agent-bus/ARCHITECTURE.md`](../../agent-bus/ARCHITECTURE.md). This ADR remains the authoritative decision record; agent-bus/ARCHITECTURE.md is implementation-detail companion. The three-track channel isolation (`control` / `data` / `rhythm`) is already shipped via `docs/governance/bus-channels.yaml` and gate Rule 45.
+> **Post-impl note (2026-05-17 six-module materialization PR):** the Bus & State Hub plane materialized as the `agent-bus/` reactor module (skeleton — `pom.xml` + `module-metadata.yaml` with `deployment_plane: bus_state` + `ARCHITECTURE.md` + `docs/dfx/agent-bus.yaml` + `src/main/java/ascend/springai/bus/spi/package-info.java`). The concrete SPI surface this ADR specifies (`WorkflowIntermediary`, `Mailbox`, `AdmissionDecision`, `BackpressureSignal`, `WorkStateEvent`, `SleepDeclaration`, `WakeupPulse`, `TickEngine`) is the W2 contract; concrete interface declarations live in [`agent-bus/ARCHITECTURE.md`](../../agent-bus/ARCHITECTURE.md). This ADR remains the authoritative decision record; agent-bus/ARCHITECTURE.md is implementation-detail companion. The three-track channel isolation (`control` / `data` / `rhythm`) is already shipped via `docs/governance/bus-channels.yaml` and gate Rule R-M sub-clause .c.
 
 ## Context
 
@@ -71,7 +71,7 @@ This ADR introduces the missing contracts and amends ADR-0048's heartbeat placem
   - `SHUTDOWN` (graceful drain initiated)
 - **`WorkStateEvent`** — emitted by the intermediary to the bus for cross-instance observability:
   - `Claimed | Running | Yielded | Succeeded | Failed | Cancelled | Expired`.
-  - These compose with the `Run.RunStatus` DFA (Rule 20 / ADR-0020) — `WorkStateEvent` is the **cross-instance broadcast** of state transitions that already happen locally.
+  - These compose with the `Run.RunStatus` DFA (Rule R-C.d / ADR-0020) — `WorkStateEvent` is the **cross-instance broadcast** of state transitions that already happen locally.
 
 ### Hard rule: bus MUST NOT force-start computation
 
@@ -188,7 +188,7 @@ This ADR locks the **track contract**; substrate selection is W2+ work. Candidat
 
 ## References
 
-- Reviewer source: `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (findings P0-3 + P0-4)
+- Reviewer source: `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (findings P0-3 + P0-4)
 - Whitepaper: `docs/spring-ai-ascend-architecture-whitepaper-en.md` §5.1, §5.2, §5.4
 - ARCHITECTURE.md §4 #48 (this ADR's anchoring constraint)
 - ADR-0031: in-process three-track channel isolation (preserved; extended cross-service here)

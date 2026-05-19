@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * End-to-end strict-matching: a Run dispatched through SyncOrchestrator with a
  * payload class for which no adapter is registered raises
  * {@link EngineMatchingException} — the runtime never silently reinterprets
- * the payload as another engine's configuration (Rule 44, ADR-0072 strongest
+ * the payload as another engine's configuration (Rule R-M.b, ADR-0072 strongest
  * reading: no fallback policy).
  *
  * <p>Enforcer row: {@code docs/governance/enforcers.yaml#E75}.

@@ -60,9 +60,9 @@ status-history queries requires an ADR amendment block):
 
 | Method | Axis | Notes |
 |---|---|---|
-| `findById(UUID runId)` | single-run lookup | Tenant-agnostic primary-key lookup; callers MUST cross-check `Run.tenantId()` against the request tenant (Rule 11). |
+| `findById(UUID runId)` | single-run lookup | Tenant-agnostic primary-key lookup; callers MUST cross-check `Run.tenantId()` against the request tenant (Rule R-C.c). |
 | `save(Run run)` | upsert | Insert-or-update; backing impl decides idempotency. |
-| `findByTenant(String tenantId)` | tenant filter | Returns all runs for the tenant. Rule 11 tenant-scoping. |
+| `findByTenant(String tenantId)` | tenant filter | Returns all runs for the tenant. Rule R-C.c tenant-scoping. |
 | `findByTenantAndStatus(String tenantId, RunStatus status)` | tenant + status filter | Composite filter for status dashboards. |
 | `findByParentRunId(UUID parentRunId)` | hierarchy descent | Child runs of a parent (suspend-for-child / nested loop). |
 | `findRootRuns(String tenantId)` | hierarchy root | Top-level runs only (`parentRunId IS NULL`) within a tenant. |
@@ -145,8 +145,8 @@ constraint (W0 code still works with inline lambdas; W2 enforces naming).
 
 ## References
 
-- Third-reviewer document: `docs/reviews/Architectural Perspective Review` (Issue 3)
-- Response document: `docs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-C)
+- Third-reviewer document: `docs/logs/reviews/Architectural Perspective Review` (Issue 3)
+- Response document: `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-C)
 - §4 #9 (revised), §4 #15 (CapabilityRegistry trigger W4 → W2)
 - `architecture-status.yaml` rows: `layered_spi_taxonomy`, `idempotency_store_promotion_to_interface`,
   `capability_registry_spi` (trigger updated to W2)

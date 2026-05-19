@@ -10,12 +10,12 @@
 #
 # Authority: ADR-0085 (rc11 wave); rc10 post-corrective review P1-3 closure.
 #
-# Initial allow-list (rc11):
-#   96 — kernel_deferred_clause_coherence (kernel block OR card)
+# Initial allow-list:
+#   G-3 — kernel_deferred_clause_coherence (kernel block OR card)
 #
-# Future additions: J-γ sweep may surface Rule 48 (yaml schema OR grandfather
-# entry), Rule 69 (active heading OR deferred reference), Rule 95 (catalog
-# row OR internal mark). Each addition requires kernel + card to explicitly
-# declare EITHER/OR wording before the rule id lands here.
+# Future additions: Rule M-2.a (yaml schema OR grandfather entry), Rule G-3.c
+# (active heading OR deferred reference), Rule R-D.g (catalog row OR internal
+# mark). Each addition requires kernel + card to explicitly declare EITHER/OR
+# wording before the rule id lands here.
 
-96
+G-3

@@ -28,10 +28,10 @@ decision_one_liner: |
 
 context: |
   The rc7-post-corrective architecture review (Codex, 2026-05-18; see
-  docs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
+  docs/logs/reviews/2026-05-18-l0-rc7-post-corrective-architecture-review.en.md
   P0-1) observed that four authoritative surfaces — root ARCHITECTURE.md line
   169 (tree), docs/governance/architecture-status.yaml line 1410
-  (allowed_claim for spi_dfx_tck_codesign), docs/releases/2026-05-18-l0-rc7-
+  (allowed_claim for spi_dfx_tck_codesign), docs/logs/releases/2026-05-18-l0-rc7-
   corrective.en.md line 49 (rc7 P0-2 closure claim), and
   docs/dfx/spring-ai-ascend-graphmemory-starter.yaml line 32 (vulnerability
   spi_purity prose) — claimed GraphMemoryRepository SPI was owned by
@@ -64,7 +64,7 @@ context: |
        starter dependencies, update contract-catalog.md, update DFX files,
        and reflow all imports.
 
-  Per Rule 2 (simplicity + surgical changes), path (1) wins. The
+  Per Rule D-2 (simplicity + surgical changes), path (1) wins. The
   architectural intent in ADR-0079 was to keep memory SPI on the
   adapter-hosting module; the drift was prose error in the rc7 corrective
   wave, not a missed refactor. The same prose error pattern was the
@@ -118,14 +118,14 @@ decision: |
       `deprecated`, `moved`, `was rooted`, `formerly`) within ±3 lines.
     - DFX files for deleted modules (e.g. pre-Phase-C agent-runtime.yaml,
       agent-platform.yaml) MUST NOT remain on disk — orphan DFX files
-      describing modules that no longer exist are anti-pattern per Rule 32
+      describing modules that no longer exist are anti-pattern per Rule R-D sub-clause .a
       (DFX is per active module). Delete or move to a `historical/` subdir
       with an explicit `status: historical` frontmatter.
 
   Prevention surface (deferred to the rc8 prevention wave, not in this ADR):
-    - Rule 86 (root_architecture_count_and_path_truth) is extended to
+    - Rule G-2 sub-clause .d (root_architecture_count_and_path_truth) is extended to
       validate path claims inside fenced tree-diagram code blocks in root
-      ARCHITECTURE.md (the rc7 drift hid in a fenced block where Rule 86's
+      ARCHITECTURE.md (the rc7 drift hid in a fenced block where Rule G-2 sub-clause .d's
       _r86_in_code toggle was excluding lines from path-existence check).
     - The check_parallel.sh awk wrapper is fixed so it executes every rule
       defined in check_architecture_sync.sh (rc7 prevention rules were
@@ -145,7 +145,7 @@ decision: |
       `agent-service/.../memory/spi/`; ADR-0082 pointer added.
     - docs/dfx/agent-runtime.yaml: deleted (pre-Phase-C historical;
       module no longer exists per ADR-0078).
-    - docs/releases/2026-05-18-l0-rc7-corrective.en.md: superseded_by
+    - docs/logs/releases/2026-05-18-l0-rc7-corrective.en.md: superseded_by
       frontmatter pointing at rc8 release note + inline historical marker
       noting the line-49 P0-2 closure overstated the tree placement.
     - agent-runtime-core/ARCHITECTURE.md §2 Contents: rewritten to
@@ -162,23 +162,23 @@ consequences:
     - "Closes 5 family-sweep hidden defects: agent-service/module-metadata description prose, agent-runtime-core/ARCHITECTURE.md §2 enumeration gap, pre-Phase-C DFX file orphan, S2cCallbackOutcome ghost reference, ADR-0079 corpus prose."
     - "Establishes a single canonical source for SPI ownership topology — module-metadata.yaml + Java source — that future authority surfaces must respect."
     - "Architectural intent in ADR-0079 (memory SPI deliberately not extracted) is now defended by an explicit ADR."
-    - "Zero Java source change. No starter dependency rewire. No semver impact. Documentation-only correction per Rule 2."
+    - "Zero Java source change. No starter dependency rewire. No semver impact. Documentation-only correction per Rule D-2."
   negative:
     - "Adds a small invariant footprint: every future SPI claim across 7+ document classes must point back to module-metadata.yaml. Mitigated by the rc8 prevention wave (Rules 86 extension, Rules 88-89)."
     - "agent-runtime-core's apparent surface area is slightly smaller than rc7 prose implied (memory SPI is not part of it). This is the correct architecture, but it may surprise readers who arrived via the rc7 release note's overstated tree claim."
 
 alternatives_considered:
   - alternative: "Move GraphMemoryRepository.java into agent-runtime-core (the reviewer's path 2)."
-    why_rejected: "Path 2 requires rewiring graphmemory starter dependencies (currently transitive via agent-service), updating agent-service imports (currently same-module), reflowing contract-catalog.md, all DFX files, plus the same documentation surfaces this ADR fixes — purely to satisfy a documentation cascade error introduced in the rc7 corrective wave. ADR-0079 deliberately left memory SPI on agent-service per ADR-0051's memory ownership boundary. The smaller change wins per Rule 2."
+    why_rejected: "Path 2 requires rewiring graphmemory starter dependencies (currently transitive via agent-service), updating agent-service imports (currently same-module), reflowing contract-catalog.md, all DFX files, plus the same documentation surfaces this ADR fixes — purely to satisfy a documentation cascade error introduced in the rc7 corrective wave. ADR-0079 deliberately left memory SPI on agent-service per ADR-0051's memory ownership boundary. The smaller change wins per Rule D-2."
   - alternative: "Promote module-metadata.yaml + DFX into the same single yaml so they can't drift apart from each other."
-    why_rejected: "module-metadata.yaml (Rule 31) and docs/dfx/<module>.yaml (Rule 32) serve different purposes — identity/topology vs five-DFX-dimensions — and the existing Rules 78 + 85 already guarantee set-match between their spi_packages: blocks. Merging them would conflate Rule 31's reactor-shape concerns with Rule 32's design-for-X concerns and break the deferred TCK module work (CLAUDE-deferred.md 32.b/32.c)."
+    why_rejected: "module-metadata.yaml (Rule R-C.b) and docs/dfx/<module>.yaml (Rule R-D sub-clause .a) serve different purposes — identity/topology vs five-DFX-dimensions — and the existing Rules 78 + 85 already guarantee set-match between their spi_packages: blocks. Merging them would conflate Rule R-C.b's reactor-shape concerns with Rule R-D sub-clause .a's design-for-X concerns and break the deferred TCK module work (CLAUDE-deferred.md 32.b/32.c)."
 
 verification:
   cli:
     - "./mvnw clean verify -> BUILD SUCCESS (no Java change in rc8)"
-    - "bash gate/check_architecture_sync.sh -> GATE: PASS (rc8 baseline with Rule 86 fenced-tree-block extension active)"
+    - "bash gate/check_architecture_sync.sh -> GATE: PASS (rc8 baseline with Rule G-2 sub-clause .d fenced-tree-block extension active)"
     - "bash gate/check_parallel.sh -> GATE: PASS; output includes root_architecture_count_and_path_truth + status_yaml_allowed_claim_module_name_truth + parallel_summary trailer (rc8 baseline)"
-    - "bash gate/test_architecture_sync_gate.sh -> Tests passed: NEW_TOTAL/NEW_TOTAL (rc8 baseline; fail-closed when passed != TOTAL per Rule 89)"
+    - "bash gate/test_architecture_sync_gate.sh -> Tests passed: NEW_TOTAL/NEW_TOTAL (rc8 baseline; fail-closed when passed != TOTAL per Rule G-5 sub-clause .b)"
     - "python gate/build_architecture_graph.py -> NEW_NODES nodes / NEW_EDGES edges; graph validation OK"
   corpus:
     - "Root ARCHITECTURE.md line ~161 tree: memory/spi/ row sits under agent-service/runtime/ block; agent-runtime-core/ block carries 'Memory SPI is OUT OF SCOPE per ADR-0079/ADR-0082' annotation."

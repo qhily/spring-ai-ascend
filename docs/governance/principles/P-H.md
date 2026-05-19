@@ -10,7 +10,7 @@ kernel: |
   Long-horizon waits in business code MUST be declarative suspension
   (`SuspendSignal`), not physical thread sleep.
   The sleeping process self-destructs and re-hydrates on the bus wake-pulse.
-  Enforced by Rule 38.
+  Enforced by Rule R-H.
 ---
 
 ## Motivation
@@ -19,12 +19,12 @@ This principle exists because **physical sleep holds a thread for the entire wai
 
 ## Operationalising rules
 
-- Rule 38 — No Thread.sleep in Business Code ([`docs/governance/rules/rule-38.md`](../rules/rule-38.md))
+- Rule R-H — No Thread.sleep in Business Code ([`docs/governance/rules/rule-R-H.md`](../rules/rule-R-H.md))
 
 ## Cross-references
 
 - ADR-0069 (origin of Rules 35–42 and the LucioIT W1 §6.4 Chronos Hydration doctrine)
 - ADR-0019 (origin of `SuspendSignal` as compile-time-visible suspension)
 - Related: P-G (Non-Blocking I/O) — Chronos Hydration is the wait-side companion to non-blocking call-side
-- Related: Rule 46 (S2C Callback Envelope) — S2C suspend reuses the SuspendSignal mechanism (sealed checked-suspension variant)
-- Test code, gate scripts, and Awaitility usage are explicitly excluded from Rule 38 scans
+- Related: Rule R-M sub-clause .d (S2C Callback Envelope) — S2C suspend reuses the SuspendSignal mechanism (sealed checked-suspension variant)
+- Test code, gate scripts, and Awaitility usage are explicitly excluded from Rule R-H scans

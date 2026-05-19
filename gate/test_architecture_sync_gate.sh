@@ -782,20 +782,20 @@ test_rule28_release_note_baseline_truth() {
 
 ## Positive: release note matches canonical baseline → PASS
 _r28_pos="$scratch/r28_pos"
-mkdir -p "$_r28_pos/docs/governance" "$_r28_pos/docs/releases"
+mkdir -p "$_r28_pos/docs/governance" "$_r28_pos/docs/logs/releases"
 cat > "$_r28_pos/docs/governance/architecture-status.yaml" <<'EOF'
 capabilities:
   architecture_sync_gate:
     allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
 EOF
-cat > "$_r28_pos/docs/releases/some-release.md" <<'EOF'
+cat > "$_r28_pos/docs/logs/releases/some-release.md" <<'EOF'
 | §4 constraints | 50 (#1–#50) |
 | Active ADRs | 52 (ADR-0001–ADR-0052) |
 | Active gate rules | 29 |
 | Gate self-test cases | 35 |
 EOF
 _r28_pos_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r28_pos/docs/governance/architecture-status.yaml")
-_r28_pos_rf=$(cat "$_r28_pos/docs/releases/some-release.md")
+_r28_pos_rf=$(cat "$_r28_pos/docs/logs/releases/some-release.md")
 _r28_pos_exp=$(printf '%s' "$_r28_pos_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
 _r28_pos_match=$(printf '%s' "$_r28_pos_rf" | grep -oE '§4[[:space:]]+constraints[[:space:]]*\|[[:space:]]*[0-9]+' | head -1)
 _r28_pos_act=$(printf '%s' "$_r28_pos_match" | grep -oE '[0-9]+' | tail -1)
@@ -807,22 +807,22 @@ fi
 
 ## Negative: release note stale counts, NO freeze marker → FAIL
 _r28_neg="$scratch/r28_neg"
-mkdir -p "$_r28_neg/docs/governance" "$_r28_neg/docs/releases"
+mkdir -p "$_r28_neg/docs/governance" "$_r28_neg/docs/logs/releases"
 cat > "$_r28_neg/docs/governance/architecture-status.yaml" <<'EOF'
 capabilities:
   architecture_sync_gate:
     allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
 EOF
-cat > "$_r28_neg/docs/releases/some-release.md" <<'EOF'
+cat > "$_r28_neg/docs/logs/releases/some-release.md" <<'EOF'
 | §4 constraints | 45 (#1–#45) |
 | Active ADRs | 47 (ADR-0001–ADR-0047) |
 | Active gate rules | 27 |
 | Gate self-test cases | 30 |
 EOF
 _r28_neg_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r28_neg/docs/governance/architecture-status.yaml")
-_r28_neg_rf=$(cat "$_r28_neg/docs/releases/some-release.md")
+_r28_neg_rf=$(cat "$_r28_neg/docs/logs/releases/some-release.md")
 _r28_neg_has_freeze=0
-grep -qE 'Historical artifact frozen at SHA' "$_r28_neg/docs/releases/some-release.md" && _r28_neg_has_freeze=1
+grep -qE 'Historical artifact frozen at SHA' "$_r28_neg/docs/logs/releases/some-release.md" && _r28_neg_has_freeze=1
 _r28_neg_exp=$(printf '%s' "$_r28_neg_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
 _r28_neg_match=$(printf '%s' "$_r28_neg_rf" | grep -oE '§4[[:space:]]+constraints[[:space:]]*\|[[:space:]]*[0-9]+' | head -1)
 _r28_neg_act=$(printf '%s' "$_r28_neg_match" | grep -oE '[0-9]+' | tail -1)
@@ -834,13 +834,13 @@ fi
 
 ## Exempt: release note stale counts BUT freeze marker present → exempt (pass)
 _r28_exempt="$scratch/r28_exempt"
-mkdir -p "$_r28_exempt/docs/governance" "$_r28_exempt/docs/releases"
+mkdir -p "$_r28_exempt/docs/governance" "$_r28_exempt/docs/logs/releases"
 cat > "$_r28_exempt/docs/governance/architecture-status.yaml" <<'EOF'
 capabilities:
   architecture_sync_gate:
     allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
 EOF
-cat > "$_r28_exempt/docs/releases/frozen-release.md" <<'EOF'
+cat > "$_r28_exempt/docs/logs/releases/frozen-release.md" <<'EOF'
 > Historical artifact frozen at SHA 82a1397 (L0 release). Baseline counts in this document reflect L0 release-time state.
 
 | §4 constraints | 45 (#1–#45) |
@@ -849,7 +849,7 @@ cat > "$_r28_exempt/docs/releases/frozen-release.md" <<'EOF'
 | Gate self-test cases | 30 |
 EOF
 _r28_exempt_has_freeze=0
-grep -qE 'Historical artifact frozen at SHA' "$_r28_exempt/docs/releases/frozen-release.md" && _r28_exempt_has_freeze=1
+grep -qE 'Historical artifact frozen at SHA' "$_r28_exempt/docs/logs/releases/frozen-release.md" && _r28_exempt_has_freeze=1
 if [[ $_r28_exempt_has_freeze -eq 1 ]]; then
   ok "rule28_baseline_neg_no_freeze_marker" "freeze marker correctly exempts release note from baseline check"
 else
@@ -1092,8 +1092,8 @@ fi
 # Rule 39 positive: review proposal with affects_level + affects_view passes
 # ---------------------------------------------------------------------------
 _r39_pos="$scratch/r39_pos"
-mkdir -p "$_r39_pos/docs/reviews"
-cat > "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" <<'EOF'
+mkdir -p "$_r39_pos/docs/logs/reviews"
+cat > "$_r39_pos/docs/logs/reviews/2026-06-01-future-proposal.md" <<'EOF'
 ---
 affects_level: L1
 affects_view: process
@@ -1101,8 +1101,8 @@ affects_view: process
 
 # Future proposal
 EOF
-_al="$(grep -E '^affects_level:[[:space:]]+(L0|L1|L2)' "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
-_av="$(grep -E '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
+_al="$(grep -E '^affects_level:[[:space:]]+(L0|L1|L2)' "$_r39_pos/docs/logs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
+_av="$(grep -E '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_r39_pos/docs/logs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
 if [[ -n "$_al" && -n "$_av" ]]; then
   ok "rule39_review_front_matter_pos" "affects_level + affects_view both present and valid"
 else
@@ -2446,7 +2446,7 @@ fi
 
 # ===========================================================================
 # 2026-05-17 cross-corpus consistency audit prevention rules — self-tests
-# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# Authority: docs/logs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
 # ===========================================================================
 
 }
@@ -4617,17 +4617,17 @@ fi
 # ---------------------------------------------------------------------------
 test_rule_97_release_note_numeric_pos() {
 _r97_pos_root="$scratch/r97_pos"
-mkdir -p "$_r97_pos_root/docs/releases" "$_r97_pos_root/docs/governance"
+mkdir -p "$_r97_pos_root/docs/logs/releases" "$_r97_pos_root/docs/governance"
 cat > "$_r97_pos_root/docs/governance/architecture-graph.yaml" <<'SHEOF'
 node_count: 369
 edge_count: 520
 SHEOF
-cat > "$_r97_pos_root/docs/releases/2026-05-19-l0-rc10-pos.en.md" <<'SHEOF'
+cat > "$_r97_pos_root/docs/logs/releases/2026-05-19-l0-rc10-pos.en.md" <<'SHEOF'
 | Architecture graph | 369 nodes / 520 edges | +21 nodes / +34 edges (rc9 → rc10 delta) |
 SHEOF
 _r97_live_n=$(grep -E '^node_count:' "$_r97_pos_root/docs/governance/architecture-graph.yaml" | awk '{print $2}')
 _r97_live_e=$(grep -E '^edge_count:' "$_r97_pos_root/docs/governance/architecture-graph.yaml" | awk '{print $2}')
-_r97_latest=$(find "$_r97_pos_root/docs/releases" -maxdepth 1 -type f -name '*.md' | sort | tail -1)
+_r97_latest=$(find "$_r97_pos_root/docs/logs/releases" -maxdepth 1 -type f -name '*.md' | sort | tail -1)
 _r97_violations=$(awk -v live_n="$_r97_live_n" -v live_e="$_r97_live_e" '
   { lines[NR] = $0 }
   END {
@@ -4658,19 +4658,19 @@ fi
 # ---------------------------------------------------------------------------
 test_rule_97_release_note_numeric_neg() {
 _r97_neg_root="$scratch/r97_neg"
-mkdir -p "$_r97_neg_root/docs/releases" "$_r97_neg_root/docs/governance"
+mkdir -p "$_r97_neg_root/docs/logs/releases" "$_r97_neg_root/docs/governance"
 cat > "$_r97_neg_root/docs/governance/architecture-graph.yaml" <<'SHEOF'
 node_count: 369
 edge_count: 520
 SHEOF
-cat > "$_r97_neg_root/docs/releases/2026-05-19-l0-rc10-neg.en.md" <<'SHEOF'
+cat > "$_r97_neg_root/docs/logs/releases/2026-05-19-l0-rc10-neg.en.md" <<'SHEOF'
 | Architecture graph | 360 nodes / 510 edges | +12 nodes / +24 edges |
 And another line claiming 360 nodes / 510 edges.
 A third line as filler.
 SHEOF
 _r97_live_n=$(grep -E '^node_count:' "$_r97_neg_root/docs/governance/architecture-graph.yaml" | awk '{print $2}')
 _r97_live_e=$(grep -E '^edge_count:' "$_r97_neg_root/docs/governance/architecture-graph.yaml" | awk '{print $2}')
-_r97_latest=$(find "$_r97_neg_root/docs/releases" -maxdepth 1 -type f -name '*.md' | sort | tail -1)
+_r97_latest=$(find "$_r97_neg_root/docs/logs/releases" -maxdepth 1 -type f -name '*.md' | sort | tail -1)
 _r97_markers='historical|rc[0-9]+ snapshot|rc[0-9]+ correction|rc[0-9]+ first cut|rc[0-9]+ baseline|superseded|previous|pre-rc[0-9]+'
 _r97_violations=$(awk -v live_n="$_r97_live_n" -v live_e="$_r97_live_e" -v markers="$_r97_markers" '
   { lines[NR] = $0 }

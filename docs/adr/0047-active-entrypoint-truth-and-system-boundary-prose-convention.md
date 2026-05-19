@@ -4,7 +4,7 @@
 
 ## Context
 
-After ADR-0046 + Gate Rule 26 closed the GATE-SCOPE-GAP for `docs/releases/*.md`, an eleventh review cycle (`docs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md`) found two residual classes of active-entrypoint drift the prior gates did not catch:
+After ADR-0046 + Gate Rule 26 closed the GATE-SCOPE-GAP for `docs/logs/releases/*.md`, an eleventh review cycle (`docs/logs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md`) found two residual classes of active-entrypoint drift the prior gates did not catch:
 
 | Finding | Failure shape |
 |---|---|
@@ -61,7 +61,7 @@ This is enforced by review and by the §1 heading structure itself, not by a reg
 
 Document headers (`> Last updated: ...`) MUST track the **last content-change date**, not the most recent review-cycle date. A re-review without content changes does not justify a header bump.
 
-Rationale: header dates serve a single purpose — pointing the reader at the most recent set of edits to inspect via `git log`. If a header date moves without a corresponding content change, the date loses signal. Architecture state is canonically asserted in `docs/governance/architecture-status.yaml` (capability ledger) + `docs/releases/` (formal release notes); headers do not need to duplicate that.
+Rationale: header dates serve a single purpose — pointing the reader at the most recent set of edits to inspect via `git log`. If a header date moves without a corresponding content change, the date loses signal. Architecture state is canonically asserted in `docs/governance/architecture-status.yaml` (capability ledger) + `docs/logs/releases/` (formal release notes); headers do not need to duplicate that.
 
 Practical effect: this cycle refreshes headers in only the files it actually edits (`ARCHITECTURE.md`, `agent-service/ARCHITECTURE.md`). The seven active docs flagged in the review (P3) that are not edited in this cycle keep their previous header dates — which honestly reflect "content last changed at the post-seventh third-pass cycle."
 
@@ -75,7 +75,7 @@ Practical effect: this cycle refreshes headers in only the files it actually edi
 
 2. **A regex denylist for stale baseline tokens (`Forty-one`, `#1-#41`).** Rejected: brittle — every count advance requires updating the denylist. The chosen positive cross-reference (README must contain current YAML counts) handles all future advances automatically.
 
-3. **Folding sub-decision B into Rule 25 (peripheral_wave_qualifier).** Rejected: Rule 25's pattern catalog is specific to peripheral-wave-qualifier shapes (`Primary sidecar impl:`, `Sidecar adapter —`). The §1 boundary-prose split is structural, not regex-detectable. Keeping it as a structural review-enforced rule preserves rule key clarity.
+3. **Folding sub-decision B into Rule G-2 sub-clause .a (peripheral_wave_qualifier).** Rejected: Rule G-2 sub-clause .a's pattern catalog is specific to peripheral-wave-qualifier shapes (`Primary sidecar impl:`, `Sidecar adapter —`). The §1 boundary-prose split is structural, not regex-detectable. Keeping it as a structural review-enforced rule preserves rule key clarity.
 
 4. **A separate ADR for the header-metadata convention.** Rejected: convention C composes naturally with the active-entrypoint truth theme; carving it into a separate ADR creates index noise. It lives here.
 
@@ -95,7 +95,7 @@ Practical effect: this cycle refreshes headers in only the files it actually edi
 | `docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md` | New ADR (this file) |
 | `docs/adr/README.md` | ADR-0047 index row appended |
 | `docs/governance/architecture-status.yaml` | `active_entrypoint_baseline_truth_gate` row added; `architecture_sync_gate.allowed_claim` counts bumped (44→45, 46→47, 26→27, 28→30); `adr_per_file.allowed_claim` corrected (46→47) |
-| `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` (then at `docs/releases/`) | Baseline metrics table bumped; 11th historical-cycle row added |
+| `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` (then at `docs/logs/releases/`) | Baseline metrics table bumped; 11th historical-cycle row added |
 | `README.md` | Baseline counts bumped to 45/47/27/30 |
 | `gate/README.md` | Rule count 26→27; Rule 27 added to catalog; self-test coverage extended |
 | `gate/check_architecture_sync.ps1` | Rule 27 block added after Rule 26; banner updated |
@@ -104,7 +104,7 @@ Practical effect: this cycle refreshes headers in only the files it actually edi
 
 ## References
 
-- Eleventh-cycle review: `docs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md`
+- Eleventh-cycle review: `docs/logs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md`
 - ADR-0045: shipped-row evidence + peripheral wave-qualifier (Gate Rules 24, 25)
 - ADR-0046: release-note shipped-surface truth (Gate Rule 26) — composes without overlap with this ADR
 - `gate/check_architecture_sync.ps1` (Rule 27)

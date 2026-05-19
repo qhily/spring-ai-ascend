@@ -2,7 +2,7 @@
 #
 # Authority: ADR-0073 (Engine Hooks + Runtime Middleware).
 # Wave: W2.x Phase 2.
-# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §5).
+# Driver review: docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §5).
 #
 # This file is the SINGLE SOURCE OF TRUTH for the canonical hook surface.
 # The Java enum ascend.springai.middleware.spi.HookPoint mirrors the `hooks:`
@@ -63,7 +63,7 @@ failure_propagation:
   # TARGET (Rule 45.b, W2 Telemetry Vertical): a middleware that returns
   # HookOutcome.Fail aborts the dispatch chain; subsequent hooks at the same
   # point are not fired; the Run transitions to FAILED with the middleware-
-  # declared reason. TODAY (v2.0.0-rc2): only the chain-abort half is wired;
+  # declared reason. TODAY: only the chain-abort half is wired;
   # Run.FAILED transition is deferred.
   default: fail_fast
   # TARGET (Rule 45.b): on_error never fail-fasts (failing inside an error

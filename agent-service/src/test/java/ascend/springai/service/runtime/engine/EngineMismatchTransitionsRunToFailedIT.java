@@ -23,20 +23,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Rule 44 strongest reading: a Run dispatched with a payload whose engine is
+ * Rule R-M.b strongest reading: a Run dispatched with a payload whose engine is
  * not registered MUST raise {@link EngineMatchingException} AND transition
  * the Run to {@link RunStatus#FAILED} with reason {@code engine_mismatch}.
  *
  * <p>The Phase 7 audit (plan {@code D:/.claude/plans/spi-atomic-willow.md} L-1)
  * added the FAILED transition because the prior code only fired the
  * {@link HookPoint#ON_ERROR} hook and rethrew, leaving the Run in its prior
- * status -- a Rule 44 compliance gap surfaced by the four-dimensional
+ * status -- a Rule R-M.b compliance gap surfaced by the four-dimensional
  * architecture self-audit. Companion to {@code EngineMatchingStrictnessIT}
- * (E75) which asserts only the exception-raising half of Rule 44.
+ * (E75) which asserts only the exception-raising half of Rule R-M.b.
  *
  * <p>Enforcer row: {@code docs/governance/enforcers.yaml#E88}.
  *
- * <p>Authority: ADR-0072; CLAUDE.md Rule 44.
+ * <p>Authority: ADR-0072; CLAUDE.md Rule R-M.b.
  */
 class EngineMismatchTransitionsRunToFailedIT {
 

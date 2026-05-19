@@ -93,7 +93,7 @@ The whitepaper §1.3 explicitly rejects "Microservice Dictatorship" — packagin
 
 ## Narrowing under ADR-0049 / ADR-0050 / ADR-0051 (whitepaper-alignment remediation, 2026-05-13)
 
-**ADR-0048 is a deployment-topology commitment, not the complete whitepaper realization.** Per the whitepaper-alignment review (`docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`), this ADR is subordinate to:
+**ADR-0048 is a deployment-topology commitment, not the complete whitepaper realization.** Per the whitepaper-alignment review (`docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`), this ADR is subordinate to:
 
 - **ADR-0049** — C/S Dynamic Hydration Protocol. ADR-0048 commits the deployment of the S-Side; ADR-0049 commits the C/S wire protocol (Task Cursor, Business Rule Subset, Skill Pool Limit, three-mode handoff). Service-Layer microservice topology is NOT a substitute for the C/S protocol.
 - **ADR-0050** — Workflow Intermediary, Mailbox Backpressure, Rhythm Track. ADR-0048's "data-P2P / control-event-bus" shorthand MUST NOT collapse heartbeat/rhythm isolation (ADR-0050 restores Rhythm as an independent third cross-service track) or bypass local intermediary admission control (ADR-0050 forbids the bus from force-starting computation).

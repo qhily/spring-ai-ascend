@@ -36,7 +36,7 @@ Three authoritative sources disagree on the `embeddingModel*` field name:
   incorrect implementations.
 - ADR-0034 is the authoritative source for the memory taxonomy — its field names take precedence.
 - W0 `GraphMetadata` was designed as a minimal graph-edge record; retrofitting full MemoryMetadata
-  at W0 contradicts Rule 2 (surgical minimum change).
+  at W0 contradicts Rule D-2 (surgical minimum change).
 
 ## Considered Options
 
@@ -73,8 +73,8 @@ Three authoritative sources disagree on the `embeddingModel*` field name:
 |---|---|---|---|
 | `RunRepository` | tenant-scoped | explicit `tenantId` arg on `findByTenant*` | unchanged |
 | `Checkpointer` | run-scoped | implicit via `runId` uniqueness | unchanged (ADR-0027) |
-| `GraphMemoryRepository` | tenant-scoped | explicit `tenantId` first arg (every method, Rule 11) | unchanged |
-| `ResilienceContract` | dual-surface (operation-policy + skill-capacity) | W0: single-arg `resolve(operationId)` (no tenant param); W1.x Phase 9+: two-arg `resolve(tenant, skill)` via `SkillCapacityRegistry` (ADR-0070, Rule 41.b) | Operation-policy axis only; the original `(tenantId, operationId)` extension plan is **superseded** by ADR-0070 / ADR-0081 — skill capacity uses `(tenant, skill)`, NOT `(tenantId, operationId)` |
+| `GraphMemoryRepository` | tenant-scoped | explicit `tenantId` first arg (every method, Rule R-C.c) | unchanged |
+| `ResilienceContract` | dual-surface (operation-policy + skill-capacity) | W0: single-arg `resolve(operationId)` (no tenant param); W1.x Phase 9+: two-arg `resolve(tenant, skill)` via `SkillCapacityRegistry` (ADR-0070, Rule R-K.b) | Operation-policy axis only; the original `(tenantId, operationId)` extension plan is **superseded** by ADR-0070 / ADR-0081 — skill capacity uses `(tenant, skill)`, NOT `(tenantId, operationId)` |
 | `Orchestrator` | tenant-scoped | explicit `tenantId` arg in `run(runId, tenantId, ...)` | unchanged |
 | `GraphExecutor` | tenant-scoped | via injected `RunContext.tenantId()` | unchanged |
 | `AgentLoopExecutor` | tenant-scoped | via injected `RunContext.tenantId()` | unchanged |

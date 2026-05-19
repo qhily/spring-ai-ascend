@@ -5,12 +5,12 @@
 
 # Rule 39 — review_proposal_front_matter (enforcer E57, ADR-0068)
 #
-# Every NEW (post-W1) proposal under docs/reviews/ MUST declare
+# Every NEW (post-W1) proposal under docs/logs/reviews/ MUST declare
 # affects_level: + affects_view: front-matter. Pre-W1 historical review
 # files are explicitly listed in the allow-list below and exempted.
 # ---------------------------------------------------------------------------
 _r39_fail=0
-# Allow-list of pre-W1 historical files (relative to docs/reviews/).
+# Allow-list of pre-W1 historical files (relative to docs/logs/reviews/).
 _r39_allow_re='^(2026-05-1[23]-|2026-05-14-(architecture-governance-in-vibe-coding-era|L0Architecture-LucioIT-wave-1-request|l1-architecture-expert-review)|spring-ai-ascend-implementation-guidelines|Architectural Perspective Review)'
 while IFS= read -r _f39; do
   [[ -z "$_f39" ]] && continue
@@ -23,7 +23,7 @@ while IFS= read -r _f39; do
   if ! grep -qE '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_f39" 2>/dev/null; then
     fail_rule "review_proposal_front_matter" "$_f39 missing 'affects_view:' front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r39_fail=1
   fi
-done < <(find docs/reviews -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort || true)
+done < <(find docs/logs/reviews -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort || true)
 if [[ $_r39_fail -eq 0 ]]; then pass_rule "review_proposal_front_matter"; fi
 
 # ---------------------------------------------------------------------------

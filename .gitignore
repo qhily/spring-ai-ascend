@@ -28,7 +28,11 @@ desktop.ini
 
 # Logs + runtime state
 *.log
-logs/
+# Note: bare `logs/` pattern removed 2026-05-19 — it incorrectly caught the
+# `docs/logs/` archive partition (which MUST be tracked: rule-migration-map.yaml,
+# governance-waves.md, migration-coverage-report.md, etc. per ADR-0086). Only
+# directory we'd want to ignore here was `third_party/*/logs/`, already covered
+# by `third_party/` below.
 var/
 state/
 state-dir/

@@ -78,7 +78,7 @@ channels:
 #
 # S2C callbacks ride the existing three physical channels via the following
 # logical mappings -- no new physical channel is added. Cross-rule resolution
-# documented in docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5.1.
+# documented in docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md §5.1.
 # ---------------------------------------------------------------------------
 logical_mappings:
   - id: s2c.callback.request

@@ -64,7 +64,7 @@ Any W2+ `Orchestrator` implementation that performs the suspension pair MUST:
 2. Enforce it with an integration test that kills the JVM mid-write and asserts post-restart
    consistency (e.g., via `ProcessBuilder` + DB state check).
 
-An implementation that cannot demonstrate this contract is a ship-blocking defect per Rule 9
+An implementation that cannot demonstrate this contract is a ship-blocking defect per Rule D-5
 (category: "Run lifecycle — checkpoint/resume atomicity").
 
 ### Consequences
@@ -86,8 +86,8 @@ misses the transaction boundary and must be retrofitted.
 
 ## References
 
-- Third-reviewer document: `docs/reviews/Architectural Perspective Review` (Issue 9)
-- Response document: `docs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-E)
+- Third-reviewer document: `docs/logs/reviews/Architectural Perspective Review` (Issue 9)
+- Response document: `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-E)
 - §4 #23 (suspension write atomicity)
 - Rule 23 (deferred, W2): suspension write atomicity enforcement
 - ADR-0007 (Postgres outbox pattern)

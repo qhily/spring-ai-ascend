@@ -1,8 +1,8 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13 (v1, SUPERSEDED)
 
-> ⚠️ **SUPERSEDED on 2026-05-13** by `docs/releases/2026-05-13-L0-architecture-release-v2.en.md`. After this v1 was published, the same day landed (a) the Service-Layer Microservice Commitment (ADR-0048, §4 #46) and (b) the Whitepaper-Alignment Remediation (ADRs 0049/0050/0051/0052, §4 #47–#50, Gate Rules 28–29, +5 self-tests), which materially shifted the architecture surface. v1 was amended in-place four times to keep up, contradicting its own "frozen" marker. The release was therefore re-cut as v2 (50 §4 constraints / 52 ADRs / 29 gate rules / 35 self-tests baseline) and re-audited by six parallel reviewer agents. **Do not cite this v1 file as canonical.** Consult `docs/releases/2026-05-13-L0-architecture-release-v2.en.md` and `docs/governance/architecture-status.yaml`. This v1 file is retained under `docs/archive/` for historical traceability per ADR-0043.
+> ⚠️ **SUPERSEDED on 2026-05-13** by `docs/logs/releases/2026-05-13-L0-architecture-release-v2.en.md`. After this v1 was published, the same day landed (a) the Service-Layer Microservice Commitment (ADR-0048, §4 #46) and (b) the Whitepaper-Alignment Remediation (ADRs 0049/0050/0051/0052, §4 #47–#50, Gate Rules 28–29, +5 self-tests), which materially shifted the architecture surface. v1 was amended in-place four times to keep up, contradicting its own "frozen" marker. The release was therefore re-cut as v2 (50 §4 constraints / 52 ADRs / 29 gate rules / 35 self-tests baseline) and re-audited by six parallel reviewer agents. **Do not cite this v1 file as canonical.** Consult `docs/logs/releases/2026-05-13-L0-architecture-release-v2.en.md` and `docs/governance/architecture-status.yaml`. This v1 file is retained under `docs/archive/` for historical traceability per ADR-0043.
 
-> **Historical artifact frozen at SHA 82a1397 (L0 release v1).** Baseline counts in this document (45 §4 constraints / 47 ADRs / 27 gate rules / 30 self-tests) reflect the state at v1 release time and are NOT retroactively updated. Subsequent canonical baseline changes — ADR-0048 (Service-Layer Microservice-Architecture Commitment, post-v1 commit 044bbb0) and the whitepaper-alignment remediation introducing ADR-0049/0050/0051/0052 per `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` — are captured in the v2 release note and tracked separately via `ARCHITECTURE.md` §4, `docs/adr/`, and `docs/governance/architecture-status.yaml`.
+> **Historical artifact frozen at SHA 82a1397 (L0 release v1).** Baseline counts in this document (45 §4 constraints / 47 ADRs / 27 gate rules / 30 self-tests) reflect the state at v1 release time and are NOT retroactively updated. Subsequent canonical baseline changes — ADR-0048 (Service-Layer Microservice-Architecture Commitment, post-v1 commit 044bbb0) and the whitepaper-alignment remediation introducing ADR-0049/0050/0051/0052 per `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` — are captured in the v2 release note and tracked separately via `ARCHITECTURE.md` §4, `docs/adr/`, and `docs/governance/architecture-status.yaml`.
 
 > Status: **L0 architecturally ready** (final entrypoint truth review pass complete)
 > Semantic release SHA: 82a1397
@@ -137,7 +137,7 @@ All `shipped: true` capability rows in `docs/governance/architecture-status.yaml
 
 ## The 4-Shape Defect Model (+ GATE-SCOPE-GAP)
 
-The first nine review cycles revealed a recurring meta-pattern: each round of central-doc repair left peripheral entry-point drift behind. The third-pass cycle codified this as four defect shapes. The tenth cycle (L0 release-note contract review) surfaced a fifth: **GATE-SCOPE-GAP** — a truth-rule's pattern catalog is exhaustive but its *token catalog* is artifact-specific, so a new artifact class (e.g. `docs/releases/*.md`) entering the active corpus inherits zero instrumentation until a dedicated rule is added. ADR-0046 + Gate Rule 26 close this gap for release notes.
+The first nine review cycles revealed a recurring meta-pattern: each round of central-doc repair left peripheral entry-point drift behind. The third-pass cycle codified this as four defect shapes. The tenth cycle (L0 release-note contract review) surfaced a fifth: **GATE-SCOPE-GAP** — a truth-rule's pattern catalog is exhaustive but its *token catalog* is artifact-specific, so a new artifact class (e.g. `docs/logs/releases/*.md`) entering the active corpus inherits zero instrumentation until a dedicated rule is added. ADR-0046 + Gate Rule 26 close this gap for release notes.
 
 | Shape | Structural prevention | Gate rule |
 |-------|-----------------------|-----------|
@@ -193,7 +193,7 @@ The following are known, intentional, and documented:
 - `gate/check_architecture_sync.ps1` + `gate/check_architecture_sync.sh` — 27 gate rules
 - `gate/test_architecture_sync_gate.sh` — 30 self-tests
 - `CLAUDE.md` — 11 active engineering rules
-- `docs/reviews/2026-05-13-l0-release-note-contract-review.en.md` — tenth-cycle review input
-- `docs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md` — eleventh-cycle review input
+- `docs/logs/reviews/2026-05-13-l0-release-note-contract-review.en.md` — tenth-cycle review input
+- `docs/logs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md` — eleventh-cycle review input
 - `docs/adr/0046-release-note-shipped-surface-truth.md` — Gate Rule 26 + GATE-SCOPE-GAP closure
 - `docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md` — Gate Rule 27 + CANONICAL-DRIFT closure + system-boundary prose convention

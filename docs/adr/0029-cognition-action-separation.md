@@ -171,8 +171,8 @@ the "language policy" clause.
 
 ## References
 
-- Fifth-reviewer document: `docs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §2
-- Response document: `docs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-B)
+- Fifth-reviewer document: `docs/logs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §2
+- Response document: `docs/logs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-B)
 - ADR-0018: SandboxExecutor SPI (GraalPolyglotSandboxExecutor — optional W3 impl)
 - ADR-0021: Layered SPI taxonomy (CapabilityRegistry)
 - ADR-0022: PayloadCodec SPI (C4 solution)

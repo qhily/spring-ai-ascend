@@ -7,7 +7,7 @@
 #
 # The PowerShell architecture-sync gate (gate/check_architecture_sync.ps1) was
 # frozen at Rule 29 in 2026-05 while the bash gate evolved to Rule 60+. The
-# second-pass review (docs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-review.en.md
+# second-pass review (docs/logs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-review.en.md
 # §P0-1) required choosing one of two postures. v2.0.0-rc2 picked the
 # canonical-bash posture per the response document. This rule asserts BOTH
 # halves of that posture:

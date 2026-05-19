@@ -28,7 +28,7 @@ SPI impls: thread-safe, no null returns. SPIs that process tenant-owned runtime 
 | `Orchestrator` | `agent-runtime-core` | `ascend.springai.service.runtime.orchestration.spi` | shipped — W0 reference impl (`SyncOrchestrator`, in `agent-service`) |
 | `S2cCallbackTransport` | `agent-runtime-core` | `ascend.springai.service.runtime.s2c.spi` | shipped — W2.x; `InMemoryS2cCallbackTransport` reference (ADR-0074) |
 | `GraphMemoryRepository` | `agent-service` | `ascend.springai.service.runtime.memory.spi` | shipped — interface only; Graphiti W1 reference (ADR-0034) |
-| `ResilienceContract` | `agent-service` | `ascend.springai.service.runtime.resilience.spi` | shipped — W0 Resilience4j-backed impl (`DefaultSkillResilienceContract`); per-skill capacity via `YamlResilienceContract`; package home moved to `.spi` per ADR-0080 (v2.0.0-rc6) to align with Rules 32/77/78 — implementations stay in `runtime.resilience.*` |
+| `ResilienceContract` | `agent-service` | `ascend.springai.service.runtime.resilience.spi` | shipped — W0 Resilience4j-backed impl (`DefaultSkillResilienceContract`); per-skill capacity via `YamlResilienceContract`; package home moved to `.spi` per ADR-0080 to align with Rules 32/77/78 — implementations stay in `runtime.resilience.*` |
 | `SkillCapacityRegistry` | `agent-service` | `ascend.springai.service.runtime.resilience.spi` | shipped — W0 YAML-backed impl (`YamlSkillCapacityRegistry`, in `agent-service`); `ResilienceAutoConfiguration` exposes it as an `@ConditionalOnMissingBean` extension point. Consumed by `ResilienceContract.resolve(tenant, skill)` per ADR-0070 / ADR-0080 / ADR-0081; added to the active SPI surface in v2.0.0-rc9 per rc8-post-corrective review P1-2 |
 | `ExecutorAdapter` | `agent-execution-engine` | `ascend.springai.engine.spi` | shipped — W2.x; reference adapters in `agent-service` (ADR-0072 / ADR-0079) |
 | `GraphExecutor` | `agent-execution-engine` | `ascend.springai.engine.spi` | shipped — `extends ExecutorAdapter`; W0 reference impl (`SequentialGraphExecutor`, in `agent-service`) |
@@ -72,7 +72,7 @@ SPI impls: thread-safe, no null returns. SPIs that process tenant-owned runtime 
 | `RunContext` | `agent-runtime-core` (`...orchestration.spi`) | Per-run context interface; exposes `tenantId()`, `runId()` |
 | `TraceContext` | `agent-runtime-core` (`...orchestration.spi`) | Trace-id / span carrier interface |
 | `ExecutorDefinition` | `agent-runtime-core` (`...orchestration.spi`) | Sealed: `GraphDefinition` \| `AgentLoopDefinition` |
-| `SuspendSignal` | `agent-runtime-core` (`...orchestration.spi`) | Checked-exception interrupt primitive; carries `forClientCallback(...)` variant per ADR-0074 (v2.0.0-rc3 unification — replaces parallel unchecked `S2cCallbackSignal`) |
+| `SuspendSignal` | `agent-runtime-core` (`...orchestration.spi`) | Checked-exception interrupt primitive; carries `forClientCallback(...)` variant per ADR-0074 |
 | `IdempotencyRecord` | `agent-runtime-core` (`...idempotency`) | Idempotency-Key persistence record (Rule 11 contract spine) |
 | `S2cCallbackEnvelope` / `S2cCallbackResponse` | `agent-runtime-core` (`...s2c.spi`) | Six mandatory request fields per ADR-0074 |
 | `EngineRegistry` | `agent-execution-engine` (`...service.runtime.engine`) | Single authority for `resolve(envelope)` / `resolveByPayload(...)` (Rule 43) |
@@ -148,7 +148,7 @@ SemVer from 1.0.0: PATCH=fix, MINOR=additive, MAJOR=breaking. Stable surface: st
 | `agent-evolve` | evolution | Skeleton — Python ML; Java adapter deferred |
 | `spring-ai-ascend-graphmemory-starter` | bus_state | Sidecar adapter (graphmemory SPI scaffold) — ADR-0034 |
 
-**Module history (pre-rc4 deletions / merges):**
+**Module history (pre**
 
 - Pre-Phase-C era modules `agent-platform` + `agent-runtime` were merged into `agent-service` per **ADR-0078** (consolidation).
 - A new `agent-runtime-core` module was extracted post-consolidation per **ADR-0079** (engine-extraction-runtime-core) to host SPI + kernel types shared by `agent-service` and `agent-execution-engine`.

@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Verifies EngineRegistry strict-matching behaviour (ADR-0072, Rules 43+44).
  *
- * <p>Strongest reading of Rule 44: a mismatch raises EngineMatchingException —
+ * <p>Strongest reading of Rule R-M.b: a mismatch raises EngineMatchingException —
  * never silent reinterpretation, never fallback.
  */
 class EngineRegistryResolveTest {

@@ -12,7 +12,7 @@ architecture_doc: agent-service/ARCHITECTURE.md
 dfx_doc: docs/dfx/agent-service.yaml
 spi_packages:
   - ascend.springai.service.runtime.memory.spi
-  - ascend.springai.service.runtime.resilience.spi   # ResilienceContract + value types promoted to .spi per ADR-0080 (v2.0.0-rc6, rc5 review P1-2 closure)
+  - ascend.springai.service.runtime.resilience.spi   # ResilienceContract + value types promoted to .spi per ADR-0080
 allowed_dependencies:
   - agent-runtime-core
   - agent-execution-engine

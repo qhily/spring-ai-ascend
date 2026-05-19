@@ -2,8 +2,8 @@
 #
 # Authority: ADR-0074 (S2C Capability Callback Protocol).
 # Wave: W2.x Phase 3.
-# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §6).
-# Cross-rule audit: docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5 (Phase 3a audit matrix).
+# Driver review: docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §6).
+# Cross-rule audit: docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md §5 (Phase 3a audit matrix).
 #
 # This file is the SINGLE SOURCE OF TRUTH for the S2C callback envelope +
 # response shape. The Java records under ascend.springai.service.runtime.s2c.spi
@@ -12,7 +12,6 @@
 # from ascend.springai.runtime.s2c in v2.0.0-rc3 per cross-constraint audit
 # alpha-4 / beta-2 — schema unchanged, only the Java home moved.
 #
-# 2026-05-18 amendment (rc4 review P0-1): the original 2026-05-16 design used a parallel unchecked S2cCallbackSignal RuntimeException; v2.0.0-rc3 deleted that type and unified the S2C executor-side trigger into SuspendSignal.forClientCallback(...) (a checked-suspension variant). See docs/adr/0074-s2c-capability-callback.yaml#amendments.
 # Self-enforced by gate Rule 58 (s2c_callback_yaml_present_and_wellformed).
 
 schema: s2c-callback/v1
@@ -66,7 +65,7 @@ outcome_values:
   - error       # client returned an error; Run transitions to FAILED with reason s2c_client_error
   - timeout     # client did not respond within deadline; Run transitions to FAILED with reason s2c_timeout
 
-# Cross-rule resolutions per Phase 3a audit matrix (docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5):
+# Cross-rule resolutions per Phase 3a audit matrix (docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md §5):
 cross_rule_resolutions:
   rule_20_run_state_machine: |
     The suspending Run transitions RUNNING -> SUSPENDED via SuspendReason.AwaitClientCallback

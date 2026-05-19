@@ -28,7 +28,7 @@ confusion about what is actually planned.
 - Seventh reviewer P1.2: two planning docs contradict `ARCHITECTURE.md`; single authority needed.
 - Hidden defects 4.1–4.8: specific contradictions documented between the three documents.
 - Hidden defect 4.9: no single wave authority means each doc accretes independent drift.
-- Rule 25 (Architecture-Text Truth): truth claims in docs must reflect code and current plan.
+- Rule G-2 sub-clause .a (Architecture-Text Truth): truth claims in docs must reflect code and current plan.
 
 ## Considered Options
 
@@ -81,7 +81,7 @@ deleted to prevent two-copy drift.
 
 ## References
 
-- Seventh reviewer P1.2: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Seventh reviewer P1.2: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
 - `docs/archive/2026-05-13-plans-archived/` — archive location
 - `ARCHITECTURE.md` §1 — active wave authority
 - `architecture-status.yaml` row: `wave_authority_consolidation`

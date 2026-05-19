@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Enforces CLAUDE.md Rule 33 (Layered 4+1 Discipline) at the source-code layer.
+ * Enforces CLAUDE.md Rule G-1.a (Layered 4+1 Discipline) at the source-code layer.
  *
- * <p>Rule 33 mandates that every architecture artefact (docs/adr/*.yaml,
- * docs/L2/**, ARCHITECTURE.md, agent-*&#47;ARCHITECTURE.md, docs/reviews/*.md)
+ * <p>Rule G-1.a mandates that every architecture artefact (docs/adr/*.yaml,
+ * docs/L2/**, ARCHITECTURE.md, agent-*&#47;ARCHITECTURE.md, docs/logs/reviews/*.md)
  * declares a (level, view) front-matter pair. The doc-side enforcement lives
- * in Gate Rule 37 (architecture_artefact_front_matter).
+ * in Gate Rule R-G (architecture_artefact_front_matter).
  *
  * <p>This ArchUnit test is the source-code complement: when W2 introduces
  * typed Java references to a Layered-4+1 artefact (for example a future

@@ -25,7 +25,7 @@ The user's strategic ask, translated to English:
 
 ## Decision
 
-Adopt the **Telemetry Vertical** as a named top-level architectural concept in `ARCHITECTURE.md §0.5.3`, sibling to the existing Tenant Vertical (§4 #3 / #22 / Rule 21) and Posture Vertical (§4 #2 / #32). The vertical owns three entities, one carrier, one wire format, and one hybrid sink strategy, with rollout staged across L1.x → W2 → W3 → W4.
+Adopt the **Telemetry Vertical** as a named top-level architectural concept in `ARCHITECTURE.md §0.5.3`, sibling to the existing Tenant Vertical (§4 #3 / #22 / Rule R-C.e) and Posture Vertical (§4 #2 / #32). The vertical owns three entities, one carrier, one wire format, and one hybrid sink strategy, with rollout staged across L1.x → W2 → W3 → W4.
 
 ### 1. Three primary entities (OTel-native + Langfuse-compatible)
 
@@ -41,7 +41,7 @@ Adopt the **Telemetry Vertical** as a named top-level architectural concept in `
 
 `TraceContext` — pure-Java SPI in `agent-runtime/orchestration/spi/`, mirroring `RunContext`. Methods: `traceId() : String`, `spanId() : String`, `sessionId() : String`, `newChildSpan(name) : TraceContext`. Default implementation: `NoopTraceContext` (propagates IDs without emission).
 
-`RunContext` is extended with `traceId()`, `spanId()`, `sessionId()` accessors (plain Strings — SPI purity preserved per §4 #7). This is the canonical carrier inside the runtime; ThreadLocal reads remain forbidden by Rule 21.
+`RunContext` is extended with `traceId()`, `spanId()`, `sessionId()` accessors (plain Strings — SPI purity preserved per §4 #7). This is the canonical carrier inside the runtime; ThreadLocal reads remain forbidden by Rule R-C.e.
 
 ### 3. Wire format and sink strategy (W2 engine, L1.x contract)
 
@@ -99,7 +99,7 @@ The two policies do not collide:
 
 **Alt B — Custom JSON to `trace_store` only (no OTLP).** Re-invents an OTLP-shaped serializer, breaks Langfuse interop, loses Tempo/Jaeger tooling. Rejected.
 
-**Alt C — Defer to W2 as a single block (no L1.x contract).** Rejected because Rule 28 (Code-as-Contract) forbids deferred enforcers. We lock the contract surface now and let the engine fill in at W2.
+**Alt C — Defer to W2 as a single block (no L1.x contract).** Rejected because Rule R-C.a (Code-as-Contract) forbids deferred enforcers. We lock the contract surface now and let the engine fill in at W2.
 
 ## Consequences
 
@@ -107,7 +107,7 @@ The two policies do not collide:
 - **Negative**: OTel SDK dep (~3-4 MB) pulled at W2; dual-write cost (~one INSERT per terminal span); three IDs in MDC (`trace_id`, `span_id`, `run_id`, plus existing `tenant_id`) instead of one.
 - **Risk surfaced**: Hook SPI un-deferral at W2 must co-ship with `LlmGateway` and GENERATION span emission; otherwise §4 #56 has no enforcer.
 
-## Enforcers (Rule 28)
+## Enforcers (Rule R-C.a)
 
 Every constraint introduced here ships with an executable enforcer. The full table lives in `docs/governance/enforcers.yaml` rows E38–E51 (new). Highlights:
 
@@ -119,11 +119,11 @@ Every constraint introduced here ships with an executable enforcer. The full tab
 - `SpanTenantAttributeRequiredTest` (ArchUnit) — §4 #57.
 - `PostureBootPiiHookPresenceContractIT` (integration) — §4 #58 (contract; full negative test W2).
 - `McpReplaySurfaceArchTest` (ArchUnit) — §4 #59.
-- Gate Rule 30 (`telemetry_vertical_constraint_coverage`) — every §4 #53–#59 sentence maps to an enforcer row.
+- Gate Rule R-B (`telemetry_vertical_constraint_coverage`) — every §4 #53–#59 sentence maps to an enforcer row.
 
 ## §16 Review Checklist
 
-- [x] Constraint text uses `MUST` / `MUST NOT` / `REQUIRED` and survives Rule 28 meta-scan.
+- [x] Constraint text uses `MUST` / `MUST NOT` / `REQUIRED` and survives Rule R-C.a meta-scan.
 - [x] Every constraint has at least one enforcer in `enforcers.yaml`.
 - [x] No deferred enforcers — L1.x enforcers are active at L1.x; W2-only enforcers are named with class FQN but ship in W2 alongside their subject.
 - [x] Cross-references to ADR-0017 (`trace_store`), ADR-0009 (Micrometer), ADR-0023 (TenantContext companion), §1 exclusion (no Admin UI) are explicit.

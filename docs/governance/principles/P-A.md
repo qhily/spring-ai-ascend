@@ -13,7 +13,7 @@ kernel: |
   configuration-driven extension, debug-friendly telemetry,
   and self-service closure (a developer can build, run, and test an agent
   end-to-end against the platform without platform-team intervention).
-  Enforced by Rule 29.
+  Enforced by Rule R-A.
 ---
 
 ## Motivation
@@ -22,10 +22,10 @@ This principle exists because **platform internals patched in-place by business 
 
 ## Operationalising rules
 
-- Rule 29 — Business/Platform Decoupling Enforcement ([`docs/governance/rules/rule-29.md`](../rules/rule-29.md))
+- Rule R-A — Business/Platform Decoupling Enforcement ([`docs/governance/rules/rule-R-A.md`](../rules/rule-R-A.md))
 
 ## Cross-references
 
-- ADR-0064 (origin of Rule 29 and the developer self-service mandate)
+- ADR-0064 (origin of Rule R-A and the developer self-service mandate)
 - Deferred sub-clause 29.c — quickstart smoke-run in CI (W1 trigger), see [`docs/CLAUDE-deferred.md`](../../CLAUDE-deferred.md)
 - Related: P-C (Independent Modules) — without module independence, decoupling is rhetorical

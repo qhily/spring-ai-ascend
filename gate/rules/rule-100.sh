@@ -31,12 +31,16 @@ else
   _r100_violations=""
   while IFS= read -r _r100_rule; do
     [[ -z "$_r100_rule" || "$_r100_rule" =~ ^[[:space:]]*# ]] && continue
-    _r100_card="docs/governance/rules/rule-$(printf '%02d' "$_r100_rule").md"
-    # Pad to 3 digits if 2-digit didn't work
-    [[ ! -f "$_r100_card" ]] && _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
-    # Extract CLAUDE.md kernel block
+    # Card path: integer id → zero-pad to 02d; namespaced id (D-1, G-3.d, ...) → literal.
+    if [[ "$_r100_rule" =~ ^[0-9]+$ ]]; then
+      _r100_card="docs/governance/rules/rule-$(printf '%02d' "$_r100_rule").md"
+      [[ ! -f "$_r100_card" ]] && _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
+    else
+      _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
+    fi
+    # Extract CLAUDE.md kernel block (heading matches either integer or namespaced id)
     _r100_block=$(awk -v rn="$_r100_rule" '
-      $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+      $0 ~ "^#### Rule "rn" " || $0 ~ "^#### Rule "rn"$" { in_block = 1; print; next }
       in_block && /^---$/ { exit }
       in_block { print }
     ' "$_r100_claude")

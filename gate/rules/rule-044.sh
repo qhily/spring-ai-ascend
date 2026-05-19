@@ -7,7 +7,7 @@
 #
 # For every architecture artefact declaring `freeze_id: <non-null>` in its
 # front-matter, any modification to that file in the working tree (vs the
-# merge base) MUST be accompanied by a NEW docs/reviews/*.md proposal in the
+# merge base) MUST be accompanied by a NEW docs/logs/reviews/*.md proposal in the
 # same commit naming the file under `affects_artefact:`. No-op today (all
 # freeze_id values are null); arms automatically when a doc is phase-released.
 # ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ done
 # If git is available and a base ref is reachable, check each frozen doc for
 # modifications without an accompanying review proposal.
 if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --verify "$_r44_base" >/dev/null 2>&1; then
-  _r44_changed_reviews="$(git diff --name-only --diff-filter=A "$_r44_base" -- 'docs/reviews/*.md' 2>/dev/null || true)"
+  _r44_changed_reviews="$(git diff --name-only --diff-filter=A "$_r44_base" -- 'docs/logs/reviews/*.md' 2>/dev/null || true)"
   while IFS= read -r _f44; do
     [[ -z "$_f44" ]] && continue
     if git diff --name-only "$_r44_base" -- "$_f44" 2>/dev/null | grep -q .; then
@@ -45,7 +45,7 @@ if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --
         fi
       done <<< "$_r44_changed_reviews"
       if [[ $_accompanied -eq 0 ]]; then
-        fail_rule "frozen_doc_edit_path_compliance" "$_f44 carries freeze_id but was modified without an accompanying docs/reviews/*.md proposal citing it under affects_artefact:"
+        fail_rule "frozen_doc_edit_path_compliance" "$_f44 carries freeze_id but was modified without an accompanying docs/logs/reviews/*.md proposal citing it under affects_artefact:"
         _r44_fail=1
       fi
     fi

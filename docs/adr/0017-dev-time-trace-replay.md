@@ -104,6 +104,6 @@ top does not require schema changes.
 - SAA Studio: [spring-ai-alibaba-studio (alibaba/spring-ai-alibaba)](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-studio)
 - SAA Admin: [spring-ai-alibaba-admin (alibaba/spring-ai-alibaba-admin)](https://github.com/spring-ai-alibaba/spring-ai-alibaba-admin)
 - AS-Java Studio: [AgentScope Studio observability docs](https://java.agentscope.io/en/task/observability.html)
-- competitive analysis: `docs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`
+- competitive analysis: `docs/logs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`
 - `architecture-status.yaml` row: `trace_replay_dev_surface`
 - ARCHITECTURE.md §1 (Admin UI exclusion)

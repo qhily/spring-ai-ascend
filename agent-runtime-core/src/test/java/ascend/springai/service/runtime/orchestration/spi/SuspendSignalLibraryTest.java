@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Library-mode SPI conformance test for SuspendSignal — Rule 46 + ADR-0019
+ * Library-mode SPI conformance test for SuspendSignal — Rule R-M.d + ADR-0019
  * (checked-suspension doctrine, sealed-variant post-rc3 refactor).
  *
  * <p>Two flavours of SuspendSignal: child-run (legacy W0+) and S2C client-callback
@@ -18,8 +18,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * system pins suspension at compile time. This test asserts the invariants of
  * both factory paths.
  *
- * <p>Pure JUnit Jupiter — no Spring, no I/O. Part of the Rule 79 evidence layer +
- * Rule 32.b TCK-promotion holding tank.
+ * <p>Pure JUnit Jupiter — no Spring, no I/O. Part of the Rule D-3.b evidence layer +
+ * Rule R-D.a.b TCK-promotion holding tank.
  */
 class SuspendSignalLibraryTest {
 
@@ -103,7 +103,7 @@ class SuspendSignalLibraryTest {
 
     @Test
     void message_includes_parent_node_key_for_evidence_capture() {
-        // Rule 79 evidence-capture surface: the exception message must include
+        // Rule D-3.b evidence-capture surface: the exception message must include
         // the parentNodeKey so a stack-trace alone identifies the suspending node.
         SuspendSignal child = new SuspendSignal("graph.node.bravo", null, RunMode.GRAPH, CHILD_DEF);
         SuspendSignal callback = SuspendSignal.forClientCallback("loop.node.charlie", "env");

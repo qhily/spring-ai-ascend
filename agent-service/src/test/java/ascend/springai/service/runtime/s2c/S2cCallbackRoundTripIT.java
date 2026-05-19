@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *   <li>No transport registered -> Run fails with s2c_transport_unavailable.</li>
  * </ul>
  *
- * <p>Authority: ADR-0074; CLAUDE.md Rule 46.
+ * <p>Authority: ADR-0074; CLAUDE.md Rule R-M.d.
  * Enforcer row: docs/governance/enforcers.yaml#E82 (S2C round-trip integration).
  */
 class S2cCallbackRoundTripIT {

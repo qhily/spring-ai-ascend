@@ -17,7 +17,7 @@ decision_one_liner: |
   Merge the two reactor modules agent-platform and agent-runtime into
   a single new agent-service module. Java packages collapse under one
   parent namespace ascend.springai.service.* with two siblings
-  service.platform.* and service.runtime.*. Rule 21 retargets from
+  service.platform.* and service.runtime.*. Rule R-C.e retargets from
   cross-module to intra-module sub-package layering. Reactor goes from
   9 modules to 8.
 
@@ -30,7 +30,7 @@ triggering_inputs:
         single agent-service module, returning the reactor to 8
         substantive modules that map 1:1 to the six L0 team-facing
         concepts. The corpus has declared this intent without an
-        executing PR; Rule 25 (Architecture-Text Truth) requires the
+        executing PR; Rule G-2 sub-clause .a (Architecture-Text Truth) requires the
         text and the code to converge.
   user_request:
     - date: 2026-05-18
@@ -50,7 +50,7 @@ context: |
   (BFF / API tier in front of a runtime cluster). ADR-0055 then
   codified the asymmetric dependency: agent-platform may import
   agent-runtime, but agent-runtime may not import agent-platform —
-  policed by Rule 21 (Tenant Propagation Purity, generalised in
+  policed by Rule R-C.e (Tenant Propagation Purity, generalised in
   v2.0.0-rc3 from the original TenantContextHolder-only assertion).
 
   Six months later the empirical picture is different. The two modules
@@ -65,7 +65,7 @@ context: |
 
   Option A (siblings under service) preserves the sub-layering
   invariant by name: service.platform.* sits next to service.runtime.*
-  and Rule 21 generalises naturally to "service.runtime MUST NOT
+  and Rule R-C.e generalises naturally to "service.runtime MUST NOT
   import service.platform". Option B (flat service.* namespace) was
   rejected because it erases the sub-layering signal in package names
   and forces every future contributor to re-derive which symbols are
@@ -105,11 +105,11 @@ decision: |
     accordingly.
 
   - Gate-script retargeting in gate/check_architecture_sync.sh
-    (51 line touches). Rule 10 (module_dep_direction) repoints from
+    (51 line touches). Rule D-6 (module_dep_direction) repoints from
     cross-module to intra-module sub-package check
-    (service.runtime ↛ service.platform). Rule 37
-    (no_blocking_io_in_runtime_main), Rule 38 (no_thread_sleep), and
-    Rule 40 (RLS baseline) repoint their scan paths from
+    (service.runtime ↛ service.platform). Rule R-G
+    (no_blocking_io_in_runtime_main), Rule R-H (no_thread_sleep), and
+    Rule R-J.a (RLS baseline) repoint their scan paths from
     agent-service/src/main and agent-service/src/main to the
     corresponding sub-trees under agent-service. Rule 28j,
     Rule 65 (module_metadata_pom_dep_parity), and Rule 66
@@ -119,7 +119,7 @@ decision: |
     ServiceRuntimeMustNotDependOnServicePlatformTest with the rule
     pattern noClasses().resideInAPackage("..service.runtime..")
     .should().dependOnClassesThat()
-    .resideInAPackage("..service.platform.."). The Rule 21
+    .resideInAPackage("..service.platform.."). The Rule R-C.e
     TenantPropagationPurityTest retargets to the same new pattern.
 
   - Governance YAML updates: bulk-replace agent-platform and
@@ -130,7 +130,7 @@ decision: |
     architecture-status.yaml#repository_counts.reactor_modules from
     9 to 8 and internal_modules from 7 to 6. New
     docs/dfx/agent-service.yaml merges the two old DFX docs across
-    the 5 Rule-32 dimensions.
+    the 5 Rule-R-D.a dimensions.
 
   - New agent-service/ARCHITECTURE.md (front matter level: L1,
     view: scenarios) consolidates the prior two per-module
@@ -144,7 +144,7 @@ decision: |
 
 consequences:
   positive:
-    - "Reactor surface shrinks by one module without weakening any architectural invariant. The sub-layering negative constraint (no service.runtime → service.platform imports) is preserved verbatim in Rule 21's retargeted ArchUnit test."
+    - "Reactor surface shrinks by one module without weakening any architectural invariant. The sub-layering negative constraint (no service.runtime → service.platform imports) is preserved verbatim in Rule R-C.e's retargeted ArchUnit test."
     - "Cross-cutting waves no longer need to touch two modules in lockstep for every L0 change. The 6-month empirical pattern (every wave edited both modules together) collapses to one module."
     - "Governance YAMLs lose ~50 duplicated rows whose only distinguishing field was the agent-platform vs agent-runtime label. architecture-graph.yaml drops a redundant module-to-module edge."
     - "New contributors no longer have to learn that agent-platform and agent-runtime always deploy together — they ship as one module, one pom.xml, one ARCHITECTURE.md, one DFX file."
@@ -156,18 +156,18 @@ consequences:
 
 alternatives_considered:
   - alternative: "Option B — Flat ascend.springai.service.* namespace, fold both platform and runtime packages up one level (e.g. service.web, service.runs, service.tenant, service.idempotency, service.orchestration, ...)."
-    why_rejected: "Erases the platform/runtime sub-layering signal at the package-name level. Every future contributor would have to re-derive from context which symbols are request-scoped (formerly platform) versus non-request (formerly runtime). Rule 21's negative invariant would have to encode an ad-hoc package list instead of a clean ..service.runtime.. ↛ ..service.platform.. pattern. The flat layout is appropriate when the sub-layering is genuinely gone; here the sub-layering is the same, only the Maven boundary changes."
+    why_rejected: "Erases the platform/runtime sub-layering signal at the package-name level. Every future contributor would have to re-derive from context which symbols are request-scoped (formerly platform) versus non-request (formerly runtime). Rule R-C.e's negative invariant would have to encode an ad-hoc package list instead of a clean ..service.runtime.. ↛ ..service.platform.. pattern. The flat layout is appropriate when the sub-layering is genuinely gone; here the sub-layering is the same, only the Maven boundary changes."
   - alternative: "Option C — Rename the Maven module only (agent-platform + agent-runtime → agent-service), leave Java packages untouched (ascend.springai.service.platform.* and ascend.springai.service.runtime.* remain as two top-level namespaces inside one module)."
     why_rejected: "Permanent namespace fossil: a single Maven module agent-service containing two unrelated top-level Java packages will read to every future reviewer as evidence of an incomplete merge. The cost is ~10x smaller (no Java import rewrites, no ArchUnit retargeting), but it defers the package decision indefinitely and produces an architecturally incoherent module. Option C is appropriate only if the user wants a minimum-risk experimental merge; the user explicitly confirmed Option A."
   - alternative: "Defer Phase C indefinitely — keep the 9-module reactor, leave the ARCHITECTURE.md §2 'follow-up' language in place, accept that the two modules always ship together."
-    why_rejected: "Violates Rule 25 (Architecture-Text Truth) over time. ARCHITECTURE.md §2 has declared the merger as future work since 2026-05-17; the longer the corpus declares an intent without executing it, the more downstream artefacts (release notes, plans, reviews) hedge against the eventual move. The empirical signal (every cross-cutting wave edits both modules together; no operator has split them) is unambiguous; deferring further accumulates dead optionality."
+    why_rejected: "Violates Rule G-2 sub-clause .a (Architecture-Text Truth) over time. ARCHITECTURE.md §2 has declared the merger as future work since 2026-05-17; the longer the corpus declares an intent without executing it, the more downstream artefacts (release notes, plans, reviews) hedge against the eventual move. The empirical signal (every cross-cutting wave edits both modules together; no operator has split them) is unambiguous; deferring further accumulates dead optionality."
 
 verification:
   cli:
-    - "./mvnw verify  → BUILD SUCCESS; all existing tests pass plus the retargeted Rule-21 ArchUnit assertion."
-    - "bash gate/check_architecture_sync.sh  → GATE: PASS on every rule, including the retargeted Rule 10, Rule 37, Rule 38, Rule 40, Rule 65, and Rule 66."
+    - "./mvnw verify  → BUILD SUCCESS; all existing tests pass plus the retargeted Rule-R-C.e ArchUnit assertion."
+    - "bash gate/check_architecture_sync.sh  → GATE: PASS on every rule, including the retargeted Rule D-6, Rule R-G, Rule R-H, Rule R-J.a, Rule 65, and Rule 66."
     - "bash gate/test_architecture_sync_gate.sh  → all self-tests GREEN; the explicit-FAIL self-test injecting a service.runtime → service.platform import catches the violation."
-    - "bash gate/build_architecture_graph.sh  → architecture-graph.yaml regenerates idempotently with no dangling node refs (Rule 34)."
+    - "bash gate/build_architecture_graph.sh  → architecture-graph.yaml regenerates idempotently with no dangling node refs (Rule G-1 sub-clause .b)."
   gate:
     - "rule_10_module_dep_direction PASS — retargeted to intra-module sub-package check."
     - "rule_21_tenant_propagation_purity PASS — retargeted ArchUnit test."

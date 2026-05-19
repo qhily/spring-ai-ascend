@@ -29,7 +29,7 @@
 
 ## Designed not shipped — third-reviewer response (2026-05-12)
 
-*Added via third architecture reviewer response. Category-classified: Cat-A (suspend taxonomy), Cat-B (lifecycle DFA), Cat-C (layered SPI), Cat-D (payload codec), Cat-E (context propagation + atomicity). Surfaced 15 hidden defects beyond reviewer's 9 issues. See `docs/reviews/2026-05-12-third-reviewer-response.en.md`.*
+*Added via third architecture reviewer response. Category-classified: Cat-A (suspend taxonomy), Cat-B (lifecycle DFA), Cat-C (layered SPI), Cat-D (payload codec), Cat-E (context propagation + atomicity). Surfaced 15 hidden defects beyond reviewer's 9 issues. See `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|
@@ -50,7 +50,7 @@
 
 ## Designed not shipped — competitive analysis (2026-05-12)
 
-*Added via competitive analysis vs SAA + AgentScope-Java. See `docs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`.*
+*Added via competitive analysis vs SAA + AgentScope-Java. See `docs/logs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`.*
 
 | capability | code-path | wave | claim |
 |---|---|---|---|
@@ -68,7 +68,7 @@
 
 ## Shipped (fourth-review cycle, 2026-05-12)
 
-*Added via fourth architecture reviewer response. Category-classified: Cat-A (source-of-truth duplication), Cat-B (temporal-mood drift), Cat-C (physical-vs-logical structure), Cat-D (ownership boundary ambiguity), Cat-E (enforcement gaps). Surfaced 44+ hidden defects beyond the 6 reviewer findings. See `docs/reviews/2026-05-12-fourth-reviewer-response.en.md`.*
+*Added via fourth architecture reviewer response. Category-classified: Cat-A (source-of-truth duplication), Cat-B (temporal-mood drift), Cat-C (physical-vs-logical structure), Cat-D (ownership boundary ambiguity), Cat-E (enforcement gaps). Surfaced 44+ hidden defects beyond the 6 reviewer findings. See `docs/logs/reviews/2026-05-12-fourth-reviewer-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|
@@ -84,7 +84,7 @@
 
 ## Designed not shipped — fifth-reviewer response (2026-05-12)
 
-*Added via fifth architecture reviewer response. Category-classified: Cat-A (data-plane typing + semantic ontology), Cat-B (cognition-action separation), Cat-C (skill SPI lifecycle), Cat-D (bus discipline + channel isolation). Surfaced 29 hidden defects beyond reviewer's 4 named findings. See `docs/reviews/2026-05-12-fifth-reviewer-response.en.md`.*
+*Added via fifth architecture reviewer response. Category-classified: Cat-A (data-plane typing + semantic ontology), Cat-B (cognition-action separation), Cat-C (skill SPI lifecycle), Cat-D (bus discipline + channel isolation). Surfaced 29 hidden defects beyond reviewer's 4 named findings. See `docs/logs/reviews/2026-05-12-fifth-reviewer-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|
@@ -102,7 +102,7 @@
 
 ## Designed + Governance — post-seventh follow-up (2026-05-13)
 
-*P1/P2 findings from post-seventh L0 readiness follow-up. 6 findings ACCEPTED (all). No rejections. No new Java code; all changes are documentation, gate rules, and ADRs. See `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md`.*
+*P1/P2 findings from post-seventh L0 readiness follow-up. 6 findings ACCEPTED (all). No rejections. No new Java code; all changes are documentation, gate rules, and ADRs. See `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|
@@ -117,7 +117,7 @@
 
 ## Designed — post-seventh second-pass response (2026-05-13)
 
-*8 clusters of peripheral-drift findings. META pattern: central docs cleaned; peripheral entry-points left pointing to deleted/non-existent contracts. §4 #39–#41 + ADR-0042–0044 + Gate Rules 19–23 + widen Rules 17/18. See `docs/reviews/2026-05-13-post-seventh-l0-readiness-second-pass-response.en.md`.*
+*8 clusters of peripheral-drift findings. META pattern: central docs cleaned; peripheral entry-points left pointing to deleted/non-existent contracts. §4 #39–#41 + ADR-0042–0044 + Gate Rules 19–23 + widen Rules 17/18. See `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-second-pass-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|
@@ -130,7 +130,7 @@
 
 ## Shipped + Designed — sixth+seventh reviewer combined response (2026-05-13)
 
-*8 clusters from combined review surface. ~50 hidden defects surfaced beyond 12 reviewer-named findings. §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate shipped. See `docs/reviews/2026-05-13-sixth-reviewer-response.en.md` and `docs/reviews/2026-05-13-seventh-reviewer-response.en.md`.*
+*8 clusters from combined review surface. ~50 hidden defects surfaced beyond 12 reviewer-named findings. §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate shipped. See `docs/logs/reviews/2026-05-13-sixth-reviewer-response.en.md` and `docs/logs/reviews/2026-05-13-seventh-reviewer-response.en.md`.*
 
 | capability | ADR | wave | claim |
 |---|---|---|---|

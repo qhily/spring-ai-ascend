@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 /**
- * Enforces Rule 47 (Evolution Scope Default Boundary, ADR-0075): every
+ * Enforces Rule R-M.e (Evolution Scope Default Boundary, ADR-0075): every
  * concrete record that implements {@code RunEvent} MUST expose an
  * {@code evolutionExport()} accessor returning an {@link EvolutionExport}
  * value. The platform refuses to persist any RunEvent whose export is
@@ -29,7 +29,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  * {@code EveryEngineDeclaresHookSurfaceTest} (E79) for the same Phase 2
  * deferred-fire-points reason.
  *
- * <p>Authority: ADR-0075; CLAUDE.md Rule 47.
+ * <p>Authority: ADR-0075; CLAUDE.md Rule R-M.e.
  * Enforcer row: {@code docs/governance/enforcers.yaml#E87} (post-review fix
  * plan F / P1-2: prior Javadoc cited #E86 which is the evolution-scope gate-
  * script row, not this ArchUnit test).
@@ -52,7 +52,7 @@ class EveryRunEventDeclaresEvolutionExportTest {
                     if (!hasMethod) {
                         events.add(SimpleConditionEvent.violated(clazz,
                                 clazz.getName() + " implements RunEvent but does not declare"
-                                        + " EvolutionExport evolutionExport() per Rule 47 / ADR-0075"));
+                                        + " EvolutionExport evolutionExport() per Rule R-M.e / ADR-0075"));
                     }
                 }
             };

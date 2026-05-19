@@ -21,7 +21,7 @@ decision_one_liner: |
 
 triggering_inputs:
   external_reviews:
-    - path: docs/reviews/2026-05-14-L0Architecture-LucioIT-wave-1-request.en.md
+    - path: docs/logs/reviews/2026-05-14-L0Architecture-LucioIT-wave-1-request.en.md
       authors: ["LucioIT"]
       thesis: |
         The L0 draft §3 ("Architectural Principles") is intentionally blank,
@@ -37,27 +37,27 @@ triggering_inputs:
     historical_defects_closed: 158
     related_defect_categories: 3
     related_defect_categories_detail: |
-      - "Resource governance & skill" (~20 findings) — addressed by P-K (Rule 41).
-      - "Data plane & payload" (~25 findings) — partially addressed by P-G (Rule 37) + P-J (Rule 40).
-      - "Trust, authz, audit" (~22 findings) — addressed by P-J (Rule 40) + P-L (Rule 42).
+      - "Resource governance & skill" (~20 findings) — addressed by P-K (Rule R-K).
+      - "Data plane & payload" (~25 findings) — partially addressed by P-G (Rule R-G) + P-J (Rule R-J.a).
+      - "Trust, authz, audit" (~22 findings) — addressed by P-J (Rule R-J.a) + P-L (Rule R-L).
     governance_gap: |
       Without these principles the eight constraints lived only in the L0
       draft prose; an LLM agent reasoning about a new feature could not
       see them as graph nodes, and a reviewer could not gate on them
-      mechanically. The W1 wave shipped substrate (Rule 33+34, graph,
+      mechanically. The W1 wave shipped substrate (Rule G-1 sub-clause .a+34, graph,
       gate rules 37-44) but left the substrate empty with respect to L0
       domain content; this ADR fills that gap for the eight ironclad
       rules.
 
 context: |
-  The W1 wave (ADR-0068) established Rule 33 (Layered 4+1 Discipline) and
-  Rule 34 (Architecture-Graph Truth) as the structural answer to the
+  The W1 wave (ADR-0068) established Rule G-1 sub-clause .a (Layered 4+1 Discipline) and
+  Rule G-1 sub-clause .b (Architecture-Graph Truth) as the structural answer to the
   governance-text-drift defect family (~50% of historical findings). The
   graph schema accepts principle/rule/enforcer/test/module nodes but at
   W1 entry contained only four principles (P-A..P-D from ADR-0064). The
   LucioIT L0 draft introduces eight L0-scope ironclad rules in prose.
   Without explicit promotion they remain prose-only and cannot be
-  enforced under Rule 28 (Code-as-Contract).
+  enforced under Rule R-C.a (Code-as-Contract).
 
   The user's 2026-05-15 scoping decision authorises:
     1. Comprehensive W1.x wave (all 5 defect groups closed in one wave).
@@ -97,15 +97,15 @@ decision: |
            a logical grant cannot exceed what the physical sandbox enforces)
 
   Each principle is operationalised by a Layer-1 Rule (35-42) shipping in
-  the same PR. Each Layer-1 Rule has a working enforcer per Rule 28
+  the same PR. Each Layer-1 Rule has a working enforcer per Rule R-C.a
   (Code-as-Contract) — gate rules 45-52 that fail on detected violations.
 
   Supporting authoritative inputs land at the same time:
-    - docs/governance/bus-channels.yaml      (Rule 35 / P-E)
-    - docs/governance/skill-capacity.yaml    (Rule 41 / P-K)
-    - docs/governance/sandbox-policies.yaml  (Rule 42 / P-L)
-    - gate/rls-baseline-grandfathered.txt    (Rule 40 / P-J — V1/V2 grandfathered)
-    - deployment_plane: field on every module-metadata.yaml (Rule 39 / P-I)
+    - docs/governance/bus-channels.yaml      (Rule R-E / P-E)
+    - docs/governance/skill-capacity.yaml    (Rule R-K / P-K)
+    - docs/governance/sandbox-policies.yaml  (Rule R-L / P-L)
+    - gate/rls-baseline-grandfathered.txt    (Rule R-J.a / P-J — V1/V2 grandfathered)
+    - deployment_plane: field on every module-metadata.yaml (Rule R-I / P-I)
 
 consequences: |
   - CLAUDE.md gains 8 new Layer-0 principles (P-E..P-L) and 8 new
@@ -124,16 +124,16 @@ consequences: |
   - docs/governance/rule-history.md table gains rows 35-42.
   - Three new YAML side-files (bus-channels, skill-capacity, sandbox-policies)
     enter the authoritative-inputs corpus consumed by the architecture-graph
-    generator (Rule 34); the graph schema gains channel / skill /
+    generator (Rule G-1 sub-clause .b); the graph schema gains channel / skill /
     sandbox-policy node types.
   - Each existing module-metadata.yaml gains deployment_plane: ∈
     {edge, compute_control, bus_state, sandbox, evolution, none}.
-  - V2__idempotency_dedup.sql is grandfathered for Rule 40; a follow-up
+  - V2__idempotency_dedup.sql is grandfathered for Rule R-J.a; a follow-up
     W2 migration (V3+) enables RLS on idempotency_dedup. Documented in
     CLAUDE-deferred.md sub-clause 40.b.
 
 rationale: |
-  The first-pass W1 wave proved the structural answer (Rule 33+34, graph,
+  The first-pass W1 wave proved the structural answer (Rule G-1 sub-clause .a+34, graph,
   gate rules 37-44) was correct but exposed a complementary gap: the
   graph encoded governance machinery but not domain ontology. An LLM
   reasoning about "how do I add admission control to a Workflow
@@ -160,7 +160,7 @@ rationale: |
   ADR-0068 was designed to eliminate.
 
   Why ship enforcers today (no deferred sub-clauses except documented
-  ones). Rule 28 forbids deferred enforcers. Each new gate rule has an
+  ones). Rule R-C.a forbids deferred enforcers. Each new gate rule has an
   honest enforcer that detects new violations TODAY. Where existing
   code violates a new rule (V2 migration without RLS) the violation is
   documented in a baseline/grandfather file (gate/rls-baseline-
@@ -175,7 +175,7 @@ alternatives_considered:
       principles describe a system-wide invariant. The 8 rules ARE
       system-wide invariants, not just mechanical patterns. Demoting
       them to Layer-1 would lose the L0 framing and force every Layer-1
-      rule to re-derive context from prose — exactly the drift Rule 33+34
+      rule to re-derive context from prose — exactly the drift Rule G-1 sub-clause .a+34
       were designed to prevent.
 
   - id: ALT-B
@@ -196,14 +196,14 @@ alternatives_considered:
 
 enforced_by:
   rules:
-    - Rule-35
-    - Rule-36
-    - Rule-37
-    - Rule-38
-    - Rule-39
-    - Rule-40
-    - Rule-41
-    - Rule-42
+    - Rule-R-E
+    - Rule-R-F
+    - Rule-R-G
+    - Rule-R-H
+    - Rule-R-I
+    - Rule-R-J.a
+    - Rule-R-K
+    - Rule-R-L
   gate_rules:
     - 45    # bus_channels_three_track_present
     - 46    # cursor_flow_documented
@@ -237,7 +237,7 @@ artefacts:
     - spring-ai-ascend-dependencies/module-metadata.yaml
     - spring-ai-ascend-graphmemory-starter/module-metadata.yaml
     # 2026-05-17: six-module materialization PR added five new module-metadata.yaml files
-    # (each declaring deployment_plane: per Rule 39 / P-I). Gate Rule 49 scans every
+    # (each declaring deployment_plane: per Rule R-I / P-I). Gate Rule 49 scans every
     # <module>/module-metadata.yaml on disk; ADR-0069's modified: list is historical
     # record of the ADR-write-time set, not the runtime input list.
     - agent-client/module-metadata.yaml
@@ -251,8 +251,8 @@ verification:
   - "bash gate/test_architecture_sync_gate.sh exits 0 with 8 new positive + 8 new negative cases (TOTAL=66)."
   - "yq '.principles[] | select(.id == \"P-E\")' docs/governance/principle-coverage.yaml returns the new principle entry."
   - "grep -c '^- id: E' docs/governance/enforcers.yaml returns 71 (was 63)."
-  - "Rule 38 (no Thread.sleep) gate scan returns zero matches in agent-service/src/main/java + agent-service/src/main/java (verified pre-landing)."
-  - "Rule 47 (no_blocking_io_in_runtime_main) gate scan returns zero matches in agent-service/src/main/java (agent-platform's existing JdbcTemplate uses are out of scope; rule scoped to agent-runtime per ADR-0069)."
+  - "Rule R-H (no Thread.sleep) gate scan returns zero matches in agent-service/src/main/java + agent-service/src/main/java (verified pre-landing)."
+  - "Rule R-M sub-clause .e (no_blocking_io_in_runtime_main) gate scan returns zero matches in agent-service/src/main/java (agent-platform's existing JdbcTemplate uses are out of scope; rule scoped to agent-runtime per ADR-0069)."
 
 deferred_sub_clauses:
   - id: 37.b

@@ -43,7 +43,7 @@ CREATE INDEX idx_idempotency_dedup_expires ON idempotency_dedup (expires_at);
 `IdempotencyKey` already enforce UUID validation upstream. `request_hash` is the
 base64-no-padding SHA-256 of canonical request bytes (44 chars; `VARCHAR(64)` is
 ample slack). `status` is constrained at the database layer to the three legal
-values; the `CHECK` constraint is itself a Rule-28 enforcer (kind: schema).
+values; the `CHECK` constraint is itself a Rule-R-C.a enforcer (kind: schema).
 
 ### 2. `IdempotencyStore` SPI (replaces W0 stub class outright)
 
@@ -116,7 +116,7 @@ Bound by `@ConfigurationProperties("app.idempotency")` with constructor binding.
 | research / prod | no | (any) | startup aborts (PostureBootGuard) |
 | research / prod | (any) | true | startup aborts (PostureBootGuard) |
 
-### 7. Enforcers (per Rule 28)
+### 7. Enforcers (per Rule R-C.a)
 
 - **E12** — `IdempotencyDurabilityIT`: claim persists across `Orchestrator.submit`
   failure; key cannot be re-claimed before `expires_at`.
@@ -138,8 +138,8 @@ Bound by `@ConfigurationProperties("app.idempotency")` with constructor binding.
   application logic — race-free.
 - Body-drift detection catches client bugs where the same `Idempotency-Key` is
   paired with two different bodies.
-- One construction path per store flavour (Rule 6).
-- Posture-aware fail-closed behaviour matches Rule 10.
+- One construction path per store flavour (Rule D-8).
+- Posture-aware fail-closed behaviour matches Rule D-6.
 
 ### Negative
 
@@ -181,7 +181,7 @@ prevents a misconfigured prod environment from silently falling back.
 - [x] Metrics and logs exist for failure paths (`springai_ascend_idempotency_*`).
 - [x] Tests cover unit, integration, and public contract layers (E12, E13, E14, E22).
 - [x] `architecture-status.yaml` truth matches implementation (rows promoted in Phase J).
-- [x] The design does not weaken existing Rule 20, Rule 21, or Rule 25 constraints.
+- [x] The design does not weaken existing Rule R-C.d, Rule R-C.e, or Rule G-2 sub-clause .a constraints.
 
 ## References
 
@@ -189,4 +189,4 @@ prevents a misconfigured prod environment from silently falling back.
 - Architect guidance §10.
 - ADR-0027 (W0 stub IdempotencyStore; this ADR supersedes its W1 deferral note).
 - ADR-0058 (PostureBootGuard).
-- ADR-0059 (Rule 28).
+- ADR-0059 (Rule R-C.a).

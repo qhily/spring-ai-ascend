@@ -16,11 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Verifies RunRepository.findRootRuns — returns only runs with parentRunId == null
  * for the specified tenant (§4 #29 scope-based hierarchy support).
  *
- * <p>TCK-promotion-candidate: when agent-runtime-tck is created on Rule 32.b
+ * <p>TCK-promotion-candidate: when agent-runtime-tck is created on Rule R-D.a.b
  * trigger, this class lifts-and-shifts as the RunRepository.findRootRuns
  * conformance test. The tenant-scoping + parent-null semantics MUST be honoured
  * by any alternative RunRepository impl (Postgres, Temporal, Redis).
- * See docs/CLAUDE-deferred.md Rule 32.b "Pre-promotion holding tank".
+ * See docs/CLAUDE-deferred.md Rule R-D.a.b "Pre-promotion holding tank".
  */
 class InMemoryRunRegistryFindRootRunsTest {
 

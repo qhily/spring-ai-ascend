@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Library-mode SPI conformance test for the RunStatus DFA (Rule 20 + ADR-0020).
+ * Library-mode SPI conformance test for the RunStatus DFA (Rule R-C.d + ADR-0020).
  * Pure JUnit Jupiter — no Spring context, no fixtures, no I/O. Runs in &lt;1s.
  *
- * <p>This class is part of the Rule 79 evidence layer + the Rule 32.b TCK-promotion
+ * <p>This class is part of the Rule D-3.b evidence layer + the Rule R-D.a.b TCK-promotion
  * holding tank (see docs/CLAUDE-deferred.md). When the TCK reactor module is
  * scaffolded on the first alternative-impl trigger, this class lifts unchanged
  * to {@code agent-runtime-tck/src/main/java/.../tck/}.

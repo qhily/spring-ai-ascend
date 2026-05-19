@@ -17,8 +17,8 @@ principles:
       telemetry, and self-service closure (a developer can build, run, and test
       an agent end-to-end against the platform without platform-team intervention).
     operationalised_by_rules:
-      - Rule-6
-      - Rule-29
+      - Rule-D-8
+      - Rule-R-A
     operationalised_by_legacy_principles:
       - P2
 
@@ -31,9 +31,9 @@ principles:
       isolation, audit, eval, safety). Each dimension must have a published
       baseline that future releases can be measured against.
     operationalised_by_rules:
-      - Rule-9
-      - Rule-21
-      - Rule-30
+      - Rule-D-5
+      - Rule-R-C.e
+      - Rule-R-B
     deferred_operationalisers:
       - Rule-18   # eval — deferred W4
 
@@ -45,14 +45,12 @@ principles:
       coupling. Production-environment upgrades are lightweight
       (BoM + starter pattern + semver compatibility).
     operationalised_by_rules:
-      - Rule-10
-      - Rule-25
-      - Rule-28
-      - Rule-31
-      - Rule-33   # NEW (ADR-0068)
-      - Rule-34   # NEW (ADR-0068)
-      - Rule-81   # NEW (rc4 review P0-2 — skeleton-module identity)
-      - Rule-84   # NEW (rc5 post-response review P0-1 — active module ARCHITECTURE path truth)
+      - Rule-D-6
+      - Rule-G-2
+      - Rule-R-C.a
+      - Rule-R-C.b
+      - Rule-G-1
+      - Rule-M-1   # NEW (rc4 review P0-2 — skeleton-module identity)
 
   - id: P-D
     name: "SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested"
@@ -62,15 +60,13 @@ principles:
       vulnerability, observability); contracts precede implementation;
       alternative implementations must pass a TCK to be conformant. Evidence
       flows in both directions: failures cite specs only AFTER observable
-      evidence is captured (Rule 79, added 2026-05-18 from the Beyond-SDD
+      evidence is captured (Rule D-3.b, added 2026-05-18 from the Beyond-SDD
       review response).
     operationalised_by_rules:
-      - Rule-4
-      - Rule-32
-      - Rule-79
-      - Rule-82   # rc4 review P1-1 — baseline-metrics single source; rc5 strengthening adds numeric-agreement check
-      - Rule-83   # NEW (rc4 review P1-3 — design-only contract registration)
-      - Rule-85   # NEW (rc5 post-response review P1-2 — catalog SPI row matches module SPI metadata)
+      - Rule-D-4
+      - Rule-R-D
+      - Rule-D-3.b
+      - Rule-M-2
     deferred_operationalisers:
       - Rule-22   # PayloadCodec — deferred
 
@@ -88,7 +84,7 @@ principles:
       rhythm (heartbeat/liveness pulses). No congestion on one channel can
       paralyse another. (LucioIT W1 §6.4.)
     operationalised_by_rules:
-      - Rule-35
+      - Rule-R-E
 
   - id: P-F
     name: "Cursor Flow & Asynchronous Client Boundary"
@@ -98,7 +94,7 @@ principles:
       state via SSE and intermediate-result checkpoints via Webhook. No
       long-poll, no synchronous blocking. (LucioIT W1 §6.1.)
     operationalised_by_rules:
-      - Rule-36
+      - Rule-R-F
 
   - id: P-G
     name: "Absolute Non-Blocking I/O"
@@ -107,9 +103,9 @@ principles:
       use Reactive or Virtual Threads. The OS-level worker thread MUST be
       released during the I/O wait so other Agents can proceed. (LucioIT W1 §6.3.)
     operationalised_by_rules:
-      - Rule-37
+      - Rule-R-G
     deferred_operationalisers:
-      - Rule-37.c   # agent-service service.platform JdbcTemplate migration to R2DBC — W2 (was agent-platform pre-Phase-C / ADR-0078)
+      - Rule-R-G.c   # agent-service service.platform JdbcTemplate migration to R2DBC — W2 (was agent-platform pre-Phase-C / ADR-0078)
 
   - id: P-H
     name: "Chronos Hydration"
@@ -118,7 +114,7 @@ principles:
       (SuspendSignal), not physical thread sleep. The sleeping process
       self-destructs and re-hydrates on the bus wake-pulse. (LucioIT W1 §6.4.)
     operationalised_by_rules:
-      - Rule-38
+      - Rule-R-H
 
   - id: P-I
     name: "Five-Plane Distributed Topology"
@@ -129,7 +125,7 @@ principles:
       code), and Evolution (Python ML). Workloads with different
       characteristics MUST NOT share infrastructure. (LucioIT W1 §7.1.)
     operationalised_by_rules:
-      - Rule-39
+      - Rule-R-I
 
   - id: P-J
     name: "Storage-Engine Tenant Isolation"
@@ -139,9 +135,10 @@ principles:
       a fully-compromised application tier cannot leak across tenants.
       (LucioIT W1 §7.2.)
     operationalised_by_rules:
-      - Rule-40
+      - Rule-R-J
     deferred_operationalisers:
-      - Rule-40.b   # V1/V2 grandfathered RLS retrofit — W2
+      - Rule-R-J.a.b   # V1/V2 grandfathered RLS retrofit — W2
+      - Rule-R-J.b.d   # resume + retry re-authorization — W2 async orchestrator
 
   - id: P-K
     name: "Skill-Dimensional Resource Arbitration"
@@ -151,9 +148,9 @@ principles:
       the Agent processes blocked on that specific skill, freeing OS threads
       for unrelated work. (LucioIT W1 §7.3.)
     operationalised_by_rules:
-      - Rule-41
+      - Rule-R-K
     deferred_operationalisers:
-      - Rule-41.b   # ResilienceContract.resolve runtime enforcement — W1.x Phase 6
+      - Rule-R-K.b   # ResilienceContract.resolve runtime enforcement — W1.x Phase 6
 
   - id: P-L
     name: "Sandbox Permission Subsumption"
@@ -163,9 +160,9 @@ principles:
       A logical grant cannot exceed what the physical sandbox enforces;
       otherwise the runtime authority is fictional. (LucioIT W1 §7.4.)
     operationalised_by_rules:
-      - Rule-42
+      - Rule-R-L
     deferred_operationalisers:
-      - Rule-42.b   # SandboxExecutor runtime subsumption check — W2
+      - Rule-R-L.b   # SandboxExecutor runtime subsumption check — W2
 
   # ---------------------------------------------------------------------
   # W2.x Engine Contract Structural Wave — heterogeneous engine contract
@@ -187,18 +184,13 @@ principles:
       only server-controlled execution scope by default. (2026-05-15
       L0 proposal §3-§7.)
     operationalised_by_rules:
-      - Rule-43   # Engine Envelope Single Authority
-      - Rule-44   # Strict Engine Matching
-      - Rule-45   # Runtime-Owned Middleware via Engine Hooks
-      - Rule-46   # S2C Callback Envelope + Lifecycle Bound
-      - Rule-47   # Evolution Scope Default Boundary
-      - Rule-80   # NEW (rc4 review P0-1 — S2cCallbackSignal historical-only in authority)
+      - Rule-R-M
     cross_cutting_invariant:
-      rule: Rule-48   # Schema-First Domain Contracts
+      rule: Rule-M-2.a   # Schema-First Domain Contracts
       description: |
         Every contract introduced under P-M MUST ship as yaml schema first,
         Java type that validates against the schema second, and runtime
-        self-validation third. Rule 48 makes this gate-enforced beyond the
+        self-validation third. Rule M-2 sub-clause .a makes this gate-enforced beyond the
         wave so future domain contracts inherit the discipline.
 
 # Legacy first-principle labels preserved for graph backward-compatibility.
@@ -212,10 +204,10 @@ legacy_principles:
     name: "Lower onboarding barrier"
     composes_with: P-A
     operationalised_by_rules:
-      - Rule-6
-      - Rule-20
-      - Rule-21
-      - Rule-29
+      - Rule-D-8
+      - Rule-R-C.d
+      - Rule-R-C.e
+      - Rule-R-A
     operationalised_by_arch_sections:
       - "ARCHITECTURE.md §4.7"
       - "ARCHITECTURE.md §4.2"
