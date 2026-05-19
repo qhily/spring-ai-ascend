@@ -236,7 +236,7 @@ Enforced by [`rule-40.md`](docs/governance/rules/rule-40.md).
 ---
 #### Rule 41 — Skill Capacity Matrix
 
-**`docs/governance/skill-capacity.yaml` MUST exist and declare, per skill, both `capacity_per_tenant` and `global_capacity` fields plus a `queue_strategy` (`suspend` or `fail`). The runtime `ResilienceContract.resolve(tenant, skill)` MUST consult this matrix; over-cap callers are SUSPENDED, not rejected (Chronos Hydration interlock with Rule 38).**
+**`docs/governance/skill-capacity.yaml` MUST exist and declare, per skill, both `capacity_per_tenant` and `global_capacity` fields plus a `queue_strategy` (`suspend` or `fail`). The runtime `ResilienceContract.resolve(tenant, skill)` MUST consult this matrix; over-capacity resolution MUST return `SkillResolution.reject(SuspendReason.RateLimited)` rather than admit-or-fail. The actual `Run`/dependent-step suspension transition is deferred to Rule 41.c (W2 scheduler admission). Chronos Hydration interlock with Rule 38.**
 
 Enforced by [`rule-41.md`](docs/governance/rules/rule-41.md).
 
@@ -473,7 +473,7 @@ Enforced by [`rule-91.md`](docs/governance/rules/rule-91.md).
 ---
 #### Rule 92 — Gate Rules Corpus Freshness
 
-**Every `# Rule N — slug` header in `gate/check_architecture_sync.sh` (before the END marker) MUST have a matching `gate/rules/rule-NNN[a-z]?.sh` file (zero-padded to 3 digits, optional lowercase letter suffix). `gate/rules/` is an IDE-only generated artifact (refreshed by `gate/lib/extract_rules.sh`) — the production parallel gate consumes the canonical monolith directly. Closes rc8 post-corrective review P2-1: an incomplete shadow rule corpus drifting stale relative to canonical.**
+**Every `# Rule N — slug` header in `gate/check_architecture_sync.sh` (before the END marker) MUST have a matching `gate/rules/rule-NNN[a-z]?.sh` file (zero-padded to 3 digits, optional lowercase letter suffix). Files are keyed by unique rule id; a rule with multiple gate sections sharing the same id (Rule 11 + Rule 28 today) maps to a single file — so the `active_gate_checks` baseline (executable section count) MAY exceed the `gate/rules/` file count by the number of duplicated section ids. `gate/rules/` is an IDE-only generated artifact (refreshed by `gate/lib/extract_rules.sh`) — the production parallel gate consumes the canonical monolith directly. Closes rc8 post-corrective review P2-1 + rc10 post-corrective review P2-1: an incomplete shadow rule corpus drifting stale relative to canonical AND prose imprecision about file count vs section count.**
 
 Enforced by [`rule-92.md`](docs/governance/rules/rule-92.md).
 
@@ -487,7 +487,7 @@ Enforced by [`rule-93.md`](docs/governance/rules/rule-93.md).
 ---
 #### Rule 94 — Active Corpus Deleted-Module Name Truth
 
-**Every active `.md`, `.yaml`, and `*.java` file (excluding `docs/archive/`, `docs/reviews/`, `docs/releases/2026-05-1[0-7]-*.md`, fenced code blocks, and yaml comment lines) MUST NOT contain a current-tense word-boundary reference to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter negative-filtered against `agent-runtime-core`) outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`, `merged into`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`, `post-ADR-NNNN`) within ±3 lines. Closes rc8 post-corrective review P1-3: ARCHITECTURE.md #59, McpReplaySurfaceArchTest Javadoc, and rule-37.md still used deleted module names; Rule 87 only covered `architecture-status.yaml#allowed_claim` — Rule 94 widens the same discipline to the broader corpus.**
+**Every active `.md`, `.yaml`, `.yml`, and `*.java` file in the repo (excluding `target/`, `.git/`, `node_modules/`, `docs/archive/`, `docs/adr/`, `docs/reviews/`, `docs/releases/2026-05-1[0-8]-*.md` + rc1..rc10 historical release notes, fenced code blocks, and the explicit historical-by-location exemption list defined in `gate/check_architecture_sync.sh` Rule 94 block) MUST NOT contain a current-tense word-boundary reference to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter negative-filtered against `agent-runtime-core`) outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`/`consolidated from`/`consolidation of`, `merged into`/`merger of`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`/`Extracted from`, `post-ADR-NNNN`, `post-Phase-C`/`after Phase C`, `ADR-NNNN`, `subsumes prior`, etc.) within ±3 lines. Closes rc8 post-corrective P1-3 (rc9) + rc10 post-corrective Rule 94 kernel-vs-implementation drift (rc11): rc9 kernel said "every active .md/.yaml/.java" but the rc9 impl scanned only 3 narrow surfaces (ARCHITECTURE.md + rule cards + test Javadocs); rc11 widens the impl to match the kernel.**
 
 Enforced by [`rule-94.md`](docs/governance/rules/rule-94.md).
 
@@ -501,7 +501,7 @@ Enforced by [`rule-95.md`](docs/governance/rules/rule-95.md).
 ---
 #### Rule 96 — Kernel-Deferred Clause Coherence
 
-**For every `## Rule N.<letter>` sub-clause heading in `docs/CLAUDE-deferred.md`, the matching `#### Rule N` kernel block in `CLAUDE.md` (between the heading and the next `---`) MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective review P1-1: Rule 42 and Rule 46 active kernels stated current-tense `MUST` for behavior CLAUDE-deferred.md correctly assigns to W2 sub-clauses; downstream readers couldn't reconcile the two authoritative sources. Rule 96 enforces the bidirectional link.**
+**For every `## Rule N.<letter>` sub-clause heading in `docs/CLAUDE-deferred.md`, EITHER the matching `#### Rule N` kernel block in `CLAUDE.md` (between the heading and the next `---`) OR the matching `docs/governance/rules/rule-NN.md` card MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective review P1-1 + rc10 post-corrective review P1-3 (kernel-vs-implementation alignment): cards have more room than always-loaded kernels, so a rule with a long deferred discussion can cite there without bloating CLAUDE.md.**
 
 Enforced by [`rule-96.md`](docs/governance/rules/rule-96.md).
 
@@ -517,9 +517,25 @@ Enforced by [`rule-97.md`](docs/governance/rules/rule-97.md).
 ---
 #### Rule 98 — Broad-Corpus Deleted-Module-Name Truth
 
-**Files under `ops/**/*.{yaml,yml,tpl}`, `docs/contracts/*.yaml`, and `**/module-metadata.yaml` (excluding `docs/archive/`, `docs/reviews/`, and `docs/releases/2026-05-1[0-7]-*.md`) MUST NOT contain word-boundary current-tense references to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter NOT matching `agent-runtime-core`) outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`, `merged into`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`, `post-ADR-NNNN`, `forbidden_dependencies`, etc.) within ±3 lines. Closes rc10 category-sweep I-ε family: Rule 94 narrowly scans (ARCHITECTURE.md, `docs/governance/rules/*.md`, `agent-*/src/test/java/**/*{Test,IT}.java`) and explicitly exempts `docs/contracts/openapi-v1.yaml`, `*/src/test/resources/*`, and `ops/` — leaks in the Helm chart triplet, the live OpenAPI contract owner field, and the BoM module-metadata.yaml description survived rc9's prevention wave.**
+**Files under `ops/**/*.{yaml,yml,tpl,md}`, `docs/contracts/*.yaml`, and `**/module-metadata.yaml` (excluding `docs/archive/`, `docs/reviews/`, and `docs/releases/2026-05-1[0-7]-*.md`) MUST NOT contain word-boundary current-tense references to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter NOT matching `agent-runtime-core`) — including inside YAML comment lines — outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`, `merged into`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`, `post-ADR-NNNN`, `forbidden_dependencies`, etc.) within ±3 lines. Closes rc10 category-sweep I-ε family (rc10) + rc10 post-corrective P1-2 (rc11): operational Markdown runbooks (`ops/**/*.md`) and YAML comment lines were outside the original Rule 98 scope, allowing 4 leaks to survive rc10's prevention wave.**
 
 Enforced by [`rule-98.md`](docs/governance/rules/rule-98.md).
+
+---
+
+### rc10 post-corrective review response prevention wave (2026-05-19)
+#### Rule 99 — Kernel Terminal-Verb vs Shipped-Decision Check
+
+**For every `#### Rule N` kernel block in `CLAUDE.md`, if a matching `## Rule N.<letter>` sub-clause exists in `docs/CLAUDE-deferred.md` AND the kernel body uses end-state verb tokens implying a shipped Run-state transition (`are SUSPENDED`, `is SUSPENDED`, `transitions to FAILED`, `consumes the * capacity`, `is rejected, not failed`, `admits the caller`), the gate MUST FAIL. The active kernel is overclaiming shipped behaviour when the matching obligation is explicitly deferred. Closes rc10 post-corrective review P1-1 (J-α family): Rule 41 kernel said "over-cap callers are SUSPENDED, not rejected" while `DefaultSkillResilienceContract.resolve` returns a decision envelope (`SkillResolution.reject(SuspendReason.RateLimited)`); the actual Run-state transition is deferred to Rule 41.c (W2 scheduler admission).**
+
+Enforced by [`rule-99.md`](docs/governance/rules/rule-99.md).
+
+---
+#### Rule 100 — Kernel-Implementation Disjunction Truth
+
+**For every rule listed in `gate/rule-100-disjunction-allowlist.txt`, BOTH the `#### Rule N` kernel block in `CLAUDE.md` AND the matching `docs/governance/rules/rule-NN.md` card MUST contain explicit disjunction wording (`EITHER` / `OR` / `either surface` / `either ... or ...` / `either kernel` / `either the`). The allow-list captures rules whose gate-script implementation uses `||` (disjunction) on the asserted conditions — the kernel and card MUST honestly declare the disjunction so a reader can reconcile the implemented policy with the documented contract. Closes rc10 post-corrective review P1-3 (J-γ family): Rule 96 kernel said "the matching CLAUDE.md kernel block MUST contain" while the impl accepted EITHER the kernel OR the rule card — a kernel-AND-impl-OR drift in the rule whose whole job is preventing kernel/deferred drift.**
+
+Enforced by [`rule-100.md`](docs/governance/rules/rule-100.md).
 
 ---
 

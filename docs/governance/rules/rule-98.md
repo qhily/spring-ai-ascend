@@ -4,12 +4,12 @@ title: "Broad-Corpus Deleted-Module-Name Truth"
 level: L0
 view: development
 principle_ref: P-D
-authority_refs: [ADR-0078, ADR-0084, "rc10 category-sweep I-ε family"]
+authority_refs: [ADR-0078, ADR-0084, ADR-0085, "rc10 category-sweep I-ε family", "rc10 post-corrective review P1-2"]
 enforcer_refs: [E137, E138]
 status: active
 kernel_cap: 8
 kernel: |
-  **Files under `ops/**/*.{yaml,yml,tpl}`, `docs/contracts/*.yaml`, and `**/module-metadata.yaml` (excluding `docs/archive/`, `docs/reviews/`, and `docs/releases/2026-05-1[0-7]-*.md`) MUST NOT contain word-boundary current-tense references to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter NOT matching `agent-runtime-core`) outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`, `merged into`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`, `post-ADR-NNNN`, `forbidden_dependencies`, etc.) within ±3 lines. Closes rc10 category-sweep I-ε family: Rule 94 narrowly scans (ARCHITECTURE.md, `docs/governance/rules/*.md`, `agent-*/src/test/java/**/*{Test,IT}.java`) and explicitly exempts `docs/contracts/openapi-v1.yaml`, `*/src/test/resources/*`, and `ops/` — leaks in the Helm chart triplet, the live OpenAPI contract owner field, and the BoM module-metadata.yaml description survived rc9's prevention wave.**
+  **Files under `ops/**/*.{yaml,yml,tpl,md}`, `docs/contracts/*.yaml`, and `**/module-metadata.yaml` (excluding `docs/archive/`, `docs/reviews/`, and `docs/releases/2026-05-1[0-7]-*.md`) MUST NOT contain word-boundary current-tense references to the pre-Phase-C module names `agent-platform` or `agent-runtime` (the latter NOT matching `agent-runtime-core`) — including inside YAML comment lines — outside an explicit historical marker (`historical`, `pre-ADR-NNNN`, `pre-Phase-C`, `consolidated into`, `merged into`, `was rooted`, `formerly`, `superseded`, `deprecated`, `archived`, `moved`, `extracted per ADR-NNNN`, `post-ADR-NNNN`, `forbidden_dependencies`, etc.) within ±3 lines. Closes rc10 category-sweep I-ε family (rc10) + rc10 post-corrective P1-2 (rc11): operational Markdown runbooks (`ops/**/*.md`) and YAML comment lines were outside the original Rule 98 scope, allowing 4 leaks to survive rc10's prevention wave.**
 ---
 
 # Rule 98 — Broad-Corpus Deleted-Module-Name Truth

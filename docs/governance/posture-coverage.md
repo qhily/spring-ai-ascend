@@ -14,12 +14,14 @@ at startup; never hard-coded at call sites.
 
 ## L1 posture coverage
 
+> Module column lists `agent-service/platform/...` and `agent-service/runtime/...` sub-packages — post-Phase-C / ADR-0078 (pre-Phase-C these were the separate `agent-platform` and `agent-runtime` reactor modules).
+
 | Module | dev | research | prod |
 |--------|-----|----------|------|
-| `agent-platform` — tenant filter, idempotency filter, `IdempotencyStore` | warn + permissive | reject / throw | reject / throw |
-| `agent-platform` — JWT validation, posture boot guard, `@RequiredConfig` | warn + permissive | reject / throw at startup | reject / throw at startup |
-| `agent-runtime` — `SyncOrchestrator`, `InMemoryRunRegistry`, `InMemoryCheckpointer` | permissive (`AppPostureGate.requireDev` passes with WARN) | `IllegalStateException` at construction | `IllegalStateException` at construction |
-| `agent-runtime` — `InMemoryCheckpointer` 16-KiB payload cap (§4 #13) | WARN on oversize | throw on oversize | throw on oversize |
+| `agent-service/platform` — tenant filter, idempotency filter, `IdempotencyStore` | warn + permissive | reject / throw | reject / throw |
+| `agent-service/platform` — JWT validation, posture boot guard, `@RequiredConfig` | warn + permissive | reject / throw at startup | reject / throw at startup |
+| `agent-service/runtime` — `SyncOrchestrator`, `InMemoryRunRegistry`, `InMemoryCheckpointer` | permissive (`AppPostureGate.requireDev` passes with WARN) | `IllegalStateException` at construction | `IllegalStateException` at construction |
+| `agent-service/runtime` — `InMemoryCheckpointer` 16-KiB payload cap (§4 #13) | WARN on oversize | throw on oversize | throw on oversize |
 | `spring-ai-ascend-graphmemory-starter` | no bean registered | no bean registered | no bean registered |
 
 Tests MUST cover `dev` and `research` paths for any new contract.

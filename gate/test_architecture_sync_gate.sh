@@ -4783,6 +4783,320 @@ fi
 }
 
 # ---------------------------------------------------------------------------
+# Rule 96 positive (rc11): card-only path — Rule N.b cited in the rule card
+# (not the kernel) MUST pass. Closes rc10 P1-3 (kernel-OR-card alignment).
+# ---------------------------------------------------------------------------
+test_rule_96_card_only_pos() {
+_r96_card_root="$scratch/r96_card_only"
+mkdir -p "$_r96_card_root/docs/governance/rules" "$_r96_card_root/docs"
+cat > "$_r96_card_root/CLAUDE.md" <<'SHEOF'
+#### Rule 50 — Sample
+
+**Active surface only. The deferred runtime obligation lives in the card.**
+
+Enforced by [`rule-50.md`](docs/governance/rules/rule-50.md).
+
+---
+SHEOF
+cat > "$_r96_card_root/docs/CLAUDE-deferred.md" <<'SHEOF'
+## Rule 50.b — Deferred Behaviour [Deferred to W2]
+SHEOF
+cat > "$_r96_card_root/docs/governance/rules/rule-50.md" <<'SHEOF'
+---
+rule_id: 50
+title: "Sample"
+---
+
+## Rule 50.b
+The card references Rule 50.b explicitly.
+SHEOF
+# Replicate the Rule 96 disjunction-coherence check
+_r96_card_missing=""
+while IFS= read -r _r96_sub; do
+  _r96_num=$(echo "$_r96_sub" | grep -oE '^[0-9]+')
+  _r96_letter=$(echo "$_r96_sub" | grep -oE '\.[a-z]$' | sed 's/^\.//')
+  [[ -z "$_r96_num" || -z "$_r96_letter" ]] && continue
+  _r96_ref="Rule ${_r96_num}.${_r96_letter}"
+  _r96_block=$(awk -v rn="$_r96_num" '
+    $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+    in_block && /^---$/ { exit }
+    in_block { print }
+  ' "$_r96_card_root/CLAUDE.md")
+  [[ -z "$_r96_block" ]] && continue
+  _r96_card="$_r96_card_root/docs/governance/rules/rule-${_r96_num}.md"
+  _r96_kernel_has=0
+  _r96_card_has=0
+  echo "$_r96_block" | grep -qF "$_r96_ref" && _r96_kernel_has=1
+  [[ -f "$_r96_card" ]] && grep -qF "$_r96_ref" "$_r96_card" && _r96_card_has=1
+  if [[ $_r96_kernel_has -eq 0 ]] && [[ $_r96_card_has -eq 0 ]]; then
+    _r96_card_missing="${_r96_card_missing}${_r96_ref} "
+  fi
+done < <(grep -oE '^## Rule [0-9]+\.[a-z]' "$_r96_card_root/docs/CLAUDE-deferred.md" | sed -E 's/^## Rule //')
+if [[ -z "$_r96_card_missing" ]]; then
+  ok "rule_96_card_only_pos" "Rule 96 correctly accepts card-only citation of Rule 50.b (kernel empty, card cites)"
+else
+  fail "rule_96_card_only_pos" "card-only path failed: $_r96_card_missing"
+fi
+}
+
+# ---------------------------------------------------------------------------
+# Rule 99 positive: Rule N kernel with decision-envelope verb + matching deferred sub-clause → PASS
+# ---------------------------------------------------------------------------
+test_rule_99_kernel_verb_pos() {
+_r99_pos_root="$scratch/r99_pos"
+mkdir -p "$_r99_pos_root/docs"
+cat > "$_r99_pos_root/CLAUDE.md" <<'SHEOF'
+#### Rule 51 — Skill Capacity (positive sample)
+
+**The runtime resolver MUST consult the matrix; over-capacity resolution MUST return SkillResolution.reject(SuspendReason.RateLimited) rather than admit-or-fail. The actual transition is deferred to Rule 51.c (W2 scheduler admission).**
+
+---
+SHEOF
+cat > "$_r99_pos_root/docs/CLAUDE-deferred.md" <<'SHEOF'
+## Rule 51.c — Run/Step Suspension Transition [Deferred to W2]
+SHEOF
+# Replicate Rule 99 check
+_r99_end_verbs='are SUSPENDED|is SUSPENDED|callers are SUSPENDED|transitions to FAILED|transitions to SUSPENDED|consumes the .* capacity|is rejected, not failed|admits the caller'
+_r99_pos_violations=$(awk -v end_verbs="$_r99_end_verbs" -v defnums="51 " '
+  BEGIN { rule = ""; body = "" }
+  /^#### Rule [0-9]+/ {
+    if (rule) emit()
+    match($0, /^#### Rule ([0-9]+)/, m)
+    rule = m[1]; body = ""; next
+  }
+  /^---$/ && rule { emit(); rule = ""; next }
+  rule { body = body $0 " " }
+  END { if (rule) emit() }
+  function emit() {
+    has_deferred = 0
+    n = split(defnums, dn, " ")
+    for (i = 1; i <= n; i++) if (dn[i] == rule) has_deferred = 1
+    if (!has_deferred) return
+    if (body ~ end_verbs) {
+      match(body, end_verbs)
+      v = substr(body, RSTART, RLENGTH)
+      print "Rule " rule ":" v
+    }
+  }
+' "$_r99_pos_root/CLAUDE.md")
+if [[ -z "$_r99_pos_violations" ]]; then
+  ok "rule_99_kernel_verb_pos" "Rule 99 correctly accepts decision-envelope kernel"
+else
+  fail "rule_99_kernel_verb_pos" "expected pass, got: $_r99_pos_violations"
+fi
+}
+
+# ---------------------------------------------------------------------------
+# Rule 99 negative: Rule N kernel with end-state verb + matching deferred sub-clause → FAIL
+# ---------------------------------------------------------------------------
+test_rule_99_kernel_verb_neg() {
+_r99_neg_root="$scratch/r99_neg"
+mkdir -p "$_r99_neg_root/docs"
+cat > "$_r99_neg_root/CLAUDE.md" <<'SHEOF'
+#### Rule 51 — Skill Capacity (negative sample)
+
+**The runtime resolver MUST consult the matrix; over-cap callers are SUSPENDED, not rejected (W2 scheduler admission per Rule 51.c).**
+
+---
+SHEOF
+cat > "$_r99_neg_root/docs/CLAUDE-deferred.md" <<'SHEOF'
+## Rule 51.c — Run/Step Suspension Transition [Deferred to W2]
+SHEOF
+_r99_end_verbs='are SUSPENDED|is SUSPENDED|callers are SUSPENDED|transitions to FAILED|transitions to SUSPENDED|consumes the .* capacity|is rejected, not failed|admits the caller'
+_r99_neg_violations=$(awk -v end_verbs="$_r99_end_verbs" -v defnums="51 " '
+  BEGIN { rule = ""; body = "" }
+  /^#### Rule [0-9]+/ {
+    if (rule) emit()
+    match($0, /^#### Rule ([0-9]+)/, m)
+    rule = m[1]; body = ""; next
+  }
+  /^---$/ && rule { emit(); rule = ""; next }
+  rule { body = body $0 " " }
+  END { if (rule) emit() }
+  function emit() {
+    has_deferred = 0
+    n = split(defnums, dn, " ")
+    for (i = 1; i <= n; i++) if (dn[i] == rule) has_deferred = 1
+    if (!has_deferred) return
+    if (body ~ end_verbs) {
+      match(body, end_verbs)
+      v = substr(body, RSTART, RLENGTH)
+      print "Rule " rule ":" v
+    }
+  }
+' "$_r99_neg_root/CLAUDE.md")
+if [[ -n "$_r99_neg_violations" ]]; then
+  ok "rule_99_kernel_verb_neg" "Rule 99 correctly flags end-state verb in active kernel with deferred sub-clause: $_r99_neg_violations"
+else
+  fail "rule_99_kernel_verb_neg" "expected violation, got none"
+fi
+}
+
+# ---------------------------------------------------------------------------
+# Rule 100 positive: allow-listed rule with kernel + card both carrying EITHER/OR wording → PASS
+# ---------------------------------------------------------------------------
+test_rule_100_disjunction_pos() {
+_r100_pos_root="$scratch/r100_pos"
+mkdir -p "$_r100_pos_root/docs/governance/rules" "$_r100_pos_root/gate"
+cat > "$_r100_pos_root/CLAUDE.md" <<'SHEOF'
+#### Rule 96 — Kernel-Deferred Clause Coherence
+
+**EITHER the kernel block OR the rule card MUST contain the literal reference.**
+
+---
+SHEOF
+cat > "$_r100_pos_root/docs/governance/rules/rule-96.md" <<'SHEOF'
+---
+rule_id: 96
+---
+
+EITHER the kernel block OR the rule card carries the reference.
+SHEOF
+cat > "$_r100_pos_root/gate/rule-100-disjunction-allowlist.txt" <<'SHEOF'
+96
+SHEOF
+_r100_pos_violations=""
+while IFS= read -r _r100_rule; do
+  [[ -z "$_r100_rule" || "$_r100_rule" =~ ^[[:space:]]*# ]] && continue
+  _r100_card="$_r100_pos_root/docs/governance/rules/rule-${_r100_rule}.md"
+  _r100_block=$(awk -v rn="$_r100_rule" '
+    $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+    in_block && /^---$/ { exit }
+    in_block { print }
+  ' "$_r100_pos_root/CLAUDE.md")
+  _r100_kh=0; _r100_ch=0
+  echo "$_r100_block" | grep -qE '\bEITHER\b|\bOR\b|either surface|either kernel|either the' && _r100_kh=1
+  [[ -f "$_r100_card" ]] && grep -qE '\bEITHER\b|\bOR\b|either surface|either kernel|either the' "$_r100_card" && _r100_ch=1
+  if [[ $_r100_kh -eq 0 || $_r100_ch -eq 0 ]]; then
+    _r100_pos_violations="${_r100_pos_violations}Rule ${_r100_rule} (kernel=$_r100_kh, card=$_r100_ch) "
+  fi
+done < "$_r100_pos_root/gate/rule-100-disjunction-allowlist.txt"
+if [[ -z "$_r100_pos_violations" ]]; then
+  ok "rule_100_disjunction_pos" "Rule 100 correctly accepts EITHER/OR-aligned kernel + card"
+else
+  fail "rule_100_disjunction_pos" "expected pass, got: $_r100_pos_violations"
+fi
+}
+
+# ---------------------------------------------------------------------------
+# Rule 100 negative: allow-listed rule with kernel missing EITHER/OR wording → FAIL
+# ---------------------------------------------------------------------------
+test_rule_100_disjunction_neg() {
+_r100_neg_root="$scratch/r100_neg"
+mkdir -p "$_r100_neg_root/docs/governance/rules" "$_r100_neg_root/gate"
+cat > "$_r100_neg_root/CLAUDE.md" <<'SHEOF'
+#### Rule 96 — Kernel-Deferred Clause Coherence
+
+**The matching CLAUDE.md kernel block MUST contain the literal reference.**
+
+---
+SHEOF
+cat > "$_r100_neg_root/docs/governance/rules/rule-96.md" <<'SHEOF'
+---
+rule_id: 96
+---
+
+The matching CLAUDE.md kernel block must contain the reference.
+SHEOF
+cat > "$_r100_neg_root/gate/rule-100-disjunction-allowlist.txt" <<'SHEOF'
+96
+SHEOF
+_r100_neg_violations=""
+while IFS= read -r _r100_rule; do
+  [[ -z "$_r100_rule" || "$_r100_rule" =~ ^[[:space:]]*# ]] && continue
+  _r100_card="$_r100_neg_root/docs/governance/rules/rule-${_r100_rule}.md"
+  _r100_block=$(awk -v rn="$_r100_rule" '
+    $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+    in_block && /^---$/ { exit }
+    in_block { print }
+  ' "$_r100_neg_root/CLAUDE.md")
+  _r100_kh=0; _r100_ch=0
+  echo "$_r100_block" | grep -qE '\bEITHER\b|\bOR\b|either surface|either kernel|either the' && _r100_kh=1
+  [[ -f "$_r100_card" ]] && grep -qE '\bEITHER\b|\bOR\b|either surface|either kernel|either the' "$_r100_card" && _r100_ch=1
+  if [[ $_r100_kh -eq 0 || $_r100_ch -eq 0 ]]; then
+    _r100_neg_violations="${_r100_neg_violations}Rule ${_r100_rule} (kernel=$_r100_kh, card=$_r100_ch) "
+  fi
+done < "$_r100_neg_root/gate/rule-100-disjunction-allowlist.txt"
+if [[ -n "$_r100_neg_violations" ]]; then
+  ok "rule_100_disjunction_neg" "Rule 100 correctly flags missing EITHER/OR wording: $_r100_neg_violations"
+else
+  fail "rule_100_disjunction_neg" "expected violation, got none"
+fi
+}
+
+# ---------------------------------------------------------------------------
+# Rule 98 ops/**/*.md widening (rc11): synthetic ops/runbooks/x.md with bare
+# `agent-platform` and no marker → FAIL; same with `post-Phase-C` marker → PASS.
+# ---------------------------------------------------------------------------
+test_rule_98_ops_runbook_md_neg() {
+_r98omd_root="$scratch/r98_ops_md_neg"
+mkdir -p "$_r98omd_root/ops/runbooks"
+cat > "$_r98omd_root/ops/runbooks/test.md" <<'SHEOF'
+# Test runbook
+This calls into agent-platform deployment.
+SHEOF
+# Replicate Rule 98 awk with rc11 widening (ops/**/*.md included, comments scanned)
+_r98omd_markers='historical|pre-Phase-C|consolidated into|formerly|superseded|deprecated|moved|extracted per ADR-[0-9]+|post-ADR-[0-9]+|post-Phase-C|ADR-[0-9]+|forbidden_dependencies'
+_r98omd_hits=$(awk -v markers="$_r98omd_markers" '
+  BEGIN {
+    ap_re = "(^|[^a-zA-Z0-9_-])agent-platform([^a-zA-Z0-9_-]|$)"
+  }
+  { lines[NR] = $0 }
+  END {
+    for (i = 1; i <= NR; i++) {
+      line = lines[i]
+      if (line ~ ap_re) {
+        lo = i - 3; if (lo < 1) lo = 1
+        hi = i + 3; if (hi > NR) hi = NR
+        window = ""
+        for (j = lo; j <= hi; j++) window = window " " lines[j]
+        if (window !~ markers) print i ":" line
+      }
+    }
+  }
+' "$_r98omd_root/ops/runbooks/test.md")
+if [[ -n "$_r98omd_hits" ]]; then
+  ok "rule_98_ops_runbook_md_neg" "Rule 98 widened scope catches ops/runbooks/*.md leakage: $_r98omd_hits"
+else
+  fail "rule_98_ops_runbook_md_neg" "expected violation in ops/runbooks/*.md, got none"
+fi
+}
+
+test_rule_98_ops_runbook_md_pos() {
+_r98omd_pos_root="$scratch/r98_ops_md_pos"
+mkdir -p "$_r98omd_pos_root/ops/runbooks"
+cat > "$_r98omd_pos_root/ops/runbooks/test.md" <<'SHEOF'
+# Test runbook (post-Phase-C / ADR-0078)
+Pre-Phase-C this called into agent-platform deployment;
+now lands on agent-service deployment.
+SHEOF
+_r98omd_markers='historical|pre-Phase-C|consolidated into|formerly|superseded|deprecated|moved|extracted per ADR-[0-9]+|post-ADR-[0-9]+|post-Phase-C|ADR-[0-9]+|forbidden_dependencies'
+_r98omd_pos_hits=$(awk -v markers="$_r98omd_markers" '
+  BEGIN {
+    ap_re = "(^|[^a-zA-Z0-9_-])agent-platform([^a-zA-Z0-9_-]|$)"
+  }
+  { lines[NR] = $0 }
+  END {
+    for (i = 1; i <= NR; i++) {
+      line = lines[i]
+      if (line ~ ap_re) {
+        lo = i - 3; if (lo < 1) lo = 1
+        hi = i + 3; if (hi > NR) hi = NR
+        window = ""
+        for (j = lo; j <= hi; j++) window = window " " lines[j]
+        if (window !~ markers) print i ":" line
+      }
+    }
+  }
+' "$_r98omd_pos_root/ops/runbooks/test.md")
+if [[ -z "$_r98omd_pos_hits" ]]; then
+  ok "rule_98_ops_runbook_md_pos" "Rule 98 widened scope accepts marked ops/runbooks/*.md"
+else
+  fail "rule_98_ops_runbook_md_pos" "expected pass with markers, got: $_r98omd_pos_hits"
+fi
+}
+
+# ---------------------------------------------------------------------------
 # PR-E4: Parallel orchestrator.
 #
 # Each test_rule*() function is independent (uses its own $scratch/r<N>_*

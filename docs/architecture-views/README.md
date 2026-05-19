@@ -108,7 +108,7 @@ When an L1 or L2 diagram is added:
 ## Naming rules
 
 - The L0 capability name is **Agent Service**.
-- Repository or module names may still contain `agent-runtime` when describing current code layout.
+- Repository or module names may still contain the deleted module name `agent-runtime` when describing pre-Phase-C code layout in historical context — current layout names `agent-service` and `agent-runtime-core` (post-ADR-0078 / post-ADR-0079).
 - L0 architectural diagrams should not use the retired **Agent Runtime** wording as a core capability name.
 
 ## Gate

@@ -37,7 +37,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verification level | **U2** at sha cd13612 |
 | Verified-at-sha | cd13612 |
 | APIs cited | `ChatClient`, `ChatModel`, `EmbeddingModel`, `VectorStore` (package `org.springframework.ai.*`) |
-| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
+| Probe | `agent-service/.../runtime/probe/OssApiProbe.java` (post-Phase-C / ADR-0078; pre-Phase-C path was `agent-runtime/.../probe/OssApiProbe.java`) |
 | Planned glue (W2) | `ChatClientFactory`, `LlmRouter`, `PgVectorAdapter` (implementation paths not yet created; scheduled for W2) |
 | Risks | (a) Milestone API may shift between M5 and GA; gate/check_spring_ai_milestone.sh fails CI past 2026-08-01 if still on M-version, forcing re-eval. (b) 2.0 GA expected ~mid-2026 -- plan W2 upgrade. |
 | Upgrade trigger | 2.0 GA; or gate fires |
@@ -52,7 +52,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verification level | **U2** at sha cd13612 |
 | Verified-at-sha | cd13612 |
 | APIs cited | `Workflow`, `WorkflowInterface`, `WorkflowMethod`, `ActivityInterface`, `ActivityMethod`, `WorkflowClient` (package `io.temporal.*`) |
-| Probe | `agent-runtime/.../probe/OssApiProbe.java#temporalGetVersionShape()` |
+| Probe | `agent-service/.../runtime/probe/OssApiProbe.java#temporalGetVersionShape()` (post-Phase-C / ADR-0078; pre-Phase-C path was `agent-runtime/.../probe/OssApiProbe.java`) |
 | Planned glue (W2) | `RunWorkflow`, `RunWorkflowImpl`, `LlmCallActivity`, `ToolCallActivity` (implementation paths not yet created; scheduled for W2) |
 | Risks | Workflow determinism lint required; `getVersion` markers must be retired >= 30 days after rollout |
 | Upgrade trigger | Minor every 90 days; major every 12 months |
@@ -67,7 +67,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verification level | **U2** at sha cd13612 |
 | Verified-at-sha | cd13612 |
 | APIs cited | `McpClient`, `McpSyncClient`, `McpAsyncClient` (package `io.modelcontextprotocol.client`); `McpSchema` (package `io.modelcontextprotocol.spec`) |
-| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
+| Probe | `agent-service/.../runtime/probe/OssApiProbe.java` (post-Phase-C / ADR-0078; pre-Phase-C path was `agent-runtime/.../probe/OssApiProbe.java`) |
 | Planned glue (W2) | `McpToolRegistry` (implementation path not yet created; scheduled for W2) |
 | Risks | MCP spec continues evolving; 1.0.0 is first stable release; server transports (SSE, streamable-HTTP) are part of the API |
 | Upgrade trigger | Patch as available; minor when a needed MCP server feature requires it |
@@ -83,7 +83,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verified-at-sha | cd13612 |
 | APIs cited | `AutoDetectParser`, `Metadata` (package `org.apache.tika.*`) |
 | Breaking change vs 2.x | Metadata key prefixes changed: `html:`, `mapi:`, `X-TIKA:resourceName`. No production code reads Tika metadata yet (pipeline lands W2). |
-| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
+| Probe | `agent-service/.../runtime/probe/OssApiProbe.java` (post-Phase-C / ADR-0078; pre-Phase-C path was `agent-runtime/.../probe/OssApiProbe.java`) |
 | Upgrade trigger | Patch as available |
 
 ### 3.5 Spring Boot 4.0.5 + platform stack (U2)

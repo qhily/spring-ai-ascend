@@ -1,6 +1,6 @@
-# W0 platform application config.
+# W0 agent-service application config (post-Phase-C / ADR-0078; pre-Phase-C this was the agent-platform config).
 # Per docs/cross-cutting/posture-model.md: APP_POSTURE drives strict-mode behavior.
-# Per agent-platform/bootstrap/ARCHITECTURE.md: required-config matrix.
+# Per agent-service/ARCHITECTURE.md §bootstrap (post-Phase-C; pre-Phase-C this referenced agent-platform/bootstrap/ARCHITECTURE.md): required-config matrix.
 
 spring:
   application:
@@ -73,7 +73,12 @@ management:
       show-details: when-authorized
   metrics:
     tags:
-      service: agent-platform
+      # Historical metric tag value preserved post-Phase-C / ADR-0078 for dashboard
+      # backwards compatibility — Grafana queries keyed on service=agent-platform continue
+      # to work. The deployed reactor module is `agent-service`; see docs/telemetry/policy.md
+      # for the rationale and a future-flip note. A migration ADR will flip this once
+      # downstream consumers acknowledge the rename.
+      service: agent-platform   # historical tag value preserved post-Phase-C / ADR-0078; deployed module is agent-service
 
 springdoc:
   api-docs:

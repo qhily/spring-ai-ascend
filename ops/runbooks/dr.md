@@ -8,7 +8,7 @@ Total region failure, data loss affecting durable stores, or RPO breach.
 
 ## Scope
 
-PostgreSQL (primary data store), Valkey (session cache), agent-platform deployment.
+PostgreSQL (primary data store), Valkey (session cache), `agent-service` deployment (post-Phase-C / ADR-0078; pre-Phase-C this was the `agent-platform` deployment).
 
 ## Prerequisites
 

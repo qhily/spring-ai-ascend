@@ -28,7 +28,7 @@ Dockerfile base image. Helm chart image tag. CI build cache.
 
 ## Verification
 
-CI green. Trivy scan (`trivy image springaiascend/agent-platform:<tag>`) shows no CRITICAL CVEs.
+CI green. Trivy scan (`trivy image springaiascend/agent-service:<tag>`; post-Phase-C / ADR-0078 — pre-Phase-C this image was `springaiascend/agent-platform:<tag>`) shows no CRITICAL CVEs.
 
 ## Rollback
 

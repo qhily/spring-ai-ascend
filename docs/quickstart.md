@@ -28,13 +28,15 @@ The build runs unit + ArchUnit tests for every reactor module. `-T 1C` builds
 independent modules in parallel; surefire runs JUnit classes concurrently within
 each fork. Add `-DjunitParallel=false` to debug intermittent test failures.
 
-Sub-second incremental builds: `./mvnw -pl agent-runtime -am test -q`.
+Sub-second incremental builds: `./mvnw -pl agent-runtime-core -am test -q` (post-Phase-C / ADR-0078; pre-Phase-C this command targeted `agent-runtime`, which was consolidated into `agent-service` with the kernel SPI types extracted to `agent-runtime-core`).
 
-## 3. Boot `agent-platform`
+## 3. Boot `agent-service`
 
 ```bash
-./mvnw -pl agent-platform spring-boot:run
+./mvnw -pl agent-service spring-boot:run
 ```
+
+(post-Phase-C / ADR-0078; pre-Phase-C the boot target was `agent-platform`.)
 
 The HTTP edge starts on port 8080.
 
@@ -83,7 +85,7 @@ public class MyFirstAgent {
 No platform-team intervention required. The patterns this exercises:
 
 - Extension via **SPI** (`GraphExecutor`, `Orchestrator`, `RunRepository`) —
-  not by patching `*.impl.*` or `ascend.springai.platform.**`.
+  not by patching `*.impl.*` or `ascend.springai.service.platform.**` (post-Phase-C package path; pre-Phase-C this was `ascend.springai.platform.**`).
 - Configuration via `@Bean` and `@ConfigurationProperties` — never by source
   patches into the platform module.
 

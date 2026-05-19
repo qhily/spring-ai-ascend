@@ -17,7 +17,8 @@ updated with justification.
 ## Current state
 
 No captured benchmark numbers yet (W0). Named test classes exist in
-agent-platform (ConcurrencyLoadIT, RunHappyPathIT) as L2 targets for W4.
+`agent-service` (`ConcurrencyLoadIT`, `RunHappyPathIT`; post-Phase-C / ADR-0078 —
+pre-Phase-C these were in the `agent-platform` reactor module) as L2 targets for W4.
 Baseline file at perf/baseline-2026-05-10.md records this state.
 
 ## References

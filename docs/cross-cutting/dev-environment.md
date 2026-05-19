@@ -73,7 +73,7 @@ bash gate/check_spring_ai_milestone.sh        # fails after 2026-08-01 if AI sti
 | Variable | Purpose | Required for |
 |---|---|---|
 | `OPENAI_API_KEY` | LLM provider | Sidecar mem0, Graphiti |
-| `ANTHROPIC_API_KEY` | LLM provider | agent-runtime (dev posture) |
+| `ANTHROPIC_API_KEY` | LLM provider | agent-service (dev posture; post-Phase-C / ADR-0078 — pre-Phase-C this was the agent-runtime module) |
 | `NEO4J_PASSWORD` | Graph DB password | sidecar-graphmemory.yml |
 | `APP_POSTURE` | `dev` / `research` / `prod` | Runtime posture (default: `dev`) |
 | `JAVA_HOME` | JDK path | Set if `./mvnw` cannot find Java 21 |

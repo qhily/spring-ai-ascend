@@ -49,10 +49,16 @@
 # +4 enforcer rows + 2 rule cards + ADR-0084 (~1.2K); ceiling held at 140,000.
 # architecture-status.yaml grew with allowed_claim rewrite + baseline_metrics
 # refresh (~1.5K); ceiling held at 110,000.
+# 2026-05-19 rc10 post-corrective wave (rc11 / ADR-0085): +2 rules (99-100,
+# ~2.7K) raised CLAUDE.md to ~44,900. Ceiling held at 45,000 (~100 bytes
+# headroom). architecture-graph.yaml grew to ~141.6K with +4 enforcer rows +
+# 2 rule cards + ADR-0085 + Rule 41.c sub-clause; ceiling raised from
+# 140,000 to 145,000. architecture-status.yaml allowed_claim rewrite raised
+# it to ~108K; ceiling held at 110,000.
 CLAUDE.md=45000
 ARCHITECTURE.md=82000
 AGENTS.md=5000
 docs/governance/SESSION-START-CONTEXT.md=6000
-docs/governance/architecture-graph.yaml=140000
+docs/governance/architecture-graph.yaml=145000
 docs/governance/architecture-status.yaml=110000
 docs/CLAUDE-deferred.md=0

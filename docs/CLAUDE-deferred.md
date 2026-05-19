@@ -287,6 +287,20 @@ Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
 
 ---
 
+## Rule 41.c — Run/Step Suspension Transition [Deferred to W2]
+
+**Re-introduction trigger**: first W2 async orchestrator implementation that consumes a `SkillResolution.reject(SuspendReason.RateLimited)` and emits a corresponding `Run.withSuspension(...)` (or dependent-step suspension) transition. Conditioned on the same trigger as Rule 46.c (W2 async orchestrator landing).
+
+**Rule (draft)**: When `ResilienceContract.resolve(tenant, skill)` returns `SkillResolution.admitted = false` with `SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED)`, the W2 orchestrator MUST translate the rejection into an actual `RunStatus.SUSPENDED` transition (per Rule 20 state-machine validity) on the dependent step that owns the skill call. The parent `Run` stays `RUNNING` so unrelated sub-branches continue (sub-Run granularity — composes with Rule 46.b "post-review strengthening"). The suspension MUST carry the `SuspendReason.RateLimited` payload into the persisted `Run.suspendReason` field so observability surfaces the saturating skill key. Failure to translate the rejection is a ship-blocking defect under Rule 9.
+
+**Background**: At W1.x scope, the active Rule 41 kernel only commits to the decision-envelope behaviour — `ResilienceContract.resolve` returns a `SkillResolution` carrying the reason, and the caller (today: no W2 orchestrator yet) is responsible for the actual `Run` transition. ADR-0070 §Consequences explicitly notes: *"Run-row carries no suspendReason field — the reason lives on SkillResolution. W2 orchestrator wiring will add Run.suspendReason when it actually transitions runs to SUSPENDED."* The rc10 post-corrective architecture review (finding P1-1) flagged the W1.x Rule 41 kernel for overclaiming end-state behaviour; rc11 narrows the kernel and lands Rule 41.c as the deferred companion.
+
+**Why deferral, not immediate fix**: The runtime translation requires the W2 async orchestrator's bus-level suspension primitive (`SuspendSignal` Chronos Hydration per Rule 38) plus a durable `Run.suspendReason` column (Flyway V3+). Retrofitting `SyncOrchestrator` alone would either (a) require reimplementing the bus wake-pulse in-memory (massive W1 scope creep) or (b) emit a half-measure that block-waits on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships — same logic as Rule 46.c (S2C non-blocking lifecycle promotion).
+
+Composes with: Rule 41 (Skill Capacity Matrix); Rule 20 (Run State Transition Validity); Rule 38 (Chronos Hydration); Rule 46.b ("post-review strengthening" — sub-Run granularity for skill saturation, identical pattern); Rule 46.c (W2 async orchestrator landing — shared trigger); ADR-0070 §Consequences; ADR-0085 (rc11 corpus-truth wave authority).
+
+---
+
 ## Rule 42.b — SandboxExecutor Subsumption Runtime Check [Deferred to W2]
 
 **Re-introduction trigger**: first sandboxed skill ships (`code-interpreter` or `untrusted-tool`) in research or prod posture (target: W2).

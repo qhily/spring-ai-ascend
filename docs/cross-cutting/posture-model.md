@@ -24,16 +24,18 @@ No other production class may call `System.getenv("APP_POSTURE")` directly (Gate
 
 ## W0 enforced posture rules
 
+> Module / Component paths below name `agent-service/platform/...` and `agent-service/runtime/...` — post-Phase-C / ADR-0078 (pre-Phase-C these were `agent-platform/...` and `agent-runtime/...` respectively).
+
 | Aspect | Module / Component | dev | research/prod |
 |---|---|---|---|
-| Missing `X-Tenant-Id` | `agent-platform/tenant` | warn + default | reject 400 |
-| Missing `Idempotency-Key` on POST / PUT / PATCH | `agent-platform/idempotency` | accept | reject 400 |
+| Missing `X-Tenant-Id` | `agent-service/platform/tenant` | warn + default | reject 400 |
+| Missing `Idempotency-Key` on POST / PUT / PATCH | `agent-service/platform/idempotency` | accept | reject 400 |
 | No `GraphMemoryRepository` bean when enabled | `graphmemory-starter` | context loads, no bean | context loads, no bean |
-| `IdempotencyStore.claimOrFind(...)` called | `agent-platform/idempotency` | warn + empty Optional | throws `IllegalStateException` |
-| `InMemoryRunRegistry` construction | `agent-runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
-| `InMemoryCheckpointer` construction | `agent-runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
-| `SyncOrchestrator` construction | `agent-runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
-| `InMemoryCheckpointer` inline payload > 16 KiB | `agent-runtime/orchestration/inmemory` | warn + stores (non-durable) | throws `IllegalStateException` (§4 #13) |
+| `IdempotencyStore.claimOrFind(...)` called | `agent-service/platform/idempotency` | warn + empty Optional | throws `IllegalStateException` |
+| `InMemoryRunRegistry` construction | `agent-service/runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
+| `InMemoryCheckpointer` construction | `agent-service/runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
+| `SyncOrchestrator` construction | `agent-service/runtime/orchestration/inmemory` | warn (non-durable) | throws `IllegalStateException` |
+| `InMemoryCheckpointer` inline payload > 16 KiB | `agent-service/runtime/orchestration/inmemory` | warn + stores (non-durable) | throws `IllegalStateException` (§4 #13) |
 
 ## Boot guard (W1 deferred)
 

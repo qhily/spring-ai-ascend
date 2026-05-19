@@ -4,12 +4,12 @@ title: "Gate Rules Corpus Freshness"
 level: L0
 view: process
 principle_ref: P-D
-authority_refs: [ADR-0083, "rc8 post-corrective review P2-1"]
+authority_refs: [ADR-0083, ADR-0085, "rc8 post-corrective review P2-1", "rc10 post-corrective review P2-1"]
 enforcer_refs: [E125, E126]
 status: active
 kernel_cap: 8
 kernel: |
-  **Every `# Rule N — slug` header in `gate/check_architecture_sync.sh` (before the END marker) MUST have a matching `gate/rules/rule-NNN[a-z]?.sh` file (zero-padded to 3 digits, optional lowercase letter suffix). `gate/rules/` is an IDE-only generated artifact (refreshed by `gate/lib/extract_rules.sh`) — the production parallel gate consumes the canonical monolith directly. Closes rc8 post-corrective review P2-1: an incomplete shadow rule corpus drifting stale relative to canonical.**
+  **Every `# Rule N — slug` header in `gate/check_architecture_sync.sh` (before the END marker) MUST have a matching `gate/rules/rule-NNN[a-z]?.sh` file (zero-padded to 3 digits, optional lowercase letter suffix). Files are keyed by unique rule id; a rule with multiple gate sections sharing the same id (Rule 11 + Rule 28 today) maps to a single file — so the `active_gate_checks` baseline (executable section count) MAY exceed the `gate/rules/` file count by the number of duplicated section ids. `gate/rules/` is an IDE-only generated artifact (refreshed by `gate/lib/extract_rules.sh`) — the production parallel gate consumes the canonical monolith directly. Closes rc8 post-corrective review P2-1 + rc10 post-corrective review P2-1: an incomplete shadow rule corpus drifting stale relative to canonical AND prose imprecision about file count vs section count.**
 ---
 
 # Rule 92 — Gate Rules Corpus Freshness

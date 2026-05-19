@@ -34,7 +34,7 @@ Outside the allowlist, `tenant_id` is bucketed (`hash(tenant_id) % 50`) into a s
 
 Every Micrometer-emitted metric carries:
 
-- `service` — `agent-platform` or `agent-runtime`.
+- `service` — historical label value `agent-platform` (preserved as the metric tag for dashboard backwards compatibility post-Phase-C / ADR-0078; the deployed reactor module is now `agent-service`). Dashboards keyed on the historical name continue to work; a future migration ADR may flip the tag value once consumers acknowledge the rename. See `agent-service/src/main/resources/application.yml` `management.metrics.tags.service` for the live value.
 - `posture` — `dev | research | prod`.
 - `version` — deployment version (set at startup).
 
@@ -96,7 +96,7 @@ OTel Baggage (`tenant.id`, `session.id`, `user.id`) is W2 wire — L1.x keeps `X
 {
   "ts":             "2026-05-14T...",
   "level":          "INFO|WARN|ERROR",
-  "service":        "agent-platform",
+  "service":        "agent-platform",  // historical tag value preserved post-Phase-C / ADR-0078 for dashboard backwards compatibility; deployed reactor module is agent-service
   "posture":        "research",
   "tenant_id":      "<uuid|null>",
   "run_id":         "<uuid|null>",
@@ -114,20 +114,22 @@ MDC populates `tenant_id` (existing — `TenantContextFilter`), `trace_id` + `sp
 
 ## 8. Required metrics by module
 
+> Owner-module column lists `agent-service/platform/...` and `agent-service/runtime/...` sub-packages — post-Phase-C / ADR-0078 (pre-Phase-C these were the separate `agent-platform` and `agent-runtime` reactor modules).
+
 | Metric | Owner module | Wave |
 |---|---|---|
-| `springai_ascend_trace_originated_total{posture,source}` | `agent-platform/observability` | **L1.x** |
-| `springai_ascend_traceparent_invalid_total{posture}` | `agent-platform/observability` | **L1.x** |
-| `agent_run_started_total` | `agent-runtime/runs` | W2 |
-| `agent_run_terminal_total{outcome}` | `agent-runtime/runs` | W2 |
-| `agent_run_cost_usd_total{tenant_id,model}` | `agent-runtime/llm` | W2 |
-| `agent_runs_pending` (gauge) | `agent-runtime/runs` | W2 |
-| `outbox_unsent_age_seconds_max` (gauge) | `agent-runtime/outbox` | W2 |
+| `springai_ascend_trace_originated_total{posture,source}` | `agent-service/platform/observability` | **L1.x** |
+| `springai_ascend_traceparent_invalid_total{posture}` | `agent-service/platform/observability` | **L1.x** |
+| `agent_run_started_total` | `agent-service/runtime/runs` | W2 |
+| `agent_run_terminal_total{outcome}` | `agent-service/runtime/runs` | W2 |
+| `agent_run_cost_usd_total{tenant_id,model}` | `agent-service/runtime/llm` | W2 |
+| `agent_runs_pending` (gauge) | `agent-service/runtime/runs` | W2 |
+| `outbox_unsent_age_seconds_max` (gauge) | `agent-service/runtime/outbox` | W2 |
 | `*_fallback_total` (per fallback branch) | various | W2 (LlmRouter), W3 (ActionGuard / OPA) |
-| `app_secret_rotation_total{secret}` | `agent-platform/bootstrap` | W2 |
-| `cardinality_budget_exceeded_total{metric}` | `agent-runtime/observability` | W2 |
-| `llm_prompt_cache_hit_total{provider,model}` | `agent-runtime/llm` | W2 |
-| `actionguard_decision_total{outcome}` | `agent-runtime/action` | W3 |
+| `app_secret_rotation_total{secret}` | `agent-service/platform/bootstrap` | W2 |
+| `cardinality_budget_exceeded_total{metric}` | `agent-service/runtime/observability` | W2 |
+| `llm_prompt_cache_hit_total{provider,model}` | `agent-service/runtime/llm` | W2 |
+| `actionguard_decision_total{outcome}` | `agent-service/runtime/action` | W3 |
 | `eval_pass_rate{suite}` | `agent-eval` | W4 |
 
 ## 9. Dashboards (W2)

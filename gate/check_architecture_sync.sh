@@ -136,6 +136,9 @@
 #  --- 2026-05-18 rc5 post-response review response prevention wave (Rules 84-85; enforcers E117-E118) ---
 #  84.  active_module_architecture_path_truth           -- every agent-*/ARCHITECTURE.md (status != skeleton|deferred) inline path claim "<module>/src/main/java/..." must resolve on disk OR carry a historical/moved/extracted-per-ADR/superseded/deferred marker within +/-3 lines (rc5 P0-1 prevention, enforcer E117)
 #  85.  catalog_spi_row_matches_module_spi_metadata     -- every non-(internal) row in contract-catalog.md SPI table must have its package in <module>/module-metadata.yaml#spi_packages AND docs/dfx/<module>.yaml#spi_packages; the (N total) header MUST equal the non-internal row count (rc5 P1-2 prevention, enforcer E118)
+#  --- 2026-05-19 rc10 post-corrective review response prevention wave (Rules 99-100 + Rule 94/98 widening; enforcers E139-E142) ---
+#  99.  kernel_terminal_verb_vs_shipped_decision_check  -- For every #### Rule N kernel block in CLAUDE.md with a matching ## Rule N.<letter> sub-clause in CLAUDE-deferred.md, the kernel MUST NOT use end-state verb tokens (`are SUSPENDED`, `is SUSPENDED`, `transitions to FAILED`, `consumes the * capacity`, `is rejected, not failed`, `admits the caller`) that overclaim shipped behaviour. Closes rc10 P1-1 (J-α family; Rule 41 kernel said "callers are SUSPENDED" while shipped code returns SkillResolution.reject — the actual transition is deferred to Rule 41.c).
+#  100. kernel_implementation_disjunction_truth        -- For every rule in gate/rule-100-disjunction-allowlist.txt, BOTH the #### Rule N kernel block in CLAUDE.md AND the matching docs/governance/rules/rule-NN.md card MUST contain explicit disjunction wording (EITHER / OR / either surface / either ... or). Closes rc10 P1-3 (J-γ family; Rule 96 kernel said "MUST contain" while impl accepted EITHER kernel OR card — kernel-AND-impl-OR drift in the rule whose job is preventing such drift).
 
 set -uo pipefail
 export LC_ALL=C
@@ -4482,8 +4485,10 @@ while IFS= read -r _r94_file; do
   [[ -z "$_r94_file" ]] && continue
   case "$_r94_file" in
     docs/archive/*|docs/reviews/*) continue ;;
-    docs/releases/2026-05-1[0-7]-*) continue ;;
-    docs/releases/2026-05-1[0-7]/*) continue ;;
+    docs/releases/2026-05-1[0-8]-*) continue ;;        # rc11 widening: 2026-05-1[0-8] covers through rc8 + beyond-sdd-response (historical)
+    docs/releases/2026-05-1[0-8]/*) continue ;;
+    docs/releases/2026-05-19-l0-rc[1-9]-*) continue ;; # rc1-rc9 (single digit) historical
+    docs/releases/2026-05-19-l0-rc10-*) continue ;;    # rc10 retracted; release-note kept as historical artifact
     docs/adr/*) continue ;;                      # frozen ADR artifacts
     */src/test/resources/*) continue ;;          # test fixtures (incl. pinned contract snapshots)
     docs/v6-rationale/*) continue ;;             # pre-Phase-C design rationale archive
@@ -4496,7 +4501,20 @@ while IFS= read -r _r94_file; do
     docs/plans/*) continue ;;                    # historical plan documents (frozen archive)
     docs/runbooks/*) continue ;;                 # operational runbooks — may reference historical paths in worked examples
     docs/governance/architecture-graph.yaml) continue ;;  # GENERATED graph; source-of-truth is enforcers.yaml + module-metadata.yaml etc.
-    docs/governance/rules/rule-87.md|docs/governance/rules/rule-94.md|docs/governance/rules/rule-98.md) continue ;;  # rule cards that describe the prevention rule — they necessarily quote deleted module names to illustrate what they prevent
+    docs/governance/architecture-status.yaml) continue ;; # rc11: the allowed_claim narrative tracks wave history including module renames
+    docs/governance/enforcers.yaml) continue ;;  # rc11: enforcer descriptions necessarily name what they check (e.g. "agent-runtime ↛ agent-platform")
+    docs/governance/rule-history.md) continue ;; # rc11: rule history necessarily names pre-Phase-C rule scopes
+    docs/governance/principles/*) continue ;;    # rc11: principle cards reference deferred sub-clauses that name pre-Phase-C modules (e.g. P-G refers to Rule 37.c agent-platform JdbcTemplate migration)
+    docs/governance/whitepaper-alignment-matrix.md) continue ;;  # rc11: whitepaper alignment matrix predates Phase C
+    docs/governance/rules/rule-87.md|docs/governance/rules/rule-94.md|docs/governance/rules/rule-98.md|docs/governance/rules/rule-33.md|docs/governance/rules/rule-93.md|docs/governance/rules/rule-37.md|docs/governance/rules/rule-21.md) continue ;;  # rule cards that describe the prevention rule — they necessarily quote deleted module names to illustrate what they prevent or to describe pre-Phase-C invariants now retargeted
+    docs/telemetry/policy.md) continue ;;        # rc11: telemetry policy doc — historical service-name backward-compat preserved
+    ops/*) continue ;;                            # rc11: ops/ surfaces are Rule 98's domain (avoids duplicate-fail)
+    docs/contracts/*) continue ;;                # rc11: contract YAMLs (besides openapi-v1.yaml) — Rule 98's domain
+    agent-service/target/classes/*) continue ;;  # rc11: build artefact — generated from src/main/resources
+    spring-ai-ascend-dependencies/module-metadata.yaml) continue ;;  # rc11: BoM description names what it pins (already enforced by Rule 98)
+    docs/dfx/*) continue ;;                       # rc11: DFX yaml descriptions reference subsumed pre-Phase-C artifacts ("subsumes prior agent-platform + agent-runtime artifacts")
+    agent-runtime-core/ARCHITECTURE.md) continue ;; # rc11: ARCHITECTURE.md of kernel module names the legacy module loop it broke
+    perf/*) continue ;;                           # rc11: perf docs name pre-Phase-C tests as scheduled W4 targets (now under agent-service)
   esac
   # Within-file: lines containing word-boundary agent-platform or agent-runtime
   # (excluding agent-runtime-core), outside fenced code blocks, outside yaml
@@ -4535,17 +4553,27 @@ while IFS= read -r _r94_file; do
     done <<< "$_r94_hits"
   fi
 done < <(
-  # Scope per rc8-post-corrective P1-3 reviewer: "active root architecture, rule cards, and active test Javadocs."
-  # Targeted file set rather than corpus-wide so the rule stays focused on the surfaces the reviewer named.
-  {
-    echo "ARCHITECTURE.md"
-    find docs/governance/rules -maxdepth 1 -type f -name '*.md' 2>/dev/null | sed 's|^\./||'
-    find agent-*/src/test/java -type f \( -name '*Test.java' -o -name '*IT.java' \) 2>/dev/null | sed 's|^\./||'
-  } | sort -u
+  # rc11 widening (per ADR-0085 + rc10 post-corrective review user election):
+  # Rule 94 kernel says "every active .md / .yaml / .java file" — the rc9 implementation
+  # scanned only 3 narrow surfaces (ARCHITECTURE.md + rule cards + test Javadocs). rc11
+  # widens the find to every active .md/.yaml/.yml/.java in the repo MINUS the explicit
+  # exemption list above (case branches). The expanded exemption list includes the
+  # historical-by-location surfaces the J-β sweep surfaced + the rule-cards-about-the-rule
+  # pattern + the build-artifact pattern.
+  find . -type f \( -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.java' \) \
+    -not -path './target/*' \
+    -not -path './*/target/*' \
+    -not -path './**/target/*' \
+    -not -path './.git/*' \
+    -not -path './node_modules/*' \
+    -not -path './docs/archive/*' \
+    -not -path './docs/adr/*' \
+    -not -path './docs/reviews/*' \
+    2>/dev/null | sed 's|^\./||' | sort -u
 )
 if [[ -n "$_r94_violations" ]]; then
   _r94_first=$(printf '%b' "$_r94_violations" | head -5 | tr '\n' '|')
-  fail_rule "active_corpus_deleted_module_name_truth" "active corpus contains current-tense pre-Phase-C module name(s) without historical marker (first 5): ${_r94_first}-- Rule 94 / E129 (rc8 post-corrective P1-3 closure; widens Rule 87 from status-yaml allowed_claim to root constraints + rule cards + test Javadocs)"
+  fail_rule "active_corpus_deleted_module_name_truth" "active corpus contains current-tense pre-Phase-C module name(s) without historical marker (first 5): ${_r94_first}-- Rule 94 / E129 (rc8 post-corrective P1-3 closure + rc11 widening per ADR-0085; widens Rule 87 from status-yaml allowed_claim to corpus-wide .md/.yaml/.java scan minus historical-by-location exemptions)"
   _r94_fail=1
 fi
 if [[ $_r94_fail -eq 0 ]]; then pass_rule "active_corpus_deleted_module_name_truth"; fi
@@ -4749,7 +4777,10 @@ while IFS= read -r _r98_file; do
         line = lines[i]
         if (line ~ /^[[:space:]]*```/) { in_code = 1 - in_code; continue }
         if (in_code) continue
-        if (line ~ /^[[:space:]]*#/) continue
+        # rc11 widening (rc10 P1-2): YAML comment lines are NOT exempted — sidecar-mem0.yml
+        # carried "(port 8001 avoids collision with agent-platform on 8080 / ...)" in a
+        # comment that rc10 missed. The marker check below still allows historical-marked
+        # comments to pass.
         if (line ~ ap_re || (line ~ ar_re && line !~ arc_re)) {
           lo = i - 3; if (lo < 1) lo = 1
           hi = i + 3; if (hi > NR) hi = NR
@@ -4767,8 +4798,9 @@ while IFS= read -r _r98_file; do
   fi
 done < <(
   # rc10 widening: surfaces Rule 94 explicitly omitted but where deleted-module-name leaks were found.
+  # rc11 widening (per ADR-0085): adds ops/**/*.md (operational runbooks) per rc10 post-corrective P1-2.
   {
-    find ops -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.tpl' \) 2>/dev/null | sed 's|^\./||'
+    find ops -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.tpl' -o -name '*.md' \) 2>/dev/null | sed 's|^\./||'
     find docs/contracts -maxdepth 1 -type f -name '*.yaml' 2>/dev/null | sed 's|^\./||'
     find . -maxdepth 3 -type f -name 'module-metadata.yaml' -not -path './target/*' -not -path './*/target/*' -not -path './.git/*' -not -path './docs/archive/*' 2>/dev/null | sed 's|^\./||'
   } | sort -u
@@ -4779,6 +4811,136 @@ if [[ -n "$_r98_violations" ]]; then
   _r98_fail=1
 fi
 if [[ $_r98_fail -eq 0 ]]; then pass_rule "broad_corpus_deleted_module_name_truth"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 99 — kernel_terminal_verb_vs_shipped_decision_check (enforcer E139)
+#
+# Closes rc10 post-corrective review P1-1 (J-α family): Rule 41 active kernel
+# said "over-cap callers are SUSPENDED, not rejected" but the shipped Java
+# surface (DefaultSkillResilienceContract.resolve) returns a decision envelope
+# (SkillResolution.reject(SuspendReason.RateLimited)), not a Run state
+# transition. The actual SUSPENDED transition is W2 orchestrator wiring per
+# CLAUDE-deferred.md Rule 41.c.
+#
+# Rule 99 prevents recurrence by scanning every active #### Rule N kernel
+# block in CLAUDE.md for end-state verb tokens (`are SUSPENDED`, `is
+# SUSPENDED`, `transitions to FAILED`, `consumes capacity`, `is rejected`,
+# `is admitted`). For each match, the rule checks whether CLAUDE-deferred.md
+# declares a Rule N.<letter> sub-clause that defers the same behaviour.
+# If BOTH (end-state verb in active kernel) AND (deferred sub-clause exists)
+# → FAIL — the active kernel is overclaiming shipped behaviour.
+#
+# This is the SEMANTIC layer Rule 96 doesn't cover. Rule 96 checks the
+# literal `Rule N.<letter>` REFERENCE exists; Rule 99 checks the VERBS in
+# the kernel match what's actually shipped.
+# ---------------------------------------------------------------------------
+_r99_fail=0
+_r99_claude="CLAUDE.md"
+_r99_deferred="docs/CLAUDE-deferred.md"
+if [[ ! -f "$_r99_claude" ]] || [[ ! -f "$_r99_deferred" ]]; then
+  fail_rule "kernel_terminal_verb_vs_shipped_decision_check" "$_r99_claude or $_r99_deferred missing — Rule 99 / E139"
+  _r99_fail=1
+else
+  # End-state verbs that imply shipped Run-state transitions:
+  _r99_end_verbs='are SUSPENDED|is SUSPENDED|callers are SUSPENDED|transitions to FAILED|transitions to SUSPENDED|consumes the .* capacity|is rejected, not failed|admits the caller'
+  _r99_violations=""
+  # Build set of rule numbers that have deferred sub-clauses
+  _r99_deferred_nums=$(grep -oE '^## Rule [0-9]+\.[a-z]' "$_r99_deferred" \
+    | sed -E 's/^## Rule //; s/\..*$//' | sort -u | tr '\n' ' ')
+  # For every #### Rule N block in CLAUDE.md, check kernel body for end-state verbs.
+  awk -v end_verbs="$_r99_end_verbs" -v defnums="$_r99_deferred_nums" '
+    BEGIN { rule = ""; body = "" }
+    /^#### Rule [0-9]+/ {
+      if (rule) emit()
+      match($0, /^#### Rule ([0-9]+)/, m)
+      rule = m[1]
+      body = ""
+      next
+    }
+    /^---$/ && rule { emit(); rule = ""; next }
+    rule { body = body $0 " " }
+    END { if (rule) emit() }
+    function emit() {
+      # Does this rule have a deferred sub-clause?
+      has_deferred = 0
+      n = split(defnums, dn, " ")
+      for (i = 1; i <= n; i++) if (dn[i] == rule) has_deferred = 1
+      if (!has_deferred) return
+      # Test body for any end-state verb
+      if (body ~ end_verbs) {
+        match(body, end_verbs)
+        v = substr(body, RSTART, RLENGTH)
+        print "Rule " rule ":" v
+      }
+    }
+  ' "$_r99_claude" > /tmp/_r99_hits.$$
+  _r99_violations=$(cat /tmp/_r99_hits.$$)
+  rm -f /tmp/_r99_hits.$$
+  if [[ -n "$_r99_violations" ]]; then
+    _r99_first=$(echo "$_r99_violations" | head -3 | tr '\n' '|')
+    fail_rule "kernel_terminal_verb_vs_shipped_decision_check" "active rule kernel uses end-state verb implying shipped Run-state transition, but matching Rule N.<letter> deferred sub-clause exists (kernel is overclaiming shipped behaviour): ${_r99_first}-- Rule 99 / E139 (rc10 post-corrective P1-1 closure; narrow kernel verb to decision-envelope behaviour OR remove the deferred sub-clause if behaviour has actually shipped)"
+    _r99_fail=1
+  fi
+fi
+if [[ $_r99_fail -eq 0 ]]; then pass_rule "kernel_terminal_verb_vs_shipped_decision_check"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 100 — kernel_implementation_disjunction_truth (enforcer E141)
+#
+# Closes rc10 post-corrective review P1-3 (J-γ family): Rule 96 kernel said
+# "the matching CLAUDE.md kernel block MUST contain" while the impl accepted
+# EITHER the kernel OR the rule card. The "AND vs OR" drift was a Code-as-
+# Contract violation in the rule whose job is preventing kernel/deferred drift.
+#
+# Rule 100 narrows the check to an explicit allow-list of rules that declare
+# "either / OR" semantics in their kernel: for each allow-list rule, both the
+# kernel text and the rule card text MUST contain explicit disjunction wording
+# (EITHER / OR / either surface / either ... or ...). The allow-list lives at
+# gate/rule-100-disjunction-allowlist.txt (one rule id per line).
+#
+# Why allow-list scope: a fully-general "kernel AND vs impl ||" parser is
+# fragile (bash predicate grammar varies; some rules use multi-stage checks).
+# The allow-list captures the rules where the disjunction is structurally
+# load-bearing.
+# ---------------------------------------------------------------------------
+_r100_fail=0
+_r100_allowlist="gate/rule-100-disjunction-allowlist.txt"
+_r100_claude="CLAUDE.md"
+if [[ ! -f "$_r100_allowlist" ]]; then
+  fail_rule "kernel_implementation_disjunction_truth" "$_r100_allowlist missing — Rule 100 / E141"
+  _r100_fail=1
+else
+  _r100_violations=""
+  while IFS= read -r _r100_rule; do
+    [[ -z "$_r100_rule" || "$_r100_rule" =~ ^[[:space:]]*# ]] && continue
+    _r100_card="docs/governance/rules/rule-$(printf '%02d' "$_r100_rule").md"
+    # Pad to 3 digits if 2-digit didn't work
+    [[ ! -f "$_r100_card" ]] && _r100_card="docs/governance/rules/rule-${_r100_rule}.md"
+    # Extract CLAUDE.md kernel block
+    _r100_block=$(awk -v rn="$_r100_rule" '
+      $0 ~ "^#### Rule "rn" " { in_block = 1; print; next }
+      in_block && /^---$/ { exit }
+      in_block { print }
+    ' "$_r100_claude")
+    # Both surfaces must declare disjunction
+    _r100_kernel_has=0
+    _r100_card_has=0
+    if echo "$_r100_block" | grep -qE '\bEITHER\b|\bOR\b|either surface|either ... or|either kernel|either the' 2>/dev/null; then
+      _r100_kernel_has=1
+    fi
+    if [[ -f "$_r100_card" ]] && grep -qE '\bEITHER\b|\bOR\b|either surface|either ... or|either kernel|either the' "$_r100_card" 2>/dev/null; then
+      _r100_card_has=1
+    fi
+    if [[ $_r100_kernel_has -eq 0 ]] || [[ $_r100_card_has -eq 0 ]]; then
+      _r100_violations="${_r100_violations}Rule ${_r100_rule} (kernel=$_r100_kernel_has, card=$_r100_card_has) "
+    fi
+  done < "$_r100_allowlist"
+  if [[ -n "$_r100_violations" ]]; then
+    fail_rule "kernel_implementation_disjunction_truth" "allow-listed disjunction rules missing 'EITHER/OR' wording in kernel and/or card: ${_r100_violations}-- Rule 100 / E141 (rc10 post-corrective P1-3 closure; allow-list at $_r100_allowlist must declare which rules are 'either-surface' so the kernel + card wording can be checked for the EITHER/OR connective)"
+    _r100_fail=1
+  fi
+fi
+if [[ $_r100_fail -eq 0 ]]; then pass_rule "kernel_implementation_disjunction_truth"; fi
 
 # === END OF RULES ===
 # ---------------------------------------------------------------------------

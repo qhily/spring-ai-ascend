@@ -29,7 +29,7 @@ W4 operator-shape gate runs a real-dependency long-lived process.
 
 | Posture | Topology |
 |---------|----------|
-| `dev` | Single JVM (agent-platform + agent-runtime) + Postgres 16 + Valkey 7 + Temporal single-node — all via `ops/compose.yml` |
+| `dev` | Single JVM (`agent-service`; consolidated from pre-Phase-C `agent-platform` + `agent-runtime` per ADR-0078) + Postgres 16 + Valkey 7 + Temporal single-node — all via `ops/compose.yml` |
 | `research` | Single-region: 2 replicas behind ALB; managed Postgres (RDS/Aurora); Temporal Cloud or self-hosted 3-node |
 | `prod` | Multi-region active/active option (W4+); same components as research with HA Postgres and Temporal cluster |
 

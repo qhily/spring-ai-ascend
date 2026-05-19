@@ -48,7 +48,7 @@ Run the bash entrypoint from Git Bash / WSL / any POSIX shell on Windows.
 
 | File | Role |
 |------|------|
-| `check_architecture_sync.sh` | **Canonical L0 release gate (108 active rules — executable section count; rc9 reconciliation, ADR-0083).** |
+| `check_architecture_sync.sh` | **Canonical L0 release gate — 112 active executable sections / 110 unique rule ids (Rule 11 and Rule 28 each appear twice with sub-checks, so `gate/rules/` has 110 files while the canonical script declares 112 sections; rc11 reconciliation, ADR-0085).** |
 | `check_architecture_sync.ps1` | DEPRECATED (v2.0.0-rc2). Fail-closed stub; see deprecation banner. |
 | `test_architecture_sync_gate.sh` | Self-test harness — 161 self-test cases covering Rules 1–6, 16, 19, 22, 24, 25, 26, 27, 28, 28j, 28k, 29, 54 (incl. rc7 ADR-0080 .spi negative), 60 (sunset), 61, 62, 63, 64, 65, 66, 79, 80, 81, 82 (incl. rc6 numeric-agreement strengthening), 83, 84, 85, 86 (incl. rc8 fenced-tree-block extension), 87, 88, 89. |
 | `build_architecture_graph.py` | Regenerates `docs/governance/architecture-graph.yaml` from the authoritative inputs (Rule 34). |

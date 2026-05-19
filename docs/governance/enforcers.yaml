@@ -1181,20 +1181,20 @@
   asserts: "Positive + negative self-test fixtures for Rule 95. Positive: every public interface under */spi/* appears in catalog → pass. Negative: a synthetic public interface under */spi/* not in catalog → fail."
 
 - id: E133
-  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); rc8 post-corrective review P1-1; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); rc8 post-corrective review P1-1; rc10 post-corrective review P1-3; ADR-0083; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#kernel_deferred_clause_coherence
-  asserts: "For every `## Rule N.<letter>` sub-clause heading in docs/CLAUDE-deferred.md, the matching `#### Rule N` kernel block in CLAUDE.md (between the heading and the next `---`) MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective P1-1: Rule 42 + Rule 46 active kernels overclaimed runtime enforcement that CLAUDE-deferred.md correctly deferred to W2."
+  asserts: "For every `## Rule N.<letter>` sub-clause heading in docs/CLAUDE-deferred.md, EITHER the matching `#### Rule N` kernel block in CLAUDE.md (between the heading and the next `---`) OR the matching `docs/governance/rules/rule-NN.md` card MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective P1-1 (Rule 42 + Rule 46 active kernels overclaimed runtime enforcement that CLAUDE-deferred.md correctly deferred to W2) + rc10 post-corrective P1-3 (kernel-vs-implementation alignment: cards have no kernel_cap, so long deferred discussions may cite there)."
 
 - id: E134
-  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); ADR-0083; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_96_kernel_cites_pos
-  asserts: "Positive + negative self-test fixtures for Rule 96. Positive: synthetic CLAUDE.md Rule N kernel containing the literal `Rule N.b` reference matches the CLAUDE-deferred.md Rule N.b sub-clause → pass. Negative: synthetic CLAUDE.md Rule N kernel WITHOUT the `Rule N.b` reference → fail."
+  asserts: "Positive + negative self-test fixtures for Rule 96. Positive A (kernel-cited): synthetic CLAUDE.md Rule N kernel containing the literal `Rule N.b` reference → pass. Positive B (card-only, rc11): synthetic Rule N.b deferred sub-clause cited only in docs/governance/rules/rule-NN.md card → pass (proves the card-only path is intentional). Negative: synthetic Rule N.b deferred sub-clause with no `Rule N.b` reference in either the kernel or the card → fail."
 
 - id: E135
   constraint_ref: "CLAUDE.md Rule 97 (release_note_numeric_truth); rc10 category-sweep I-α-2; ADR-0084"
@@ -1227,3 +1227,35 @@
   view: development
   artifact: gate/test_architecture_sync_gate.sh#test_rule_98_broad_corpus_pos
   asserts: "Positive + negative self-test fixtures for Rule 98. Positive: synthetic ops/helm/test.yaml with `agent-service` reference → pass. Negative: synthetic ops/helm/test.yaml with bare `agent-platform` reference → fail. Also positive: same `agent-platform` reference but with `pre-Phase-C` marker on adjacent line → pass."
+
+- id: E139
+  constraint_ref: "CLAUDE.md Rule 99 (kernel_terminal_verb_vs_shipped_decision_check); rc10 post-corrective review P1-1; ADR-0085"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/check_architecture_sync.sh#kernel_terminal_verb_vs_shipped_decision_check
+  asserts: "For every #### Rule N kernel block in CLAUDE.md, if a matching ## Rule N.<letter> sub-clause exists in docs/CLAUDE-deferred.md AND the kernel body contains an end-state verb token (`are SUSPENDED`, `is SUSPENDED`, `transitions to FAILED`, `consumes the * capacity`, `is rejected, not failed`, `admits the caller`), the gate FAILS — the active kernel is overclaiming shipped behaviour when the matching obligation is deferred. Closes rc10 post-corrective review P1-1: Rule 41 kernel said `over-cap callers are SUSPENDED, not rejected` while DefaultSkillResilienceContract.resolve returns a SkillResolution decision envelope (the actual Run.SUSPENDED transition is deferred to Rule 41.c)."
+
+- id: E140
+  constraint_ref: "CLAUDE.md Rule 99 (kernel_terminal_verb_vs_shipped_decision_check); ADR-0085"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/test_architecture_sync_gate.sh#test_rule_99_kernel_verb_pos
+  asserts: "Positive + negative self-test fixtures for Rule 99. Positive: synthetic CLAUDE.md Rule N kernel saying `MUST return SkillResolution.reject(...)` with matching Rule N.c deferred sub-clause → pass. Negative: synthetic CLAUDE.md Rule N kernel saying `callers are SUSPENDED` with matching Rule N.c deferred sub-clause → fail."
+
+- id: E141
+  constraint_ref: "CLAUDE.md Rule 100 (kernel_implementation_disjunction_truth); rc10 post-corrective review P1-3; ADR-0085"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/check_architecture_sync.sh#kernel_implementation_disjunction_truth
+  asserts: "For every rule listed in gate/rule-100-disjunction-allowlist.txt, BOTH the #### Rule N kernel block in CLAUDE.md AND the matching docs/governance/rules/rule-NN.md card MUST contain explicit disjunction wording (EITHER / OR / either surface / either ... or ... / either kernel / either the). Initial allow-list (rc11): Rule 96. Closes rc10 post-corrective review P1-3: Rule 96 kernel said `the matching CLAUDE.md kernel block MUST contain` while the impl accepted EITHER kernel OR rule card — a kernel-AND-impl-OR drift in the rule whose job is preventing kernel/deferred drift."
+
+- id: E142
+  constraint_ref: "CLAUDE.md Rule 100 (kernel_implementation_disjunction_truth); ADR-0085"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/test_architecture_sync_gate.sh#test_rule_100_disjunction_pos
+  asserts: "Positive + negative self-test fixtures for Rule 100. Positive: synthetic Rule 96 kernel + card both saying `EITHER the kernel block OR the rule card` → pass. Negative: synthetic Rule 96 kernel saying only `the kernel block MUST contain` with `96` in the allow-list → fail (kernel=0)."

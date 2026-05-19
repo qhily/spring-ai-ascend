@@ -37,7 +37,10 @@ while IFS= read -r _r98_file; do
         line = lines[i]
         if (line ~ /^[[:space:]]*```/) { in_code = 1 - in_code; continue }
         if (in_code) continue
-        if (line ~ /^[[:space:]]*#/) continue
+        # rc11 widening (rc10 P1-2): YAML comment lines are NOT exempted — sidecar-mem0.yml
+        # carried "(port 8001 avoids collision with agent-platform on 8080 / ...)" in a
+        # comment that rc10 missed. The marker check below still allows historical-marked
+        # comments to pass.
         if (line ~ ap_re || (line ~ ar_re && line !~ arc_re)) {
           lo = i - 3; if (lo < 1) lo = 1
           hi = i + 3; if (hi > NR) hi = NR
@@ -55,8 +58,9 @@ while IFS= read -r _r98_file; do
   fi
 done < <(
   # rc10 widening: surfaces Rule 94 explicitly omitted but where deleted-module-name leaks were found.
+  # rc11 widening (per ADR-0085): adds ops/**/*.md (operational runbooks) per rc10 post-corrective P1-2.
   {
-    find ops -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.tpl' \) 2>/dev/null | sed 's|^\./||'
+    find ops -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.tpl' -o -name '*.md' \) 2>/dev/null | sed 's|^\./||'
     find docs/contracts -maxdepth 1 -type f -name '*.yaml' 2>/dev/null | sed 's|^\./||'
     find . -maxdepth 3 -type f -name 'module-metadata.yaml' -not -path './target/*' -not -path './*/target/*' -not -path './.git/*' -not -path './docs/archive/*' 2>/dev/null | sed 's|^\./||'
   } | sort -u
@@ -68,12 +72,4 @@ if [[ -n "$_r98_violations" ]]; then
 fi
 if [[ $_r98_fail -eq 0 ]]; then pass_rule "broad_corpus_deleted_module_name_truth"; fi
 
-# === END OF RULES ===
 # ---------------------------------------------------------------------------
-if [[ $fail_count -eq 0 ]]; then
-  echo "GATE: PASS"
-  exit 0
-else
-  echo "GATE: FAIL"
-  exit 1
-fi
