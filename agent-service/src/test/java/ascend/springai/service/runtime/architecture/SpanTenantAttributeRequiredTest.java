@@ -19,7 +19,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * class lands under {@code agent-service/src/main/.../runtime/observability/emit/} (post-Phase-C; pre-Phase-C: {@code agent-runtime/observability/emit/} per ADR-0078) or names containing
  * {@code SpanEmitter}/{@code SpanBuilder}. The negative invariant: no such class
  * may exist without depending on {@code RunContext} (the canonical tenant carrier
- * per Rule 21 + ADR-0023).
+ * per Rule R-C.e + ADR-0023).
  *
  * <p>Enforcer E44. ADR-0061 §5.
  */
@@ -42,7 +42,7 @@ class SpanTenantAttributeRequiredTest {
     @Test
     void any_future_span_emitter_must_depend_on_RunContext() {
         // Positive form: if a class named *SpanEmitter or *SpanBuilder exists,
-        // it MUST depend on RunContext (the tenant carrier per §4 #22 / Rule 21).
+        // it MUST depend on RunContext (the tenant carrier per §4 #22 / Rule R-C.e).
         // Vacuous at L1.x (no such class).
         ArchRule rule = com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes()
                 .that().haveSimpleNameEndingWith("SpanEmitter")

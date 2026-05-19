@@ -40,7 +40,7 @@ at W2-W3, the absence of these contracts will cause:
   this ADR creates it.
 - Rule 13 (P1 — deferred W3) requires every LLM/tool call to return a cost receipt; binding this
   now prevents the W3 retrofit cost.
-- The posture model (Rule 10) already mandates fail-closed behaviour in research/prod; the untrusted-
+- The posture model (Rule D-6) already mandates fail-closed behaviour in research/prod; the untrusted-
   sandbox mandate is a natural extension of that model.
 
 ## Considered Options
@@ -221,7 +221,7 @@ public record ResiliencePolicy(
 ```
 
 `ResilienceContract.resolve(operationId)` remains the **operation-policy routing** surface (W0+).
-A SECOND OVERLOAD `resolve(tenant, skill)` was introduced in W1.x Phase 9 (ADR-0070, Rule 41.b) for
+A SECOND OVERLOAD `resolve(tenant, skill)` was introduced in W1.x Phase 9 (ADR-0070, Rule R-K.b) for
 **skill-capacity arbitration** — this overload **supersedes** the pre-ADR-0070 plan to extend the
 operation surface to `(tenantId, operationId)`. The two axes (operation-policy routing vs
 skill-capacity arbitration) MUST NOT be conflated. See ADR-0081 (Dual-Surface Reconciliation,
@@ -267,8 +267,8 @@ existing code.
 
 ## References
 
-- Fifth-reviewer document: `docs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §3
-- Response document: `docs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-C)
+- Fifth-reviewer document: `docs/logs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §3
+- Response document: `docs/logs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-C)
 - ADR-0018: SandboxExecutor SPI (mandatory sandbox impl for UNTRUSTED skills)
 - ADR-0019: SuspendReason taxonomy (SkillResumeToken + suspend path)
 - ADR-0022: PayloadCodec SPI (SkillCostReceipt composes with PayloadCodec at persist)

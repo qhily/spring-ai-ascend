@@ -9,13 +9,13 @@ import org.junit.jupiter.api.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Enforces Rule 38 (No Thread.sleep in Business Code) for the s2c package
+ * Enforces Rule R-H (No Thread.sleep in Business Code) for the s2c package
  * specifically -- the S2C call site is the most natural location to slip in
  * a busy-wait/sleep while waiting for the client response. The orchestrator
  * MUST instead route through SuspendSignal/checkpoint per Chronos Hydration
  * (P-H).
  *
- * <p>Authority: ADR-0074; CLAUDE.md Rule 38 (No Thread.sleep) + Rule 46
+ * <p>Authority: ADR-0074; CLAUDE.md Rule R-H (No Thread.sleep) + Rule R-M.d
  * (S2C Callback Envelope + Lifecycle Bound).
  * Enforcer row: docs/governance/enforcers.yaml#E83 (post-review fix plan F /
  * P1-2: prior Javadoc cited #E84 which is the engine-envelope boot-validation
@@ -33,7 +33,7 @@ class S2cCallbackRespectsRule38Test {
                 .that().resideInAPackage("ascend.springai.service.runtime.s2c..")
                 .should().callMethod(Thread.class, "sleep", long.class)
                 .orShould().callMethod(Thread.class, "sleep", long.class, int.class)
-                .because("ADR-0074 + Rule 38: S2C wait must route through SuspendSignal "
+                .because("ADR-0074 + Rule R-H: S2C wait must route through SuspendSignal "
                         + "(Chronos Hydration) -- no thread blocking, no busy-wait.");
         rule.check(S2C_MAIN);
     }

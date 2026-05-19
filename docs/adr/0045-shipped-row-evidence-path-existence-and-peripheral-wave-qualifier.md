@@ -4,7 +4,7 @@
 
 ## Context
 
-The seventh reviewer's third pass (`docs/reviews/2026-05-13-post-seventh-l0-readiness-third-pass.en.md`)
+The seventh reviewer's third pass (`docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-third-pass.en.md`)
 identified four P1 blockers (P1.1–P1.4) and two P2 consistency findings (P2.1–P2.2). The user's
 cross-cycle meta-analysis distilled the recurring root cause into **four defect shapes**:
 
@@ -24,7 +24,7 @@ third pass found that still escape existing gates:
 
 2. **PERIPHERAL-DRIFT at entry-point level**: SPI Javadoc and active markdown docs name future-wave
    implementations without a wave qualifier, producing the same "is it shipped or deferred?" ambiguity
-   that the root README graphmemory row (P1.2) exhibited. Gate Rule 20 caught specific ghost class
+   that the root README graphmemory row (P1.2) exhibited. Gate Rule R-C.d caught specific ghost class
    names in module READMEs; no rule caught unconditional impl-naming patterns in SPI Javadoc or
    module tables.
 
@@ -43,20 +43,20 @@ This ADR also codifies:
 
 ## Decision
 
-### Gate Rule 24 — `shipped_row_evidence_paths_exist`
+### Gate Rule R-J.b — `shipped_row_evidence_paths_exist`
 
 Every `l2_documents:` entry and `latest_delivery_file:` value on a `shipped: true` capability row
 in `docs/governance/architecture-status.yaml` must resolve to a file that exists on disk.
 
-**Implementation:** Both `gate/check_architecture_sync.ps1` (Rule 24 block) and
-`gate/check_architecture_sync.sh` (Rule 24 block) parse the YAML line-by-line, tracking
+**Implementation:** Both `gate/check_architecture_sync.ps1` (Rule R-J.b block) and
+`gate/check_architecture_sync.sh` (Rule R-J.b block) parse the YAML line-by-line, tracking
 `shipped: true` blocks, and test each `l2_documents:` list item and each `latest_delivery_file:`
 value with `Test-Path` / `[ -e ]`.
 
 **Self-tests:** `gate/test_architecture_sync_gate.sh` — positive case (existing path passes) and
 negative case (non-existent path detected).
 
-### Gate Rule 25 — `peripheral_wave_qualifier`
+### Gate Rule G-2 sub-clause .a — `peripheral_wave_qualifier`
 
 SPI Javadoc in `agent-service/src/main/java` must not use `"Primary sidecar impl:"` or
 `"Primary impl:"` without a wave qualifier (W0/W1/W2/W3/W4) in the surrounding ±3 line context.
@@ -103,9 +103,9 @@ ADR-0043's `docs/plans/**` exclusion is simplified to "entirely historical".
 
 ## §4 Constraints
 
-**§4 #42:** Shipped-row evidence paths must resolve on disk (Gate Rule 24). See above.
+**§4 #42:** Shipped-row evidence paths must resolve on disk (Gate Rule R-J.b). See above.
 
-**§4 #43:** Entry-point prose must carry wave qualifiers for future-wave impl claims (Gate Rule 25). See above.
+**§4 #43:** Entry-point prose must carry wave qualifiers for future-wave impl claims (Gate Rule G-2 sub-clause .a). See above.
 
 ## Documents Changed (this cycle)
 
@@ -135,8 +135,8 @@ ADR-0043's `docs/plans/**` exclusion is simplified to "entirely historical".
 
 ## References
 
-- Third-pass review: `docs/reviews/2026-05-13-post-seventh-l0-readiness-third-pass.en.md`
-- ADR-0042: test-evidence enforcement for Rule 25 (Rule 19 origin)
+- Third-pass review: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-third-pass.en.md`
+- ADR-0042: test-evidence enforcement for Rule G-2 sub-clause .a (Rule 19 origin)
 - ADR-0043: active normative doc catalog and peripheral drift prevention (Rule 22 origin)
 - ADR-0044: SPI contract precision and memory metadata reconciliation
 - `docs/governance/architecture-status.yaml` (shipped capabilities ledger)

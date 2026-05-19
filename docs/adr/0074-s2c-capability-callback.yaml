@@ -19,8 +19,8 @@ relates_to:
 
 amendments:
   - date: 2026-05-18
-    review: "docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md (P0-1: ADR-0074 + s2c-callback.v1.yaml + enforcers.yaml E82 still described the deleted Java type S2cCallbackSignal as the current ship)"
-    response: "docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md#response (rc4 review closure sweep)"
+    review: "docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md (P0-1: ADR-0074 + s2c-callback.v1.yaml + enforcers.yaml E82 still described the deleted Java type S2cCallbackSignal as the current ship)"
+    response: "docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md#response (rc4 review closure sweep)"
     summary: |
       The original 2026-05-16 decision introduced a parallel unchecked
       S2cCallbackSignal (a RuntimeException subtype under
@@ -33,7 +33,7 @@ amendments:
       compile-time-visible-suspension doctrine as a SINGLE source of truth
       (no parallel RuntimeException hierarchy for suspension semantics).
 
-      CLAUDE.md Rule 46, SuspendSignal.java, SyncOrchestrator.java,
+      CLAUDE.md Rule R-M sub-clause .d, SuspendSignal.java, SyncOrchestrator.java,
       agent-service/ARCHITECTURE.md, and architecture-status.yaml#allowed_claim
       were updated at rc3 to reflect the unification. This ADR's prose,
       docs/contracts/s2c-callback.v1.yaml's status comment, and
@@ -70,7 +70,7 @@ decision_one_liner: |
 
 triggering_inputs:
   external_reviews:
-    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+    - path: "docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
       authors: ["LucioIT architecture review team"]
       thesis: |
         Proposal §6: server-side execution may asynchronously invoke client-side
@@ -82,7 +82,7 @@ triggering_inputs:
         partial failure handling, security/authorization, and trace
         correlation between server and client.
   internal_signal:
-    - "Phase 3a Cross-Rule Co-Design Audit Matrix (docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5) named the resolution for each of the 5 affected rules (20, 35, 38, 41, 42); ADR-0074 implements those resolutions verbatim."
+    - "Phase 3a Cross-Rule Co-Design Audit Matrix (docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md §5) named the resolution for each of the 5 affected rules (20, 35, 38, 41, 42); ADR-0074 implements those resolutions verbatim."
     - "SuspendReason sealed interface already declared AwaitChild / AwaitTimer / AwaitExternal / AwaitApproval as empty placeholder variants (per ADR-0070 / ADR-0019). The new AwaitClientCallback variant extends the permits list naturally — no breaking change."
     - "Initial Phase 3 design attempted to extend SuspendSignal in orchestration.spi with an Object clientCallback slot. A linter / external revert restored SuspendSignal to its W1 form. The 2026-05-16 design used a separate S2cCallbackSignal extends RuntimeException in runtime.s2c.spi; v2.0.0-rc3 unified S2C suspension into SuspendSignal as a checked-suspension variant (forClientCallback) — see amendments: block. This preserves orchestration.spi purity AND keeps ADR-0019's checked-suspension doctrine as a single source of truth."
 
@@ -123,7 +123,7 @@ decision: |
         S2C_TIMEOUT          — outcome=TIMEOUT from transport
 
   - EngineRegistry gains registerS2cCallbackTransport(...) + s2cCallbackTransport()
-    accessor. At most one transport may be registered (Rule 6 single
+    accessor. At most one transport may be registered (Rule D-8 single
     construction path); duplicate registration rejected.
 
   - SyncOrchestrator wiring:
@@ -159,7 +159,7 @@ decision: |
       S2cCallbackRoundTripIT — 4 integration cases: happy path, callback_id mismatch, outcome=ERROR, no transport
       S2cCallbackRespectsRule38Test — ArchUnit: no Thread.sleep in runtime.s2c.. package
 
-  - Rule 46 + gate Rule 58 + enforcer rows E81-E84 land in CLAUDE.md / gate
+  - Rule R-M sub-clause .d + gate Rule 58 + enforcer rows E81-E84 land in CLAUDE.md / gate
     scripts / enforcers.yaml as part of Phase 7 integration (main thread
     batches all W2.x rule additions into CLAUDE.md once at Phase 7).
 
@@ -167,11 +167,11 @@ consequences:
   positive:
     - "S2C is added WITHOUT modifying any existing rule — Rules 20/35/38/41/42 each accommodate S2C via existing extension points (SuspendReason sealed variant, bus-channels logical mappings, skill-capacity new row, existing schema-validation idiom). The Phase 3a audit matrix proves this structurally."
     - "The checked SuspendSignal.forClientCallback variant (rc3 unification — see amendments) is compile-time visible AND avoids forcing new RuntimeException subtypes into orchestration.spi. ADR-0019's checked-suspension doctrine remains the single source of truth."
-    - "EngineRegistry concentrates ALL engine-contract state (adapters + middlewares + S2C transport) — the orchestrator pulls everything from a single source per Rule 6."
-    - "Validation of the response (callback_id match, outcome enum membership) runs BEFORE the resumed engine code sees the payload — Rule 42 (Sandbox Subsumption) is honoured."
+    - "EngineRegistry concentrates ALL engine-contract state (adapters + middlewares + S2C transport) — the orchestrator pulls everything from a single source per Rule D-8."
+    - "Validation of the response (callback_id match, outcome enum membership) runs BEFORE the resumed engine code sees the payload — Rule R-L (Sandbox Subsumption) is honoured."
   negative:
     - "Runtime skill-capacity enforcement at orchestrator (calling ResilienceContract.resolve before transport.dispatch) is deferred to W2. W2.x ships the yaml declaration + audit decision only. Risk: a saturated cluster cannot use the new skill row to suspend S2C callers at W2.x; first capacity enforcement lands with the W2 async orchestrator."
-    - "transport.dispatch(envelope).toCompletableFuture().join() blocks the orchestrator thread synchronously at W2.x. SyncOrchestrator is intentionally single-threaded recursive (W0 design); W2 async orchestrator uses proper non-blocking composition. Rule 38 still holds (no Thread.sleep; the block is on a CompletionStage)."
+    - "transport.dispatch(envelope).toCompletableFuture().join() blocks the orchestrator thread synchronously at W2.x. SyncOrchestrator is intentionally single-threaded recursive (W0 design); W2 async orchestrator uses proper non-blocking composition. Rule R-H still holds (no Thread.sleep; the block is on a CompletionStage)."
     - "The InMemoryS2cCallbackTransport is the only shipping transport at W2.x. Production transports (webhook POST, SSE push, WebSocket, gRPC) ship in W3 per proposal §10 open question 6."
     - "Schema validation is currently constructor-level (each record validates its own fields). The 'is response.outcome a known enum value' check is enforced by Java enum type itself (callers cannot construct unknown outcomes). The 'is request_payload schema-compliant for this capability_ref' check is W3 (requires the client capability registry)."
 

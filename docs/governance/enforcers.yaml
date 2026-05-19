@@ -1,4 +1,4 @@
-# Rule 28 — Code-as-Contract enforcer index
+# Rule R-C.a — Code-as-Contract enforcer index
 #
 # Every architectural constraint in the corpus (CLAUDE.md, ARCHITECTURE.md,
 # every */ARCHITECTURE.md, every ADR, every plan under docs/plans/) MUST map
@@ -8,8 +8,8 @@
 #   id            - stable identifier (E<n>); never reused
 #   constraint_ref- citation back to the constraint (file + section or rule number)
 #   kind          - one of: archunit | gate-script | integration | schema | compile-time
-#   level         - one of: L0 | L1 | L2   (CLAUDE.md Rule 33)
-#   view          - one of: logical | development | process | physical | scenarios   (CLAUDE.md Rule 33)
+#   level         - one of: L0 | L1 | L2   (CLAUDE.md Rule G-1 sub-clause .a)
+#   view          - one of: logical | development | process | physical | scenarios   (CLAUDE.md Rule G-1 sub-clause .a)
 #   artifact      - relative path to the enforcer code (and optional #anchor)
 #   asserts       - one-line description of what the enforcer asserts
 #
@@ -41,7 +41,7 @@
   asserts: "agent-runtime pom does not depend on agent-platform"
 
 - id: E2
-  constraint_ref: "CLAUDE.md Rule 21 generalised at L1; ADR-0055"
+  constraint_ref: "CLAUDE.md Rule R-C.e generalised at L1; ADR-0055"
   kind: archunit
   level: L1
   view: development
@@ -49,7 +49,7 @@
   asserts: "no class under ascend.springai.service.runtime.. imports any class under ascend.springai.service.platform.."
 
 - id: E3
-  constraint_ref: "CLAUDE.md Rule 32; ARCHITECTURE.md §4.7 (SPI purity); pre-existing"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .a; ARCHITECTURE.md §4.7 (SPI purity); pre-existing"
   kind: archunit
   level: L1
   view: development
@@ -57,7 +57,7 @@
   asserts: "runtime.memory.spi.. and runtime.orchestration.spi.. import only java.*"
 
 - id: E4
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §5.2; ADR-0055"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §5.2; ADR-0055"
   kind: archunit
   level: L1
   view: development
@@ -65,7 +65,7 @@
   asserts: "agent-platform does not import ascend.springai.service.runtime.memory.spi.."
 
 - id: E5
-  constraint_ref: "CLAUDE.md Rule 20; L1 plan §6.5; architecture-status.yaml line 892; W1.x Phase 8 — ADR-0070 (cursor flow)"
+  constraint_ref: "CLAUDE.md Rule R-C.d; L1 plan §6.5; architecture-status.yaml line 892; W1.x Phase 8 — ADR-0070 (cursor flow)"
   kind: integration
   level: L1
   view: logical
@@ -73,7 +73,7 @@
   asserts: "POST /v1/runs returns 202 with TaskCursor envelope (status=PENDING, cursor_url present); RunStatus enum contains no CREATED — Phase 8 migrated this contract from 201+RunResponse to 202+TaskCursor."
 
 - id: E6
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §6.5; architecture-status.yaml line 892"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §6.5; architecture-status.yaml line 892"
   kind: integration
   level: L1
   view: logical
@@ -81,7 +81,7 @@
   asserts: "DELETE /v1/runs/{id} returns 405/404; cancellation is POST /v1/runs/{id}/cancel"
 
 - id: E7
-  constraint_ref: "CLAUDE.md Rule 28; L1 plan §6.3 status-code matrix"
+  constraint_ref: "CLAUDE.md Rule R-C.a; L1 plan §6.3 status-code matrix"
   kind: integration
   level: L1
   view: logical
@@ -89,7 +89,7 @@
   asserts: "each row of §6.3 returns the documented status code + ErrorEnvelope.code"
 
 - id: E8
-  constraint_ref: "CLAUDE.md Rule 20; L1 plan §6.4 error envelope"
+  constraint_ref: "CLAUDE.md Rule R-C.d; L1 plan §6.4 error envelope"
   kind: integration
   level: L1
   view: logical
@@ -97,7 +97,7 @@
   asserts: "every 4xx/5xx response has only the top-level 'error' field with code+message+details"
 
 - id: E9
-  constraint_ref: "CLAUDE.md Rule 10; L1 plan §7.1; ADR-0056"
+  constraint_ref: "CLAUDE.md Rule D-6; L1 plan §7.1; ADR-0056"
   kind: integration
   level: L1
   view: process
@@ -105,7 +105,7 @@
   asserts: "JWT validation enforces RS256, iss, aud, exp, nbf, clock-skew; failures return 401 with metric"
 
 - id: E10
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §7.2; ADR-0056"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §7.2; ADR-0056"
   kind: integration
   level: L1
   view: process
@@ -113,7 +113,7 @@
   asserts: "JWT tenant_id claim mismatched with X-Tenant-Id header returns 403 tenant_mismatch + counter increment"
 
 - id: E11
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §7.3; ADR-0056; ADR-0058"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §7.3; ADR-0056; ADR-0058"
   kind: integration
   level: L1
   view: process
@@ -121,7 +121,7 @@
   asserts: "app.auth.dev-local-mode=true causes startup failure when app.posture != dev"
 
 - id: E12
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §8.3; ADR-0057"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §8.3; ADR-0057"
   kind: integration
   level: L1
   view: process
@@ -129,7 +129,7 @@
   asserts: "claim row durable before Orchestrator.submit; submit failure marks row FAILED; key cannot be re-claimed before expires_at"
 
 - id: E13
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §8.1; ADR-0057"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §8.1; ADR-0057"
   kind: schema
   level: L1
   view: logical
@@ -137,7 +137,7 @@
   asserts: "PRIMARY KEY (tenant_id, idempotency_key) prevents duplicate inserts at storage layer"
 
 - id: E14
-  constraint_ref: "CLAUDE.md Rule 21; L1 plan §8.2; ADR-0057"
+  constraint_ref: "CLAUDE.md Rule R-C.e; L1 plan §8.2; ADR-0057"
   kind: integration
   level: L1
   view: logical
@@ -153,7 +153,7 @@
   asserts: "every CREATE TABLE under src/main/resources/db/migration/ has a tenant_id column"
 
 - id: E16
-  constraint_ref: "CLAUDE.md Rule 10; architect guidance §11"
+  constraint_ref: "CLAUDE.md Rule D-6; architect guidance §11"
   kind: archunit
   level: L1
   view: development
@@ -161,7 +161,7 @@
   asserts: "Spring Data repository methods returning Collection/Page declare Pageable OR are annotated @BoundedQuery. Test ships with allowEmptyShould(true) — armed for W1 persistence work; vacuous at L1 (no Spring Data Repository beans yet)."
 
 - id: E17
-  constraint_ref: "CLAUDE.md Rule 10; architect guidance §11"
+  constraint_ref: "CLAUDE.md Rule D-6; architect guidance §11"
   kind: archunit
   level: L1
   view: development
@@ -169,7 +169,7 @@
   asserts: "no source under agent-platform/persistence/.. builds JPQL/SQL with String concatenation"
 
 - id: E18
-  constraint_ref: "CLAUDE.md Rule 28; L1 plan §10; architect guidance §12"
+  constraint_ref: "CLAUDE.md Rule R-C.a; L1 plan §10; architect guidance §12"
   kind: archunit
   level: L1
   view: development
@@ -193,7 +193,7 @@
   asserts: "no AKIA/sk-/-----BEGIN PRIVATE KEY-----/etc. patterns in tracked files (allow-list inline-annotated)"
 
 - id: E21
-  constraint_ref: "CLAUDE.md Rule 28; L1 plan §9; ADR-0058"
+  constraint_ref: "CLAUDE.md Rule R-C.a; L1 plan §9; ADR-0058"
   kind: integration
   level: L1
   view: process
@@ -201,7 +201,7 @@
   asserts: "research/prod posture fails startup with IllegalStateException when any @RequiredConfig field absent"
 
 - id: E22
-  constraint_ref: "CLAUDE.md Rule 10; L1 plan §8.4; ADR-0058"
+  constraint_ref: "CLAUDE.md Rule D-6; L1 plan §8.4; ADR-0058"
   kind: integration
   level: L1
   view: process
@@ -209,7 +209,7 @@
   asserts: "InMemoryIdempotencyStore bean registered only when posture=dev AND app.idempotency.allow-in-memory=true"
 
 - id: E23
-  constraint_ref: "CLAUDE.md Rule 20; ADR-0020"
+  constraint_ref: "CLAUDE.md Rule R-C.d; ADR-0020"
   kind: integration
   level: L1
   view: process
@@ -217,7 +217,7 @@
   asserts: "Run.withStatus and Run.withSuspension call RunStateMachine.validate; illegal transitions throw IllegalStateException"
 
 - id: E24
-  constraint_ref: "CLAUDE.md Rule 20; L1 plan §6.5 cancel semantics"
+  constraint_ref: "CLAUDE.md Rule R-C.d; L1 plan §6.5 cancel semantics"
   kind: integration
   level: L1
   view: logical
@@ -225,7 +225,7 @@
   asserts: "cancel of SUCCEEDED/FAILED/EXPIRED run returns 409 illegal_state_transition"
 
 - id: E25
-  constraint_ref: "CLAUDE.md Rule 21; architect guidance §15.6; pre-existing"
+  constraint_ref: "CLAUDE.md Rule R-C.e; architect guidance §15.6; pre-existing"
   kind: integration
   level: L1
   view: logical
@@ -249,7 +249,7 @@
   asserts: "root pom.xml declares exactly 4 <module> entries at L1"
 
 - id: E28
-  constraint_ref: "CLAUDE.md Rule 28 (meta); ADR-0059"
+  constraint_ref: "CLAUDE.md Rule R-C.a (meta); ADR-0059"
   kind: gate-script
   level: L0
   view: scenarios
@@ -289,7 +289,7 @@
   asserts: "L1 plan §11 table row IDs equal the set of id: fields in this file"
 
 - id: E33
-  constraint_ref: "CLAUDE.md Rule 28; L1 plan §18.3 step 1; Phase K audit fix F6; ADR-0059"
+  constraint_ref: "CLAUDE.md Rule R-C.a; L1 plan §18.3 step 1; Phase K audit fix F6; ADR-0059"
   kind: gate-script
   level: L0
   view: scenarios
@@ -297,7 +297,7 @@
   asserts: "every artifact: path in this file resolves to a real file on disk (strips #anchor suffix). Closes the gate-gap that let E12 ship pointing at a non-existent test."
 
 - id: E34
-  constraint_ref: "CLAUDE.md Rule 28; L1 plan §18.3 step 8; ADR-0055; Phase K audit fix F9"
+  constraint_ref: "CLAUDE.md Rule R-C.a; L1 plan §18.3 step 8; ADR-0055; Phase K audit fix F9"
   kind: archunit
   level: L1
   view: development
@@ -305,7 +305,7 @@
   asserts: "agent-platform main sources may only import runtime.runs.*, runtime.orchestration.spi.*, runtime.posture.* — never runtime.orchestration.inmemory.*, runtime.resilience.*, runtime.memory.spi.*, or other internal packages."
 
 - id: E35
-  constraint_ref: "CLAUDE.md Rule 28; ADR-0060 §1; Phase L reviewer P0-2 root cause"
+  constraint_ref: "CLAUDE.md Rule R-C.a; ADR-0060 §1; Phase L reviewer P0-2 root cause"
   kind: gate-script
   level: L0
   view: scenarios
@@ -313,7 +313,7 @@
   asserts: "every artifact: path#anchor in enforcers.yaml resolves to a real method (.java/.sh) or heading (.md) inside the target file; closes the gate gap where E5/E6/E24 shipped pointing at non-existent test methods."
 
 - id: E36
-  constraint_ref: "CLAUDE.md Rule 28; ADR-0060 §3; Phase L reviewer P0-3"
+  constraint_ref: "CLAUDE.md Rule R-C.a; ADR-0060 §3; Phase L reviewer P0-3"
   kind: integration
   level: L1
   view: logical
@@ -321,7 +321,7 @@
   asserts: "live spec at /v3/api-docs MUST NOT expose any /v1/** operation that is absent from the pinned snapshot, unless tagged x-experimental: true; closes the gap where /v1/runs shipped while openapi-v1.yaml still said W0."
 
 - id: E37
-  constraint_ref: "CLAUDE.md Rule 21; ADR-0060 §2; Phase L"
+  constraint_ref: "CLAUDE.md Rule R-C.e; ADR-0060 §2; Phase L"
   kind: integration
   level: L1
   view: development
@@ -331,7 +331,7 @@
 # --- Telemetry Vertical L1.x (ADR-0061 / ADR-0062 / ADR-0063 / §4 #53–#59) ---
 
 - id: E38
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #53 (telemetry_vertical_first_class); ADR-0061"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #53 (telemetry_vertical_first_class); ADR-0061"
   kind: archunit
   level: L1
   view: development
@@ -339,7 +339,7 @@
   asserts: "Telemetry Vertical first-class — no class outside hook/observability packages reads or writes the TraceWriter sink; TraceContext SPI is the sole carrier for trace-emission-side concerns at L1.x."
 
 - id: E39
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #54 (run_trace_session_identity_spi); ADR-0062"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #54 (run_trace_session_identity_spi); ADR-0062"
   kind: archunit
   level: L1
   view: logical
@@ -347,7 +347,7 @@
   asserts: "RunContext SPI exposes traceId() : String, spanId() : String, sessionId() : String, traceContext() : TraceContext accessors (L1.x mandatory shape per §4 #54)."
 
 - id: E40
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #54 (run_trace_session_identity_data); ADR-0062"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #54 (run_trace_session_identity_data); ADR-0062"
   kind: integration
   level: L1
   view: logical
@@ -355,7 +355,7 @@
   asserts: "Run.traceId is non-null 32-char lowercase hex when populated; nullable column tolerated at L1.x; child Run inherits parent's sessionId via Checkpointer carry-over."
 
 - id: E41
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #55 (w3c_traceparent_at_http_edge); ADR-0061 §4"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #55 (w3c_traceparent_at_http_edge); ADR-0061 §4"
   kind: integration
   level: L1
   view: process
@@ -363,7 +363,7 @@
   asserts: "TraceExtractFilter at order 10 extracts well-formed W3C traceparent or originates a fresh trace_id+span_id; populates MDC trace_id/span_id/parent_span_id; emits traceresponse: 00-<trace_id>-<server_span_id>-01 on every outbound response; increments springai_ascend_trace_originated_total{source=client|server} appropriately."
 
 - id: E42
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #55 (mdc_correlation_carriers); docs/telemetry/policy.md §7"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #55 (mdc_correlation_carriers); docs/telemetry/policy.md §7"
   kind: integration
   level: L1
   view: process
@@ -371,7 +371,7 @@
   asserts: "MDC during a filter-chain request carries tenant_id + trace_id + span_id; cleared on filter completion. run_id is populated by RunController at Run materialisation (verified separately by the controller's own integration test)."
 
 - id: E43
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #56 (generation_span_schema_hookchain_only); ADR-0061 §7"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #56 (generation_span_schema_hookchain_only); ADR-0061 §7"
   kind: archunit
   level: L1
   view: development
@@ -379,7 +379,7 @@
   asserts: "No class under ascend.springai.service.runtime.llm.. imports org.springframework.ai.chat.ChatModel outside the HookChain package. Vacuous at L1.x (no LLM classes yet); arms automatically when W2 LlmGateway lands."
 
 - id: E44
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #57 (span_tenant_attribute_required); ADR-0061 §5"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #57 (span_tenant_attribute_required); ADR-0061 §5"
   kind: archunit
   level: L1
   view: development
@@ -387,7 +387,7 @@
   asserts: "No class under agent-runtime/main attempts to construct a span-shaped record (TraceWriter or future Span builder) without passing a tenant_id-derived argument. Vacuous at L1.x (no span builders yet); arms automatically when W2 Hook SPI un-freezes."
 
 - id: E45
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #58 (no_pii_in_span_attributes_contract); ADR-0061 §5"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #58 (no_pii_in_span_attributes_contract); ADR-0061 §5"
   kind: integration
   level: L1
   view: process
@@ -395,7 +395,7 @@
   asserts: "Boot-gate contract: in posture=research/prod, AppPostureGate exposes the requirement for a PiiRedactionHook bean; absence MUST be a fail-closed condition once the Hook SPI un-freezes at W2. L1.x asserts the contract surface; the negative emission test PiiSpanAttributeIT lands at W2."
 
 - id: E46
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #59 (mcp_only_telemetry_replay_surface); §1 (no Admin UI); ADR-0017"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #59 (mcp_only_telemetry_replay_surface); §1 (no Admin UI); ADR-0017"
   kind: archunit
   level: L1
   view: development
@@ -403,17 +403,17 @@
   asserts: "No @RestController is placed under packages matching agent-platform/web/replay, agent-platform/web/trace, or agent-platform/web/session. Preserves §1 exclusion and ADR-0017 MCP-only replay surface."
 
 - id: E47
-  constraint_ref: "CLAUDE.md Rule 25; ARCHITECTURE.md §4 #53–#59 coverage gate; ADR-0061 §8 enforcer plan"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .a; ARCHITECTURE.md §4 #53–#59 coverage gate; ADR-0061 §8 enforcer plan"
   kind: gate-script
   level: L1
   view: scenarios
   artifact: gate/check_architecture_sync.sh#telemetry_vertical_constraint_coverage
-  asserts: "Every §4 #53–#59 constraint number resolves to at least one enforcer row in this file (this is enforced positively as Gate Rule 30 in addition to the existing meta-rule 28 which scans must/required sentences)."
+  asserts: "Every §4 #53–#59 constraint number resolves to at least one enforcer row in this file (this is enforced positively as Gate Rule R-B in addition to the existing meta-rule 28 which scans must/required sentences)."
 
 # --- Layer-0 Governing Principles (CLAUDE.md Rules 29-32, ARCHITECTURE.md §4 #60-#63, ADR-0064..0067) ---
 
 - id: E48
-  constraint_ref: "CLAUDE.md Rule 29 + Rule 32; ARCHITECTURE.md §4 #60 + §4 #63; ADR-0064; ADR-0067"
+  constraint_ref: "CLAUDE.md Rule R-A + Rule R-D sub-clause .a; ARCHITECTURE.md §4 #60 + §4 #63; ADR-0064; ADR-0067"
   kind: archunit
   level: L0
   view: development
@@ -421,7 +421,7 @@
   asserts: "Any package matching ascend.springai..spi.. does not depend on Spring, agent-platform, inmemory reference impls, Micrometer, or OpenTelemetry — generalises E3 to all current and future SPI packages."
 
 - id: E49
-  constraint_ref: "CLAUDE.md Rule 29; ARCHITECTURE.md §4 #60; ADR-0064"
+  constraint_ref: "CLAUDE.md Rule R-A; ARCHITECTURE.md §4 #60; ADR-0064"
   kind: gate-script
   level: L0
   view: scenarios
@@ -429,7 +429,7 @@
   asserts: "docs/quickstart.md exists and is referenced from README.md so a developer reaches first-agent execution without platform-team intervention."
 
 - id: E50
-  constraint_ref: "CLAUDE.md Rule 30; ARCHITECTURE.md §4 #61; ADR-0065"
+  constraint_ref: "CLAUDE.md Rule R-B; ARCHITECTURE.md §4 #61; ADR-0065"
   kind: gate-script
   level: L0
   view: scenarios
@@ -437,15 +437,15 @@
   asserts: "docs/governance/competitive-baselines.yaml exists and declares the four required pillar dimensions (performance, cost, developer_onboarding, governance)."
 
 - id: E51
-  constraint_ref: "CLAUDE.md Rule 30; ARCHITECTURE.md §4 #61; ADR-0065"
+  constraint_ref: "CLAUDE.md Rule R-B; ARCHITECTURE.md §4 #61; ADR-0065"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#release_note_references_four_pillars
-  asserts: "The most recent docs/releases/*.md release note mentions all four pillar names (performance, cost, developer_onboarding, governance)."
+  asserts: "The most recent docs/logs/releases/*.md release note mentions all four pillar names (performance, cost, developer_onboarding, governance)."
 
 - id: E52
-  constraint_ref: "CLAUDE.md Rule 31; ARCHITECTURE.md §4 #62; ADR-0066"
+  constraint_ref: "CLAUDE.md Rule R-C.b; ARCHITECTURE.md §4 #62; ADR-0066"
   kind: gate-script
   level: L0
   view: development
@@ -453,7 +453,7 @@
   asserts: "Every reactor module's <module>/pom.xml has a sibling <module>/module-metadata.yaml declaring module, kind, version, and semver_compatibility."
 
 - id: E53
-  constraint_ref: "CLAUDE.md Rule 32; ARCHITECTURE.md §4 #63; ADR-0067"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .a; ARCHITECTURE.md §4 #63; ADR-0067"
   kind: gate-script
   level: L0
   view: scenarios
@@ -461,7 +461,7 @@
   asserts: "Every kind:platform and kind:domain module has docs/dfx/<module>.yaml covering five DFX dimensions: releasability, resilience, availability, vulnerability, observability."
 
 - id: E54
-  constraint_ref: "CLAUDE.md Rule 32; ARCHITECTURE.md §4 #63; ADR-0067"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .a; ARCHITECTURE.md §4 #63; ADR-0067"
   kind: gate-script
   level: L0
   view: development
@@ -471,7 +471,7 @@
 # --- W1 Layered-4+1 + Architecture-Graph wave (Rules 33-34; ADR-0068; §4 #64-#65) ---
 
 - id: E55
-  constraint_ref: "CLAUDE.md Rule 33; ADR-0068; ARCHITECTURE.md §4 #64"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .a; ADR-0068; ARCHITECTURE.md §4 #64"
   kind: gate-script
   level: L0
   view: scenarios
@@ -479,7 +479,7 @@
   asserts: "every docs/adr/*.yaml, every docs/L2/*.md, root ARCHITECTURE.md, and every agent-*/ARCHITECTURE.md declare level: + view: front-matter with values in the legal enums."
 
 - id: E56
-  constraint_ref: "CLAUDE.md Rule 34; ADR-0068; ARCHITECTURE.md §4 #65"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .b; ADR-0068; ARCHITECTURE.md §4 #65"
   kind: gate-script
   level: L0
   view: scenarios
@@ -487,15 +487,15 @@
   asserts: "docs/governance/architecture-graph.yaml is regenerated idempotently from authoritative inputs; supersedes/extends sub-graph is a DAG; every edge endpoint resolves to a real graph node or file path; every artifact#anchor reference resolves to a real method/heading (strengthens E33/E35)."
 
 - id: E57
-  constraint_ref: "CLAUDE.md Rule 33; ADR-0068; ARCHITECTURE.md §4 #64"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .a; ADR-0068; ARCHITECTURE.md §4 #64"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#review_proposal_front_matter
-  asserts: "every docs/reviews/*.md (excluding _TEMPLATE.md and pre-W1 historical files declared in an allow-list) declares affects_level: + affects_view: front-matter."
+  asserts: "every docs/logs/reviews/*.md (excluding _TEMPLATE.md and pre-W1 historical files declared in an allow-list) declares affects_level: + affects_view: front-matter."
 
 - id: E58
-  constraint_ref: "CLAUDE.md Rule 34; ADR-0068; ARCHITECTURE.md §4 #65"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .b; ADR-0068; ARCHITECTURE.md §4 #65"
   kind: gate-script
   level: L0
   view: scenarios
@@ -503,7 +503,7 @@
   asserts: "every enforcer row with status: shipped must be reachable from at least one Layer-0 principle (P-A..P-D) by traversing edges in docs/governance/architecture-graph.yaml — closes the gap where an enforcer can ship without a stated principle motivation."
 
 - id: E59
-  constraint_ref: "CLAUDE.md Rule 33; ADR-0068"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .a; ADR-0068"
   kind: archunit
   level: L0
   view: development
@@ -513,7 +513,7 @@
 # --- Phase M remediation (CLAUDE.md Rules 34; ADR-0068; ARCHITECTURE.md §4 #65) ---
 
 - id: E60
-  constraint_ref: "CLAUDE.md Rule 34; ADR-0068; ARCHITECTURE.md §4 #65 (artifact#anchor MUST resolve)"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .b; ADR-0068; ARCHITECTURE.md §4 #65 (artifact#anchor MUST resolve)"
   kind: gate-script
   level: L0
   view: scenarios
@@ -521,15 +521,15 @@
   asserts: "every artefact node in docs/governance/architecture-graph.yaml with anchor: non-null carries anchor_resolves: true — closes the L1-expert P0-2 / P2-1 gap where prior validation only checked file path, allowing E5/E7/E24-class enforcer rows to ship with wrong #methodName."
 
 - id: E61
-  constraint_ref: "CLAUDE.md Rule 34; ADR-0068; ARCHITECTURE.md §4 #65 (build script MUST be idempotent)"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .b; ADR-0068; ARCHITECTURE.md §4 #65 (build script MUST be idempotent)"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#architecture_graph_idempotent
-  asserts: "running gate/build_architecture_graph.sh twice on unchanged inputs produces byte-identical docs/governance/architecture-graph.yaml output — closes the Rule 34 normative-phrase gap where idempotency had no enforcer."
+  asserts: "running gate/build_architecture_graph.sh twice on unchanged inputs produces byte-identical docs/governance/architecture-graph.yaml output — closes the Rule G-1 sub-clause .b normative-phrase gap where idempotency had no enforcer."
 
 - id: E62
-  constraint_ref: "CLAUDE.md Rule 33; ADR-0068; ARCHITECTURE.md §4 #64 (ADRs MUST be .yaml)"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .a; ADR-0068; ARCHITECTURE.md §4 #64 (ADRs MUST be .yaml)"
   kind: gate-script
   level: L0
   view: scenarios
@@ -537,12 +537,12 @@
   asserts: "the highest-numbered ADR file under docs/adr/NNNN-*.{md,yaml} carries the .yaml extension — prevents future ADRs from regressing to the legacy .md shape after ADR-0068."
 
 - id: E63
-  constraint_ref: "CLAUDE.md Rule 33; ADR-0068; ARCHITECTURE.md §4 #64 (frozen artefacts edit path)"
+  constraint_ref: "CLAUDE.md Rule G-1 sub-clause .a; ADR-0068; ARCHITECTURE.md §4 #64 (frozen artefacts edit path)"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#frozen_doc_edit_path_compliance
-  asserts: "any modification to a file carrying freeze_id: <non-null> in front-matter is accompanied (same commit, vs $BASE_REF) by a new docs/reviews/*.md proposal naming the file under affects_artefact: — no-op today (all freeze_id values are null); arms automatically at first phase release."
+  asserts: "any modification to a file carrying freeze_id: <non-null> in front-matter is accompanied (same commit, vs $BASE_REF) by a new docs/logs/reviews/*.md proposal naming the file under affects_artefact: — no-op today (all freeze_id values are null); arms automatically at first phase release."
 
 # ---------------------------------------------------------------------------
 # Phase 1 of W1.x — L0 ironclad rules promoted from LucioIT W1 §6/§7.
@@ -550,7 +550,7 @@
 # ---------------------------------------------------------------------------
 
 - id: E64
-  constraint_ref: "CLAUDE.md Rule 35 (Three-Track Channel Isolation); ADR-0069; LucioIT W1 §6.4"
+  constraint_ref: "CLAUDE.md Rule R-E (Three-Track Channel Isolation); ADR-0069; LucioIT W1 §6.4"
   kind: gate-script
   level: L0
   view: physical
@@ -558,7 +558,7 @@
   asserts: "docs/governance/bus-channels.yaml exists; declares exactly 3 channels (control/data/rhythm) each with a unique physical_channel: identifier; data channel inherits the 16-KiB inline payload cap."
 
 - id: E65
-  constraint_ref: "CLAUDE.md Rule 36 (Cursor Flow Mandate); ADR-0069; LucioIT W1 §6.1"
+  constraint_ref: "CLAUDE.md Rule R-F (Cursor Flow Mandate); ADR-0069; LucioIT W1 §6.1"
   kind: gate-script
   level: L0
   view: process
@@ -566,7 +566,7 @@
   asserts: "docs/contracts/openapi-v1.yaml declares at least one 202-returning operation OR an explicit cursor: schema — Cursor Flow surface enumerable in machine form."
 
 - id: E66
-  constraint_ref: "CLAUDE.md Rule 37 (Reactive External I/O); ADR-0069; LucioIT W1 §6.3"
+  constraint_ref: "CLAUDE.md Rule R-G (Reactive External I/O); ADR-0069; LucioIT W1 §6.3"
   kind: gate-script
   level: L0
   view: process
@@ -574,7 +574,7 @@
   asserts: "no production class under agent-service/src/main/java/** imports org.springframework.web.client.RestTemplate or org.springframework.jdbc.core.JdbcTemplate (agent-platform-side existing JdbcTemplate uses are out of scope per ADR-0069 / CLAUDE-deferred 37.c)."
 
 - id: E67
-  constraint_ref: "CLAUDE.md Rule 38 (No Thread.sleep in Business Code); ADR-0069; LucioIT W1 §6.4"
+  constraint_ref: "CLAUDE.md Rule R-H (No Thread.sleep in Business Code); ADR-0069; LucioIT W1 §6.4"
   kind: gate-script
   level: L0
   view: process
@@ -582,7 +582,7 @@
   asserts: "no production class under agent-service/src/main/java/** or agent-service/src/main/java/** invokes Thread.sleep(...) or TimeUnit.<unit>.sleep(...); test code, gate scripts, and Awaitility usage are excluded."
 
 - id: E68
-  constraint_ref: "CLAUDE.md Rule 39 (Five-Plane Manifest); ADR-0069; LucioIT W1 §7.1"
+  constraint_ref: "CLAUDE.md Rule R-I (Five-Plane Manifest); ADR-0069; LucioIT W1 §7.1"
   kind: gate-script
   level: L0
   view: physical
@@ -590,7 +590,7 @@
   asserts: "every <module>/module-metadata.yaml declares deployment_plane: ∈ {edge, compute_control, bus_state, sandbox, evolution, none}."
 
 - id: E69
-  constraint_ref: "CLAUDE.md Rule 40 (Storage-Engine Tenant Isolation); ADR-0069; LucioIT W1 §7.2"
+  constraint_ref: "CLAUDE.md Rule R-J sub-clause .a (Storage-Engine Tenant Isolation); ADR-0069; LucioIT W1 §7.2"
   kind: gate-script
   level: L0
   view: physical
@@ -598,7 +598,7 @@
   asserts: "every Flyway migration creating a table with a tenant_id column either includes ENABLE ROW LEVEL SECURITY in the same file OR is listed in gate/rls-baseline-grandfathered.txt."
 
 - id: E70
-  constraint_ref: "CLAUDE.md Rule 41 (Skill Capacity Matrix); ADR-0069; LucioIT W1 §7.3"
+  constraint_ref: "CLAUDE.md Rule R-K (Skill Capacity Matrix); ADR-0069; LucioIT W1 §7.3"
   kind: gate-script
   level: L0
   view: physical
@@ -606,7 +606,7 @@
   asserts: "docs/governance/skill-capacity.yaml exists; each skill row declares capacity_per_tenant + global_capacity + queue_strategy ∈ {suspend, fail}."
 
 - id: E71
-  constraint_ref: "CLAUDE.md Rule 42 (Sandbox Permission Subsumption); ADR-0069; LucioIT W1 §7.4"
+  constraint_ref: "CLAUDE.md Rule R-L (Sandbox Permission Subsumption); ADR-0069; LucioIT W1 §7.4"
   kind: gate-script
   level: L0
   view: physical
@@ -614,11 +614,11 @@
   asserts: "docs/governance/sandbox-policies.yaml exists with default_policy: declaring all 6 required keys (outbound_network, filesystem_read, filesystem_write, cpu_cap_millicores, memory_cap_megabytes, wall_clock_cap_seconds)."
 
 # ---------------------------------------------------------------------------
-# W1.x Phase 8 — Cursor Flow runtime activation (Rule 36.b / ADR-0070)
+# W1.x Phase 8 — Cursor Flow runtime activation (Rule R-F.b / ADR-0070)
 # ---------------------------------------------------------------------------
 
 - id: E72
-  constraint_ref: "CLAUDE.md Rule 36 (Cursor Flow Mandate) and Rule 36.b; ADR-0070; LucioIT W1 §6.1"
+  constraint_ref: "CLAUDE.md Rule R-F (Cursor Flow Mandate) and Rule R-F.b; ADR-0070; LucioIT W1 §6.1"
   kind: integration
   level: L1
   view: process
@@ -626,23 +626,23 @@
   asserts: "POST /v1/runs returns HTTP 202 within 200 ms with a TaskCursor payload (runId + status=PENDING + cursor_url matching the run URL), even when the registered AsyncRunDispatcher synchronously blocks for 30 seconds — proves the controller fires the dispatcher via CompletableFuture.runAsync and the HTTP response is never gated on dispatcher runtime."
 
 # ---------------------------------------------------------------------------
-# W1.x Phase 9 — ResilienceContract runtime activation (Rule 41.b / ADR-0070)
+# W1.x Phase 9 — ResilienceContract runtime activation (Rule R-K.b / ADR-0070)
 # ---------------------------------------------------------------------------
 
 - id: E73
-  constraint_ref: "CLAUDE.md Rule 41 (Skill Capacity Matrix) and Rule 41.b; ADR-0070; LucioIT W1 §7.3"
+  constraint_ref: "CLAUDE.md Rule R-K (Skill Capacity Matrix) and Rule R-K.b; ADR-0070; LucioIT W1 §7.3"
   kind: integration
   level: L1
   view: process
   artifact: agent-service/src/test/java/ascend/springai/service/runtime/resilience/SkillCapacityResolutionIT.java#suspendsSecondCallerWhenCapacityIsOne
-  asserts: "ResilienceContract.resolve(tenant, skill) consults docs/governance/skill-capacity.yaml at runtime; the second concurrent caller for a 1-capacity skill is rejected with SkillResolution.admitted=false carrying SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED) — proves the contract maps capacity exhaustion to would-suspend (Rule 41 / P-K), NOT to would-fail."
+  asserts: "ResilienceContract.resolve(tenant, skill) consults docs/governance/skill-capacity.yaml at runtime; the second concurrent caller for a 1-capacity skill is rejected with SkillResolution.admitted=false carrying SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED) — proves the contract maps capacity exhaustion to would-suspend (Rule R-K / P-K), NOT to would-fail."
 
 # ---------------------------------------------------------------------------
 # W2.x Phase 1 — Engine Envelope + Strict Matching (Rules 43, 44 / ADR-0072 / P-M)
 # ---------------------------------------------------------------------------
 
 - id: E74
-  constraint_ref: "CLAUDE.md Rule 43 (Engine Envelope Single Authority); ADR-0072; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .a (Engine Envelope Single Authority); ADR-0072; P-M"
   kind: archunit
   level: L1
   view: development
@@ -650,15 +650,15 @@
   asserts: "every concrete Orchestrator implementation in agent-service/src/main depends on ascend.springai.service.runtime.engine.EngineRegistry -- dispatch authority is centralised; pattern-matching on ExecutorDefinition subtypes outside the registry is the prohibited shape (the source-level instanceof scan is gate Rule 56's responsibility)."
 
 - id: E75
-  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching); ADR-0072; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .b (Strict Engine Matching); ADR-0072; P-M"
   kind: integration
   level: L1
   view: logical
   artifact: agent-service/src/test/java/ascend/springai/service/runtime/engine/EngineMatchingStrictnessIT.java#payload_with_no_registered_adapter_raises_engine_mismatch
-  asserts: "SyncOrchestrator.run with a payload class for which no ExecutorAdapter is registered raises EngineMatchingException carrying engine_mismatch -- proves no silent reinterpretation, no fallback policy (Rule 44 strongest reading)."
+  asserts: "SyncOrchestrator.run with a payload class for which no ExecutorAdapter is registered raises EngineMatchingException carrying engine_mismatch -- proves no silent reinterpretation, no fallback policy (Rule R-M sub-clause .b strongest reading)."
 
 - id: E76
-  constraint_ref: "CLAUDE.md Rule 43 (Engine Envelope Single Authority); ADR-0072; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .a (Engine Envelope Single Authority); ADR-0072; P-M"
   kind: gate-script
   level: L1
   view: logical
@@ -666,7 +666,7 @@
   asserts: "docs/contracts/engine-envelope.v1.yaml exists; declares schema: engine-envelope/v1, known_engines: block, and at least one '- id:' entry -- the single source of truth for envelope shape is gate-validated."
 
 - id: E77
-  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching); ADR-0072; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .b (Strict Engine Matching); ADR-0072; P-M"
   kind: gate-script
   level: L1
   view: development
@@ -674,11 +674,11 @@
   asserts: "bidirectional consistency between known_engines[].id in docs/contracts/engine-envelope.v1.yaml and String ENGINE_TYPE = \"<id>\" constants in agent-service/src/main -- guarantees the Phase 5 EngineRegistry.validateAgainstSchema boot check has matching inputs at compile time."
 
 # ---------------------------------------------------------------------------
-# W2.x Phase 2 — Engine Lifecycle Hooks + Runtime Middleware SPI (Rule 45 / ADR-0073 / P-M)
+# W2.x Phase 2 — Engine Lifecycle Hooks + Runtime Middleware SPI (Rule R-M sub-clause .c / ADR-0073 / P-M)
 # ---------------------------------------------------------------------------
 
 - id: E78
-  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .c (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
   kind: gate-script
   level: L1
   view: logical
@@ -686,7 +686,7 @@
   asserts: "docs/contracts/engine-hooks.v1.yaml declares schema: engine-hooks/v1, a hooks: list, and bidirectionally agrees with the HookPoint enum constants in agent-service/src/main -- the canonical hook surface and the Java enum never drift."
 
 - id: E79
-  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .c (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
   kind: archunit
   level: L1
   view: development
@@ -694,7 +694,7 @@
   asserts: "every concrete GraphExecutor / AgentLoopExecutor implementation under agent-service/src/main exposes a hookSurface() method (default empty allowed) -- structural pre-condition for the EngineHookSurface contract; allowEmptyShould(true) is intentional at W2.x while Phase 2 ships SPI surface only."
 
 - id: E80
-  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .c (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
   kind: integration
   level: L1
   view: process
@@ -702,11 +702,11 @@
   asserts: "SyncOrchestrator fires HookPoint.BEFORE_SUSPENSION + HookPoint.BEFORE_RESUME on a suspend/resume cycle and HookPoint.ON_ERROR on a propagated RuntimeException -- proves the three Phase 2 mandatory hooks reach registered RuntimeMiddleware end-to-end through EngineRegistry.hookDispatcher()."
 
 # ---------------------------------------------------------------------------
-# W2.x Phase 3 — S2C Capability Callback (Rule 46 / ADR-0074 / P-M)
+# W2.x Phase 3 — S2C Capability Callback (Rule R-M sub-clause .d / ADR-0074 / P-M)
 # ---------------------------------------------------------------------------
 
 - id: E81
-  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .d (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
   kind: gate-script
   level: L1
   view: logical
@@ -714,7 +714,7 @@
   asserts: "docs/contracts/s2c-callback.v1.yaml exists; declares schema header, request: and response: blocks, the 6 mandatory request fields (callback_id, server_run_id, capability_ref, request_payload, trace_id, idempotency_key per Phase 3a audit §5.2), and outcome_values closed at {ok, error, timeout}."
 
 - id: E82
-  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .d (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
   kind: integration
   level: L1
   view: process
@@ -722,7 +722,7 @@
   asserts: "SyncOrchestrator catches the checked SuspendSignal where isClientCallback() is true (the v2.0.0-rc3 unification of the historical S2cCallbackSignal — see ADR-0074 amendments block), dispatches via InMemoryS2cCallbackTransport, validates response (callback_id match, outcome enum), and resumes the parent run with the response payload. Four cases: happy-path OK, callback_id mismatch -> s2c_response_invalid, outcome=ERROR -> s2c_client_error, no transport -> s2c_transport_unavailable."
 
 - id: E83
-  constraint_ref: "CLAUDE.md Rule 46; CLAUDE.md Rule 38 (No Thread.sleep); ADR-0074; P-H + P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .d; CLAUDE.md Rule R-H (No Thread.sleep); ADR-0074; P-H + P-M"
   kind: archunit
   level: L1
   view: process
@@ -734,7 +734,7 @@
 # ---------------------------------------------------------------------------
 
 - id: E84
-  constraint_ref: "Rule 28 / Rule 9 -- runtime self-validation of governance YAML (R2 pilot); ADR-0076"
+  constraint_ref: "Rule R-C.a / Rule D-5 -- runtime self-validation of governance YAML (R2 pilot); ADR-0076"
   kind: integration
   level: L1
   view: process
@@ -742,11 +742,11 @@
   asserts: "Spring Boot startup fails with IllegalStateException when the registered ExecutorAdapter set does not match docs/contracts/engine-envelope.v1.yaml#known_engines -- fail-fast at boot via EngineAutoConfiguration wiring. Three cases verified: match-succeeds, missing-adapter-fails, unknown-adapter-fails."
 
 # ---------------------------------------------------------------------------
-# W2.x Phase 6 — Schema-First Domain Contracts (Rule 48 / ADR-0077 / P-M cross-cutting)
+# W2.x Phase 6 — Schema-First Domain Contracts (Rule M-2 sub-clause .a / ADR-0077 / P-M cross-cutting)
 # ---------------------------------------------------------------------------
 
 - id: E85
-  constraint_ref: "CLAUDE.md Rule 48 (Schema-First Domain Contracts); ADR-0077; P-M cross-cutting invariant"
+  constraint_ref: "CLAUDE.md Rule M-2 sub-clause .a (Schema-First Domain Contracts); ADR-0077; P-M cross-cutting invariant"
   kind: gate-script
   level: L0
   view: scenarios
@@ -754,11 +754,11 @@
   asserts: "Every prose-enum site (<UPPERCASE_TYPE> | <UPPERCASE_TYPE>) in ARCHITECTURE.md (root) or agent-*/ARCHITECTURE.md outside fenced code blocks and markdown tables MUST be either (a) listed in gate/schema-first-grandfathered.txt with a matching file_path prefix or (b) accompanied by a docs/contracts/*.yaml or docs/governance/*.yaml reference within +/-5 lines. The grandfather list is closed (no additions after 2026-05-16) -- new domain taxonomies MUST land yaml-first, preventing recurrence of defect family F1 (79/158 historical text-drift defects)."
 
 # ---------------------------------------------------------------------------
-# W2.x Phase 4 — Evolution Scope Boundary (Rule 47 / ADR-0075 / P-M)
+# W2.x Phase 4 — Evolution Scope Boundary (Rule R-M sub-clause .e / ADR-0075 / P-M)
 # ---------------------------------------------------------------------------
 
 - id: E86
-  constraint_ref: "CLAUDE.md Rule 47 (Evolution Scope Default Boundary); ADR-0075; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .e (Evolution Scope Default Boundary); ADR-0075; P-M"
   kind: gate-script
   level: L1
   view: physical
@@ -766,7 +766,7 @@
   asserts: "docs/governance/evolution-scope.v1.yaml exists with schema: evolution-scope/v1, three discriminator blocks (in_scope, out_of_scope_default, opt_in_export) all present, in_scope and out_of_scope_default both non-empty, and opt_in_export.contract_required references telemetry-export.v1.yaml (W3 placeholder)."
 
 - id: E87
-  constraint_ref: "CLAUDE.md Rule 47 (Evolution Scope Default Boundary); ADR-0075; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .e (Evolution Scope Default Boundary); ADR-0075; P-M"
   kind: archunit
   level: L1
   view: development
@@ -774,33 +774,33 @@
   asserts: "Every record class implementing ascend.springai.service.runtime.runs.RunEvent declares an evolutionExport() accessor returning ascend.springai.service.runtime.evolution.EvolutionExport. Armed with allowEmptyShould(true) at W2.x because RunEvent ships in W2 per ADR-0022 -- test starts asserting per-variant declaration when variants land."
 
 # ---------------------------------------------------------------------------
-# W2.x Phase 7 audit response -- Rule 44 compliance closure + Phase 3a Matrix freeze
+# W2.x Phase 7 audit response -- Rule R-M sub-clause .b compliance closure + Phase 3a Matrix freeze
 # (plan D:/.claude/plans/spi-atomic-willow.md L-1 + L-12)
 # ---------------------------------------------------------------------------
 
 - id: E88
-  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching) -- FAILED-transition half; ADR-0072; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .b (Strict Engine Matching) -- FAILED-transition half; ADR-0072; P-M"
   kind: integration
   level: L1
   view: process
   artifact: agent-service/src/test/java/ascend/springai/service/runtime/engine/EngineMismatchTransitionsRunToFailedIT.java#engine_mismatch_transitions_run_to_failed_and_fires_on_error_with_reason
-  asserts: "SyncOrchestrator catches EngineMatchingException, transitions the Run to RunStatus.FAILED with finishedAt set, and fires HookPoint.ON_ERROR carrying reason=engine_mismatch + requestedEngineType + actualPayloadType. Closes the Rule 44 prose-vs-code gap surfaced by the Phase 7 self-audit -- E75 only asserted the exception-raising half, E88 asserts the Run-state-transition half."
+  asserts: "SyncOrchestrator catches EngineMatchingException, transitions the Run to RunStatus.FAILED with finishedAt set, and fires HookPoint.ON_ERROR carrying reason=engine_mismatch + requestedEngineType + actualPayloadType. Closes the Rule R-M sub-clause .b prose-vs-code gap surfaced by the Phase 7 self-audit -- E75 only asserted the exception-raising half, E88 asserts the Run-state-transition half."
 
 - id: E89
-  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback) -- Phase 3a Cross-Rule Co-Design Audit Matrix freeze; ADR-0074; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .d (S2C Callback) -- Phase 3a Cross-Rule Co-Design Audit Matrix freeze; ADR-0074; P-M"
   kind: gate-script
   level: L0
   view: scenarios
-  artifact: docs/reviews/2026-05-16-engine-contract-structural-response.en.md
-  asserts: "The Phase 3a section 5 Cross-Rule Co-Design Audit Matrix is referenced by ADR-0074 line 47 and CLAUDE.md Rule 46 prose as the canonical Rules 20/35/38/41/42 interlock specification. Freeze invariant: this file MUST exist on disk; a future rename or split MUST update both anchors AND this enforcer row in the same PR. Today the assertion is structural (file exists); the matrix content itself is reviewed under PR review per Rule 9 ship-gate posture."
+  artifact: docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md
+  asserts: "The Phase 3a section 5 Cross-Rule Co-Design Audit Matrix is referenced by ADR-0074 line 47 and CLAUDE.md Rule R-M sub-clause .d prose as the canonical Rules 20/35/38/41/42 interlock specification. Freeze invariant: this file MUST exist on disk; a future rename or split MUST update both anchors AND this enforcer row in the same PR. Today the assertion is structural (file exists); the matrix content itself is reviewed under PR review per Rule D-5 ship-gate posture."
 
 # ---------------------------------------------------------------------------
-# v2.0.0-rc1 post-release review response -- Rule 46 FAILED-transition + R2 classpath fallback
+# v2.0.0-rc1 post-release review response -- Rule R-M sub-clause .d FAILED-transition + R2 classpath fallback
 # (plan D:/.claude/plans/spi-atomic-willow.md C + E)
 # ---------------------------------------------------------------------------
 
 - id: E90
-  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound) -- FAILED-transition half; ADR-0074; P-M"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .d (S2C Callback Envelope + Lifecycle Bound) -- FAILED-transition half; ADR-0074; P-M"
   kind: integration
   level: L1
   view: process
@@ -808,7 +808,7 @@
   asserts: "For each of the four S2C failure modes (s2c_response_invalid, s2c_client_error, s2c_transport_unavailable, s2c_transport_failure), SyncOrchestrator transitions the Run to RunStatus.FAILED with finishedAt set, fires HookPoint.ON_ERROR carrying reason + callbackId, and rethrows so the caller observes failure. Closes the post-review P0-2 gap: prior code let IllegalStateException from handleClientCallback escape the try, leaving the Run in SUSPENDED. Companion to E82 which covered only the happy path + raw exception type."
 
 - id: E91
-  constraint_ref: "CLAUDE.md Rule 28 / Rule 9 -- runtime self-validation of governance YAML via classpath fallback; ADR-0076"
+  constraint_ref: "CLAUDE.md Rule R-C.a / Rule D-5 -- runtime self-validation of governance YAML via classpath fallback; ADR-0076"
   kind: integration
   level: L1
   view: process
@@ -816,12 +816,12 @@
   asserts: "EngineAutoConfiguration boots successfully when app.engine.envelope-schema-path resolves only via classpath fallback (filesystem path absent), proving the agent-platform jar carries docs/contracts/engine-envelope.v1.yaml on its classpath. Closes the post-review P0-4 gap: prior code claimed jar deployment worked but the pom.xml had no <resources> rule copying the YAML; production boot from a packaged jar would have failed. Companion to E84 which covers the same R2 pilot in the reactor (filesystem) launch mode."
 
 # ---------------------------------------------------------------------------
-# v2.0.0-rc3 cross-constraint audit response -- S2C trace-ID validator (α-5)
+# v2.0.0-rc1 post-release review response -- Rule R-M sub-clause .d FAILED-transition + R2 classpath fallback
 # + s2c.spi package-purity (α-4 / β-2 stronger ArchUnit)
 # ---------------------------------------------------------------------------
 
 - id: E92
-  constraint_ref: "docs/contracts/s2c-callback.v1.yaml (request.trace_id + response.client_trace_id MUST be W3C 32-char lowercase hex); CLAUDE.md Rule 46; cross-constraint audit P1-5 / α-5"
+  constraint_ref: "docs/contracts/s2c-callback.v1.yaml (request.trace_id + response.client_trace_id MUST be W3C 32-char lowercase hex); CLAUDE.md Rule R-M sub-clause .d; cross-constraint audit P1-5 / α-5"
   kind: integration
   level: L1
   view: process
@@ -829,7 +829,7 @@
   asserts: "Beyond length() != 32, S2cCallbackEnvelope.requireLowerHex32(...) and S2cCallbackResponse rejection paths assert the W3C trace-ID character class: only 0-9 + a-f are accepted; uppercase hex AND non-hex chars are rejected with IllegalArgumentException whose message names 'lowercase hex'. Closes the rc3 cross-constraint audit P1-5 gap where the contract text claimed lowercase-hex enforcement but the constructor only checked length."
 
 - id: E93
-  constraint_ref: "CLAUDE.md Rule 32 (SPI + DFX + TCK Co-Design); ARCHITECTURE.md SPI purity (java.* only + same-spi-package siblings); cross-constraint audit α-4 / β-2"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .a (SPI + DFX + TCK Co-Design); ARCHITECTURE.md SPI purity (java.* only + same-spi-package siblings); cross-constraint audit α-4 / β-2"
   kind: archunit
   level: L0
   view: development
@@ -838,11 +838,11 @@
 
 # ---------------------------------------------------------------------------
 # 2026-05-17 cross-corpus consistency audit prevention rules.
-# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# Authority: docs/logs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
 # ---------------------------------------------------------------------------
 
 - id: E94
-  constraint_ref: "CLAUDE.md Rule 28 + ADR-0055 + ADR-0059 + ADR-0067; cross-corpus consistency audit 2026-05-17 / G1 (hardcoded module count drift)"
+  constraint_ref: "CLAUDE.md Rule R-C.a + ADR-0055 + ADR-0059 + ADR-0067; cross-corpus consistency audit 2026-05-17 / G1 (hardcoded module count drift)"
   kind: gate-script
   level: L0
   view: scenarios
@@ -850,7 +850,7 @@
   asserts: "Root pom.xml <module> count equals the canonical total_reactor_modules in docs/governance/architecture-status.yaml#repository_counts. Module-count changes update one file (the YAML), not four (gate + 3 ADRs). Drift surfaced by 2026-05-17 audit when six-module materialization PR landed and the count was hard-coded in 4 places."
 
 - id: E95
-  constraint_ref: "CLAUDE.md Rule 31 (Independent Module Evolution); cross-corpus consistency audit 2026-05-17 / G2 (metadata-vs-pom drift)"
+  constraint_ref: "CLAUDE.md Rule R-C.b (Independent Module Evolution); cross-corpus consistency audit 2026-05-17 / G2 (metadata-vs-pom drift)"
   kind: gate-script
   level: L0
   view: development
@@ -858,12 +858,12 @@
   asserts: "Every ascend.springai sibling artifact declared inside a <dependency> block of <module>/pom.xml appears in the same module's module-metadata.yaml allowed_dependencies. Drift surfaced by 2026-05-17 audit when agent-service/pom.xml gained an agent-middleware dep after T2.B1 but agent-service/module-metadata.yaml's allowed_dependencies remained empty."
 
 - id: E96
-  constraint_ref: "CLAUDE.md Rule 32 (SPI + DFX + TCK Co-Design); cross-corpus consistency audit 2026-05-17 / G3 (SPI surface drift)"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .a (SPI + DFX + TCK Co-Design); cross-corpus consistency audit 2026-05-17 / G3 (SPI surface drift)"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/check_architecture_sync.sh#spi_package_exhaustiveness
-  asserts: "Every */spi/ leaf directory under <module>/src/main/java appears in <module>/module-metadata.yaml spi_packages. Drift surfaced by 2026-05-17 audit when agent-runtime contained an ascend.springai.service.runtime.s2c.spi directory that was undeclared in spi_packages; Rule 36 (domain_module_has_spi_package) verified declared packages existed on disk but did not enforce the reverse direction (every on-disk SPI directory is declared)."
+  asserts: "Every */spi/ leaf directory under <module>/src/main/java appears in <module>/module-metadata.yaml spi_packages. Drift surfaced by 2026-05-17 audit when agent-runtime contained an ascend.springai.service.runtime.s2c.spi directory that was undeclared in spi_packages; Rule R-F (domain_module_has_spi_package) verified declared packages existed on disk but did not enforce the reverse direction (every on-disk SPI directory is declared)."
 
 # ---------------------------------------------------------------------------
 # 2026-05-17 CLAUDE.md token-optimization wave PR1.
@@ -872,15 +872,15 @@
 # ---------------------------------------------------------------------------
 
 - id: E97
-  constraint_ref: "CLAUDE.md Rule 67 (claude_md_kernel_size_bounded); token-optimization wave PR1"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .a (claude_md_kernel_size_bounded); token-optimization wave PR1"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#claude_md_kernel_size_bounded
-  asserts: "Each '#### Rule NN' section in CLAUDE.md fits under the per-rule kernel_cap declared in docs/governance/rules/rule-NN.md (daily principles: cap 12; architectural + ironclad: cap 6). If a card does not exist yet, the rule is SKIPPED for that section (Rule 69 catches the missing card)."
+  asserts: "Each '#### Rule NN' section in CLAUDE.md fits under the per-rule kernel_cap declared in docs/governance/rules/rule-NN.md (daily principles: cap 12; architectural + ironclad: cap 6). If a card does not exist yet, the rule is SKIPPED for that section (Rule G-3 sub-clause .c catches the missing card)."
 
 - id: E98
-  constraint_ref: "CLAUDE.md Rule 68 (claude_md_kernel_matches_card); token-optimization wave PR1"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .b (claude_md_kernel_matches_card); token-optimization wave PR1"
   kind: gate-script
   level: L0
   view: scenarios
@@ -888,7 +888,7 @@
   asserts: "For every docs/governance/rules/rule-NN.md card, the kernel: scalar in YAML front-matter byte-matches (after whitespace normalisation) the body paragraph of '#### Rule NN' in CLAUDE.md. Prevents semantic drift between kernel and card."
 
 - id: E99
-  constraint_ref: "CLAUDE.md Rule 69 (every_active_rule_has_card); token-optimization wave PR1"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .c (every_active_rule_has_card); token-optimization wave PR1"
   kind: gate-script
   level: L0
   view: scenarios
@@ -896,7 +896,7 @@
   asserts: "Every '#### Rule NN' heading in CLAUDE.md has a sibling docs/governance/rules/rule-NN.md (zero-padded). Every card either appears as a heading in CLAUDE.md or as a 'Rule NN' reference in docs/CLAUDE-deferred.md. Orphan cards fail."
 
 - id: E100
-  constraint_ref: "CLAUDE.md Rule 70 (always_loaded_budget_enforced); token-optimization wave PR1"
+  constraint_ref: "CLAUDE.md Rule G-4 sub-clause .a (always_loaded_budget_enforced); token-optimization wave PR1"
   kind: gate-script
   level: L0
   view: scenarios
@@ -904,7 +904,7 @@
   asserts: "gate/measure_always_loaded_tokens.sh walks every file in gate/always-loaded-budget.txt; the rule fails if any file exceeds its declared byte ceiling. Primary defence against CLAUDE.md regressing back to its pre-shrink size."
 
 - id: E101
-  constraint_ref: "CLAUDE.md Rule 71 (deferred_doc_not_in_always_loaded); token-optimization wave PR1"
+  constraint_ref: "CLAUDE.md Rule G-4 sub-clause .b (deferred_doc_not_in_always_loaded); token-optimization wave PR1"
   kind: gate-script
   level: L0
   view: scenarios
@@ -913,24 +913,24 @@
 
 # ---------------------------------------------------------------------------
 # 2026-05-17 gate-script efficiency wave PR-E1.
-# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-73.md
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-G-6.md
 # ---------------------------------------------------------------------------
 
 - id: E103
-  constraint_ref: "CLAUDE.md Rule 73 (gate_config_well_formed); gate-efficiency wave PR-E1"
+  constraint_ref: "CLAUDE.md Rule G-6 sub-clause .b (gate_config_well_formed); gate-efficiency wave PR-E1"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#gate_config_well_formed
-  asserts: "gate/config.yaml validates against gate/config.schema.yaml: required top-level keys present (parallelism, logging, scan_cache, regression_detection, rule_filters); leaf types/ranges/enums correct (jobs in [0,256]; batch_strategy in {round_robin, longest_first}; stdout_format in {human, quiet, json}; multiplier_threshold >= 1.0). Implementation lives in gate/lib/load_config.sh#gate_validate_config_against_schema. Schema-first per Rule 48."
+  asserts: "gate/config.yaml validates against gate/config.schema.yaml: required top-level keys present (parallelism, logging, scan_cache, regression_detection, rule_filters); leaf types/ranges/enums correct (jobs in [0,256]; batch_strategy in {round_robin, longest_first}; stdout_format in {human, quiet, json}; multiplier_threshold >= 1.0). Implementation lives in gate/lib/load_config.sh#gate_validate_config_against_schema. Schema-first per Rule M-2 sub-clause .a."
 
 # ---------------------------------------------------------------------------
 # 2026-05-18 Linux-first dev environment policy (PR-E7).
-# Authority: docs/governance/rules/rule-74.md + docs/governance/dev-environment.md
+# Authority: docs/governance/rules/rule-G-7.md + docs/governance/dev-environment.md
 # ---------------------------------------------------------------------------
 
 - id: E104
-  constraint_ref: "CLAUDE.md Rule 74 (linux_first_dev_doc_present); 2026-05-18 PR-E7"
+  constraint_ref: "CLAUDE.md Rule G-7 (linux_first_dev_doc_present); 2026-05-18 PR-E7"
   kind: gate-script
   level: L0
   view: scenarios
@@ -943,15 +943,15 @@
 # ---------------------------------------------------------------------------
 
 - id: E102
-  constraint_ref: "CLAUDE.md Rule 72 (rule_duration_regression_check); Wave 4 Track A"
+  constraint_ref: "CLAUDE.md Rule G-6 sub-clause .a (rule_duration_regression_check); Wave 4 Track A"
   kind: gate-script
   level: L0
   view: scenarios
   artifact: gate/check_architecture_sync.sh#rule_duration_regression_check
-  asserts: "After 5+ successful runs are recorded under gate/log/runs/, every subsequent gate run compares per-rule durations against the rolling median in gate/log/benchmarks/median.json. A rule whose current duration exceeds 2x its baseline AND exceeds 200ms absolute fails Rule 72."
+  asserts: "After 5+ successful runs are recorded under gate/log/runs/, every subsequent gate run compares per-rule durations against the rolling median in gate/log/benchmarks/median.json. A rule whose current duration exceeds 2x its baseline AND exceeds 200ms absolute fails Rule G-6 sub-clause .a."
 
 - id: E105
-  constraint_ref: "CLAUDE.md Rule 11 (contract_spine_tenant_id_required); Wave 4 Track B"
+  constraint_ref: "CLAUDE.md Rule R-C.c (contract_spine_tenant_id_required); Wave 4 Track B"
   kind: gate-script
   level: L1
   view: development
@@ -959,7 +959,7 @@
   asserts: "Every public record under agent-runtime-core/src/main/java/ascend/springai/service/runtime/ declares a String tenantId component. Process-internal opt-out via 'scope: process-internal' reason comment."
 
 - id: E106
-  constraint_ref: "CLAUDE.md Rule 24 (runlifecycle_cancel_reauthz_shipped); Wave 4 Track C"
+  constraint_ref: "CLAUDE.md Rule R-J sub-clause .b (runlifecycle_cancel_reauthz_shipped); Wave 4 Track C"
   kind: gate-script
   level: L1
   view: process
@@ -967,7 +967,7 @@
   asserts: "agent-service RunController exposes POST /v1/runs/{runId}/cancel with tenant re-validation. Resume + retry sub-clauses (24.d) remain deferred to W2."
 
 - id: E107
-  constraint_ref: "CLAUDE.md Rule 29.c (quickstart_smoke_job_present); Wave 4 Track E"
+  constraint_ref: "CLAUDE.md Rule R-A.c (quickstart_smoke_job_present); Wave 4 Track E"
   kind: gate-script
   level: L1
   view: scenarios
@@ -975,7 +975,7 @@
   asserts: ".github/workflows/ci.yml declares a job named 'quickstart-smoke' that boots agent-service and polls /v1/health."
 
 - id: E108
-  constraint_ref: "CLAUDE.md Rule 75 (spi_packages_populated); SPI metadata integrity wave 2026-05-18"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .b (spi_packages_populated); SPI metadata integrity wave 2026-05-18"
   kind: gate-script
   level: L1
   view: development
@@ -983,23 +983,23 @@
   asserts: "Every module-metadata.yaml#spi_packages entry resolves to a directory with at least one .java file beyond package-info.java. Entries marked '# placeholder; ADR-NNNN ...' are exempt as deferred SPI work."
 
 - id: E109
-  constraint_ref: "CLAUDE.md Rule 76 (no_split_spi_packages); SPI metadata integrity wave 2026-05-18"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .c (no_split_spi_packages); SPI metadata integrity wave 2026-05-18"
   kind: gate-script
   level: L1
   view: development
   artifact: gate/check_architecture_sync.sh#no_split_spi_packages
-  asserts: "No Java SPI package may be declared by more than one Maven module's spi_packages: list. Prevents Maven split-packages (CLAUDE.md Rule 76)."
+  asserts: "No Java SPI package may be declared by more than one Maven module's spi_packages: list. Prevents Maven split-packages (CLAUDE.md Rule R-D sub-clause .c)."
 
 - id: E110
-  constraint_ref: "CLAUDE.md Rule 77 (spi_packages_dot_spi_convention); SPI metadata integrity wave 2026-05-18"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .d (spi_packages_dot_spi_convention); SPI metadata integrity wave 2026-05-18"
   kind: gate-script
   level: L1
   view: development
   artifact: gate/check_architecture_sync.sh#spi_packages_dot_spi_convention
-  asserts: "Every spi_packages entry ends in '.spi' or contains '.spi.' — operationalises the *.spi.* literal convention of Rule 32."
+  asserts: "Every spi_packages entry ends in '.spi' or contains '.spi.' — operationalises the *.spi.* literal convention of Rule R-D sub-clause .a."
 
 - id: E111
-  constraint_ref: "CLAUDE.md Rule 78 (dfx_spi_packages_match_module_metadata); SPI metadata integrity wave 2026-05-18"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .e (dfx_spi_packages_match_module_metadata); SPI metadata integrity wave 2026-05-18"
   kind: gate-script
   level: L1
   view: development
@@ -1007,21 +1007,21 @@
   asserts: "For every kind={platform,domain} module, docs/dfx/<module>.yaml declares a top-level spi_packages: matching the non-placeholder entries of module-metadata.yaml#spi_packages."
 
 - id: E112
-  constraint_ref: "CLAUDE.md Rule 79 (rule_79_runbook_present_and_cited); Beyond-SDD review response wave 2026-05-18"
+  constraint_ref: "CLAUDE.md Rule D-3.b (rule_79_runbook_present_and_cited); Beyond-SDD review response wave 2026-05-18"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#rule_79_runbook_present_and_cited
-  asserts: "docs/runbooks/debug-first-evidence.md exists with the canonical title 'Evidence-First Debug Sequence', AND docs/governance/rules/rule-79.md references the runbook path — catches both runbook deletion and card↔runbook link breakage."
+  asserts: "docs/runbooks/debug-first-evidence.md exists with the canonical title 'Evidence-First Debug Sequence', AND docs/governance/rules/rule-D-3.b.md references the runbook path — catches both runbook deletion and card↔runbook link breakage."
 
 # ---------------------------------------------------------------------------
 # 2026-05-18 rc4 cross-constraint review response prevention wave — E113-E116
-# Authority: docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
-#            + docs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
+# Authority: docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review.en.md
+#            + docs/logs/reviews/2026-05-18-l0-rc4-cross-constraint-architecture-review-response.en.md
 # ---------------------------------------------------------------------------
 
 - id: E113
-  constraint_ref: "CLAUDE.md Rule 80 (s2c_callback_signal_historical_only_in_authority); rc4 review P0-1; ADR-0074 (2026-05-18 amendments)"
+  constraint_ref: "CLAUDE.md Rule R-M sub-clause .f (s2c_callback_signal_historical_only_in_authority); rc4 review P0-1; ADR-0074 (2026-05-18 amendments)"
   kind: gate-script
   level: L1
   view: logical
@@ -1029,7 +1029,7 @@
   asserts: "Across active accepted ADRs (docs/adr/*.yaml + docs/adr/*.md), CLAUDE.md, README.md, agent-*/ARCHITECTURE.md, and docs/contracts/*.v1.yaml, every occurrence of the literal token 'S2cCallbackSignal' MUST appear within ±5 lines (markdown paragraph or yaml comment/block-scalar window) of one of the historical markers 'historical', 'deleted', 'refactored from', 'rc3-unification', or 'amendments' (case-insensitive). Live current-state claims using the deleted Java type fail. Closes rc4 P0-1: ADR-0074 amendments block + s2c-callback.v1.yaml header + enforcers.yaml E82 description are the canonical historical references; new authority drift is rejected."
 
 - id: E114
-  constraint_ref: "CLAUDE.md Rule 81 (skeleton_module_has_no_production_java); rc4 review P0-2; ADR-0073; ADR-0079"
+  constraint_ref: "CLAUDE.md Rule M-1 (skeleton_module_has_no_production_java); rc4 review P0-2; ADR-0073; ADR-0079"
   kind: gate-script
   level: L1
   view: development
@@ -1037,7 +1037,7 @@
   asserts: "For every agent-*/ARCHITECTURE.md whose front-matter status: contains the token 'skeleton', the module's src/main/java/**/*.java tree contains only package-info.java files OR placeholder SPI stubs whose first 30 lines name both the 'placeholder' keyword (case-insensitive) AND an 'ADR-NNNN' waiver. Bidirectional: modules with extracted production code MUST NOT declare status: skeleton. Closes rc4 P0-2 (agent-execution-engine still claimed skeleton across README + ARCHITECTURE.md + pom.xml + architecture-status while ADR-0079 had extracted production code)."
 
 - id: E115
-  constraint_ref: "CLAUDE.md Rule 82 (baseline_metrics_single_source); rc4 review P1-1"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .b (baseline_metrics_single_source); rc4 review P1-1"
   kind: gate-script
   level: L1
   view: logical
@@ -1045,7 +1045,7 @@
   asserts: "docs/governance/architecture-status.yaml#architecture_sync_gate.baseline_metrics MUST exist as a structured block declaring the six required keys 'active_engineering_rules', 'active_gate_checks', 'gate_executable_test_cases', 'enforcer_rows', 'architecture_graph_nodes', 'architecture_graph_edges'. README.md AND gate/README.md MUST each contain at least one occurrence of the substring 'architecture_sync_gate.baseline_metrics' so prose baseline claims acknowledge the canonical source. Closes rc4 P1-1: entrypoint counts have one source."
 
 - id: E116
-  constraint_ref: "CLAUDE.md Rule 83 (design_only_contract_registered_in_catalog); rc4 review P1-3; ADR-0032; ADR-0052"
+  constraint_ref: "CLAUDE.md Rule M-2 sub-clause .b (design_only_contract_registered_in_catalog); rc4 review P1-3; ADR-0032; ADR-0052"
   kind: gate-script
   level: L1
   view: logical
@@ -1053,31 +1053,31 @@
   asserts: "For every docs/contracts/*.v1.yaml with 'status: design_only' OR 'runtime_enforced: false', (a) the file basename appears as a literal substring in docs/contracts/contract-catalog.md, AND (b) at least one ADR-NNNN reference cited in the yaml resolves to a real file under docs/adr/<NNNN>-*.yaml or docs/adr/<NNNN>-*.md. Every cited ADR must exist (dangling references fail). Closes rc4 P1-3 prevention: plan-projection.v1.yaml unregistered + W2/W4 staging ambiguity defect class."
 
 - id: E117
-  constraint_ref: "CLAUDE.md Rule 84 (active_module_architecture_path_truth); rc5 post-response review P0-1; ADR-0078; ADR-0079"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .c (active_module_architecture_path_truth); rc5 post-response review P0-1; ADR-0078; ADR-0079"
   kind: gate-script
   level: L1
   view: development
   artifact: gate/check_architecture_sync.sh#active_module_architecture_path_truth
-  asserts: "For every agent-*/ARCHITECTURE.md file whose YAML front-matter status: token does NOT contain 'skeleton' or 'deferred', every inline path claim matching the regex 'agent-[a-z-]+/src/main/java/[a-zA-Z0-9_/.-]+' MUST resolve to a real file on disk OR the surrounding +/-3 lines MUST carry one of the historical markers: historical, moved, extracted per ADR-NNNN, extracted at, was rooted, formerly, deferred, superseded, pre-ADR-NNNN, relocated, migrated, post-ADR-NNNN. Closes rc5 post-response P0-1: active module ARCHITECTURE.md path claims cannot lag behind real code locations after a refactor (Rule 81 covers the symmetric skeleton case; Rule 84 covers the active case Rule 81 does not reach)."
+  asserts: "For every agent-*/ARCHITECTURE.md file whose YAML front-matter status: token does NOT contain 'skeleton' or 'deferred', every inline path claim matching the regex 'agent-[a-z-]+/src/main/java/[a-zA-Z0-9_/.-]+' MUST resolve to a real file on disk OR the surrounding +/-3 lines MUST carry one of the historical markers: historical, moved, extracted per ADR-NNNN, extracted at, was rooted, formerly, deferred, superseded, pre-ADR-NNNN, relocated, migrated, post-ADR-NNNN. Closes rc5 post-response P0-1: active module ARCHITECTURE.md path claims cannot lag behind real code locations after a refactor (Rule M-1 covers the symmetric skeleton case; Rule G-2 sub-clause .c covers the active case Rule M-1 does not reach)."
 
 - id: E118
-  constraint_ref: "CLAUDE.md Rule 85 (catalog_spi_row_matches_module_spi_metadata); rc5 post-response review P1-2; ADR-0030; ADR-0070; ADR-0080"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .f (catalog_spi_row_matches_module_spi_metadata); rc5 post-response review P1-2; ADR-0030; ADR-0070; ADR-0080"
   kind: gate-script
   level: L1
   view: development
   artifact: gate/check_architecture_sync.sh#catalog_spi_row_matches_module_spi_metadata
-  asserts: "Every row in the docs/contracts/contract-catalog.md '**Active SPI interfaces (N total):**' table whose 'Status' column does NOT contain the literal substring '(internal)' MUST: (a) point at a module whose <module>/module-metadata.yaml contains a spi_packages: entry that exactly matches the row's Package column OR contains the package as a .spi-prefixed sub-package, AND (b) the same module's docs/dfx/<module>.yaml#spi_packages list MUST contain the same package. The header count (N total) MUST equal the number of non-(internal) rows. Closes rc5 post-response P1-2: catalog SPI commitments must be backed by SPI metadata declarations on both sides of the Rule 78 set."
+  asserts: "Every row in the docs/contracts/contract-catalog.md '**Active SPI interfaces (N total):**' table whose 'Status' column does NOT contain the literal substring '(internal)' MUST: (a) point at a module whose <module>/module-metadata.yaml contains a spi_packages: entry that exactly matches the row's Package column OR contains the package as a .spi-prefixed sub-package, AND (b) the same module's docs/dfx/<module>.yaml#spi_packages list MUST contain the same package. The header count (N total) MUST equal the number of non-(internal) rows. Closes rc5 post-response P1-2: catalog SPI commitments must be backed by SPI metadata declarations on both sides of the Rule R-D sub-clause .e set."
 
 - id: E119
-  constraint_ref: "CLAUDE.md Rule 86 (root_architecture_count_and_path_truth); rc6 post-response review P0-2; ADR-0078; ADR-0079"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .d (root_architecture_count_and_path_truth); rc6 post-response review P0-2; ADR-0078; ADR-0079"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/check_architecture_sync.sh#root_architecture_count_and_path_truth
-  asserts: "Root ARCHITECTURE.md numeric module-count claims (\b[0-9]+-module\b | \b[0-9]+ modules\b | \b[0-9]+ reactor modules\b) outside fenced code blocks and YAML frontmatter MUST equal both (a) the count of <module> entries in root pom.xml and (b) docs/governance/architecture-status.yaml#repository_counts.reactor_modules; root ARCHITECTURE.md path claims of shape agent-*/src/main/java/... MUST resolve to a real path on disk OR carry one of the markers (historical, pre-ADR-NNNN, pre-Phase-C, consolidated, merged, was rooted, formerly, superseded, deferred, moved, extracted per ADR-NNNN, post-ADR-NNNN, archived) within +/-3 lines. Closes rc6 post-response P0-2: root ARCHITECTURE.md count and path truth (Rule 84 covers agent-*/ARCHITECTURE.md; Rule 86 covers root)."
+  asserts: "Root ARCHITECTURE.md numeric module-count claims (\b[0-9]+-module\b | \b[0-9]+ modules\b | \b[0-9]+ reactor modules\b) outside fenced code blocks and YAML frontmatter MUST equal both (a) the count of <module> entries in root pom.xml and (b) docs/governance/architecture-status.yaml#repository_counts.reactor_modules; root ARCHITECTURE.md path claims of shape agent-*/src/main/java/... MUST resolve to a real path on disk OR carry one of the markers (historical, pre-ADR-NNNN, pre-Phase-C, consolidated, merged, was rooted, formerly, superseded, deferred, moved, extracted per ADR-NNNN, post-ADR-NNNN, archived) within +/-3 lines. Closes rc6 post-response P0-2: root ARCHITECTURE.md count and path truth (Rule G-2 sub-clause .c covers agent-*/ARCHITECTURE.md; Rule G-2 sub-clause .d covers root)."
 
 - id: E120
-  constraint_ref: "CLAUDE.md Rule 87 (status_yaml_allowed_claim_module_name_truth); rc6 post-response review P1-2; ADR-0078; ADR-0079"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .e (status_yaml_allowed_claim_module_name_truth); rc6 post-response review P1-2; ADR-0078; ADR-0079"
   kind: gate-script
   level: L0
   view: development
@@ -1085,23 +1085,23 @@
   asserts: "Every line in docs/governance/architecture-status.yaml matching ^[[:space:]]+allowed_claim:[[:space:]]* whose extracted value contains a word-boundary match for agent-platform or agent-runtime (negative-filtered against agent-runtime-core) MUST have one of the markers (historical, pre-ADR-NNNN, pre-Phase-C, consolidated into, consolidated from, merged into, merged in, was rooted, formerly, superseded, deprecated, archived, moved, post-ADR-NNNN) present within +/-3 lines of the same yaml file. Closes rc6 post-response P1-2: ledger allowed_claim text cannot drift to deleted module names while structured repository_counts correctly declares the post-ADR-0078 9-module topology."
 
 - id: E121
-  constraint_ref: "CLAUDE.md Rule 88 (serial_parallel_gate_slug_parity); rc7 post-corrective review P0-2; ADR-0082"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .a (serial_parallel_gate_slug_parity); rc7 post-corrective review P0-2; ADR-0082"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#serial_parallel_gate_slug_parity
-  asserts: "Set of rule slugs extracted from gate/check_architecture_sync.sh (canonical) MUST equal the set the parallel awk extraction in gate/check_parallel.sh would produce, bounded by the explicit `# === END OF RULES ===` terminator. Every `# Rule N — slug` header MUST use em-dash `—` separator; double-dash `--` is forbidden. The canonical script MUST declare the `# === END OF RULES ===` marker. Closes rc7 post-corrective P0-2: the parallel wrapper silently skipped Rules 86-87 because of a compound defect (marker mismatch + separator mismatch); Rule 88 catches both legs."
+  asserts: "Set of rule slugs extracted from gate/check_architecture_sync.sh (canonical) MUST equal the set the parallel awk extraction in gate/check_parallel.sh would produce, bounded by the explicit `# === END OF RULES ===` terminator. Every `# Rule N — slug` header MUST use em-dash `—` separator; double-dash `--` is forbidden. The canonical script MUST declare the `# === END OF RULES ===` marker. Closes rc7 post-corrective P0-2: the parallel wrapper silently skipped Rules 86-87 because of a compound defect (marker mismatch + separator mismatch); Rule G-5 sub-clause .a catches both legs."
 
 - id: E122
-  constraint_ref: "CLAUDE.md Rule 89 (self_test_harness_fail_closed_coverage); rc7 post-corrective review P1-1; rc8 post-corrective review P1-4; ADR-0082; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .b (self_test_harness_fail_closed_coverage); rc7 post-corrective review P1-1; rc8 post-corrective review P1-4; ADR-0082; ADR-0083"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#self_test_harness_fail_closed_coverage
-  asserts: "gate/test_architecture_sync_gate.sh MUST (a) contain a `passed != TOTAL` fail-closed clause that exits non-zero, (b) NOT declare TOTAL via a bare literal `TOTAL=NNN` form (must derive from passed+failed or an explicit manifest), and (c) declare at least one `test_rule_<N>_*` function for every prevention-wave `# Rule N — slug` header (`N >= 80`) defined in gate/check_architecture_sync.sh. Pre-rc4 Rules 1-79 are grandfathered (covered by ArchUnit / integration tests at design time, not by inline self-test fixtures). rc9 narrows the wording from the original 'full coverage parity / every Rule' phrasing to the prevention-wave-only scope matching CLAUDE.md Rule 89 kernel and gate/check_architecture_sync.sh implementation (closes rc8 post-corrective P1-4: enforcers row + gate/README claim overclaimed broader coverage than the rule actually enforces). Original rc7 closure: harness hardcoded TOTAL=143 and exited 0 when only ~37 tests ran; inline Rule 86/87 fixtures lost their results to the parallel orchestrator overwriting passed/failed counters."
+  asserts: "gate/test_architecture_sync_gate.sh MUST (a) contain a `passed != TOTAL` fail-closed clause that exits non-zero, (b) NOT declare TOTAL via a bare literal `TOTAL=NNN` form (must derive from passed+failed or an explicit manifest), and (c) declare at least one `test_rule_<N>_*` function for every prevention-wave `# Rule N — slug` header (`N >= 80`) defined in gate/check_architecture_sync.sh. Pre-rc4 Rules 1-79 are grandfathered (covered by ArchUnit / integration tests at design time, not by inline self-test fixtures). rc9 narrows the wording from the original 'full coverage parity / every Rule' phrasing to the prevention-wave-only scope matching CLAUDE.md Rule G-5 sub-clause .b kernel and gate/check_architecture_sync.sh implementation (closes rc8 post-corrective P1-4: enforcers row + gate/README claim overclaimed broader coverage than the rule actually enforces). Original rc7 closure: harness hardcoded TOTAL=143 and exited 0 when only ~37 tests ran; inline Rule G-2 sub-clause .d/87 fixtures lost their results to the parallel orchestrator overwriting passed/failed counters."
 
 - id: E123
-  constraint_ref: "CLAUDE.md Rule 91 (baseline_metric_matches_executable_manifest); rc8 post-corrective review P0-1; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .c (baseline_metric_matches_executable_manifest); rc8 post-corrective review P0-1; ADR-0083"
   kind: gate-script
   level: L0
   view: process
@@ -1109,15 +1109,15 @@
   asserts: "docs/governance/architecture-status.yaml#architecture_sync_gate.baseline_metrics.active_gate_checks MUST equal the literal count of `# Rule N — slug` headers in gate/check_architecture_sync.sh before the `# === END OF RULES ===` terminator. Closes rc8 post-corrective P0-1: published baseline declared 74 active gate rules while parallel_summary reported 102 (28-section gap persisted across 8 release notes). ADR-0083 adopts the executable-section count as the canonical meaning of active_gate_checks."
 
 - id: E124
-  constraint_ref: "CLAUDE.md Rule 91 (baseline_metric_matches_executable_manifest); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .c (baseline_metric_matches_executable_manifest); ADR-0083"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_91_baseline_matches_pos
-  asserts: "Positive + negative self-test fixtures for Rule 91 in gate/test_architecture_sync_gate.sh. Positive: mock status YAML with active_gate_checks matching the canonical manifest count → rule passes. Negative: mock status YAML with active_gate_checks set to a value lower than the canonical manifest count → rule fails closed."
+  asserts: "Positive + negative self-test fixtures for Rule G-5 sub-clause .c in gate/test_architecture_sync_gate.sh. Positive: mock status YAML with active_gate_checks matching the canonical manifest count → rule passes. Negative: mock status YAML with active_gate_checks set to a value lower than the canonical manifest count → rule fails closed."
 
 - id: E125
-  constraint_ref: "CLAUDE.md Rule 92 (gate_rules_corpus_freshness); rc8 post-corrective review P2-1; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .d (gate_rules_corpus_freshness); rc8 post-corrective review P2-1; ADR-0083"
   kind: gate-script
   level: L0
   view: process
@@ -1125,15 +1125,15 @@
   asserts: "Every `# Rule N — slug` header in gate/check_architecture_sync.sh (before the END marker) MUST have a matching gate/rules/rule-NNN[a-z]?.sh file (zero-padded to 3 digits with optional letter suffix). gate/rules/ is an IDE-only generated artifact refreshed by gate/lib/extract_rules.sh; the production parallel gate consumes the canonical monolith directly. Closes rc8 post-corrective P2-1: incomplete shadow rule corpus (83 files vs 102 canonical headers)."
 
 - id: E126
-  constraint_ref: "CLAUDE.md Rule 92 (gate_rules_corpus_freshness); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-5 sub-clause .d (gate_rules_corpus_freshness); ADR-0083"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_92_freshness_pos
-  asserts: "Positive + negative self-test fixtures for Rule 92. Positive: every canonical header has a matching gate/rules/rule-NNN[a-z]?.sh file → pass. Negative: a canonical header without a matching file (synthetic deletion) → fail."
+  asserts: "Positive + negative self-test fixtures for Rule G-5 sub-clause .d. Positive: every canonical header has a matching gate/rules/rule-NNN[a-z]?.sh file → pass. Negative: a canonical header without a matching file (synthetic deletion) → fail."
 
 - id: E127
-  constraint_ref: "CLAUDE.md Rule 93 (dfx_stem_matches_module); rc8 post-corrective review P0-3; ADR-0082; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule M-2 sub-clause .c (dfx_stem_matches_module); rc8 post-corrective review P0-3; ADR-0082; ADR-0083"
   kind: gate-script
   level: L0
   view: development
@@ -1141,31 +1141,31 @@
   asserts: "Every docs/dfx/*.yaml file (excluding docs/archive/) MUST have a basename stem matching a `<module>` entry in root pom.xml. Closes rc8 post-corrective P0-3: docs/dfx/agent-platform.yaml remained on disk after ADR-0078 deleted the agent-platform module; ADR-0082 mandated removal but the gate did not enforce orphan-detection until rc9."
 
 - id: E128
-  constraint_ref: "CLAUDE.md Rule 93 (dfx_stem_matches_module); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule M-2 sub-clause .c (dfx_stem_matches_module); ADR-0083"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/test_architecture_sync_gate.sh#test_rule_93_dfx_stem_pos
-  asserts: "Positive + negative self-test fixtures for Rule 93. Positive: all dfx/*.yaml stems match modules in pom.xml → pass. Negative: synthetic dfx/orphan-module.yaml with no matching pom.xml entry → fail."
+  asserts: "Positive + negative self-test fixtures for Rule M-2 sub-clause .c. Positive: all dfx/*.yaml stems match modules in pom.xml → pass. Negative: synthetic dfx/orphan-module.yaml with no matching pom.xml entry → fail."
 
 - id: E129
-  constraint_ref: "CLAUDE.md Rule 94 (active_corpus_deleted_module_name_truth); rc8 post-corrective review P1-3; ADR-0078; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .f (active_corpus_deleted_module_name_truth); rc8 post-corrective review P1-3; ADR-0078; ADR-0083"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/check_architecture_sync.sh#active_corpus_deleted_module_name_truth
-  asserts: "Active corpus (`.md`, `.yaml`, `*.java` files outside docs/archive/, docs/reviews/, docs/releases/2026-05-1[0-7]-*.md, fenced code blocks, yaml comment lines) MUST NOT contain word-boundary current-tense `agent-platform` or `agent-runtime` (negative-filtered against `agent-runtime-core`) without a historical marker (historical, pre-ADR-NNNN, pre-Phase-C, consolidated into, merged into, was rooted, formerly, superseded, deprecated, archived, moved, extracted per ADR-NNNN, post-ADR-NNNN) within ±3 lines. Widens Rule 87 (which only covered architecture-status.yaml#allowed_claim) to root constraints, rule cards, and test Javadocs. Closes rc8 post-corrective P1-3."
+  asserts: "Active corpus (`.md`, `.yaml`, `*.java` files outside docs/archive/, docs/logs/reviews/, docs/logs/releases/2026-05-1[0-7]-*.md, fenced code blocks, yaml comment lines) MUST NOT contain word-boundary current-tense `agent-platform` or `agent-runtime` (negative-filtered against `agent-runtime-core`) without a historical marker (historical, pre-ADR-NNNN, pre-Phase-C, consolidated into, merged into, was rooted, formerly, superseded, deprecated, archived, moved, extracted per ADR-NNNN, post-ADR-NNNN) within ±3 lines. Widens Rule G-2 sub-clause .e (which only covered architecture-status.yaml#allowed_claim) to root constraints, rule cards, and test Javadocs. Closes rc8 post-corrective P1-3."
 
 - id: E130
-  constraint_ref: "CLAUDE.md Rule 94 (active_corpus_deleted_module_name_truth); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .f (active_corpus_deleted_module_name_truth); ADR-0083"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/test_architecture_sync_gate.sh#test_rule_94_corpus_bare_neg
-  asserts: "Positive + negative self-test fixtures for Rule 94. Positive: synthetic file mentioning agent-platform with a `pre-Phase-C` marker on the line above → pass. Negative: synthetic file mentioning agent-platform on a bare line → fail. Also positive: fenced code-block content mentioning agent-platform → pass (excluded scope)."
+  asserts: "Positive + negative self-test fixtures for Rule G-2 sub-clause .f. Positive: synthetic file mentioning agent-platform with a `pre-Phase-C` marker on the line above → pass. Negative: synthetic file mentioning agent-platform on a bare line → fail. Also positive: fenced code-block content mentioning agent-platform → pass (excluded scope)."
 
 - id: E131
-  constraint_ref: "CLAUDE.md Rule 95 (spi_catalog_exhaustiveness); rc8 post-corrective review P1-2; ADR-0080; ADR-0081; ADR-0083"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .g (spi_catalog_exhaustiveness); rc8 post-corrective review P1-2; ADR-0080; ADR-0081; ADR-0083"
   kind: gate-script
   level: L0
   view: logical
@@ -1173,89 +1173,89 @@
   asserts: "Every `public interface ...` declaration in a Java source file under any `*/spi/*` path (excluding `target/`) MUST appear in docs/contracts/contract-catalog.md as a backtick-wrapped interface name (either as an Active SPI table row OR explicitly marked `(internal)`). Closes rc8 post-corrective P1-2: SkillCapacityRegistry was public under .spi but missing from the catalog (11 total claimed)."
 
 - id: E132
-  constraint_ref: "CLAUDE.md Rule 95 (spi_catalog_exhaustiveness); ADR-0083"
+  constraint_ref: "CLAUDE.md Rule R-D sub-clause .g (spi_catalog_exhaustiveness); ADR-0083"
   kind: gate-script
   level: L0
   view: logical
   artifact: gate/test_architecture_sync_gate.sh#test_rule_95_spi_catalog_pos
-  asserts: "Positive + negative self-test fixtures for Rule 95. Positive: every public interface under */spi/* appears in catalog → pass. Negative: a synthetic public interface under */spi/* not in catalog → fail."
+  asserts: "Positive + negative self-test fixtures for Rule R-D sub-clause .g. Positive: every public interface under */spi/* appears in catalog → pass. Negative: a synthetic public interface under */spi/* not in catalog → fail."
 
 - id: E133
-  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); rc8 post-corrective review P1-1; rc10 post-corrective review P1-3; ADR-0083; ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .d (kernel_deferred_clause_coherence); rc8 post-corrective review P1-1; rc10 post-corrective review P1-3; ADR-0083; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#kernel_deferred_clause_coherence
-  asserts: "For every `## Rule N.<letter>` sub-clause heading in docs/CLAUDE-deferred.md, EITHER the matching `#### Rule N` kernel block in CLAUDE.md (between the heading and the next `---`) OR the matching `docs/governance/rules/rule-NN.md` card MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective P1-1 (Rule 42 + Rule 46 active kernels overclaimed runtime enforcement that CLAUDE-deferred.md correctly deferred to W2) + rc10 post-corrective P1-3 (kernel-vs-implementation alignment: cards have no kernel_cap, so long deferred discussions may cite there)."
+  asserts: "For every `## Rule N.<letter>` sub-clause heading in docs/CLAUDE-deferred.md, EITHER the matching `#### Rule N` kernel block in CLAUDE.md (between the heading and the next `---`) OR the matching `docs/governance/rules/rule-NN.md` card MUST contain the literal string `Rule N.<letter>` to acknowledge the deferred runtime obligation. Closes rc8 post-corrective P1-1 (Rule R-L + Rule R-M sub-clause .d active kernels overclaimed runtime enforcement that CLAUDE-deferred.md correctly deferred to W2) + rc10 post-corrective P1-3 (kernel-vs-implementation alignment: cards have no kernel_cap, so long deferred discussions may cite there)."
 
 - id: E134
-  constraint_ref: "CLAUDE.md Rule 96 (kernel_deferred_clause_coherence); ADR-0083; ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .d (kernel_deferred_clause_coherence); ADR-0083; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_96_kernel_cites_pos
-  asserts: "Positive + negative self-test fixtures for Rule 96. Positive A (kernel-cited): synthetic CLAUDE.md Rule N kernel containing the literal `Rule N.b` reference → pass. Positive B (card-only, rc11): synthetic Rule N.b deferred sub-clause cited only in docs/governance/rules/rule-NN.md card → pass (proves the card-only path is intentional). Negative: synthetic Rule N.b deferred sub-clause with no `Rule N.b` reference in either the kernel or the card → fail."
+  asserts: "Positive + negative self-test fixtures for Rule G-3 sub-clause .d. Positive A (kernel-cited): synthetic CLAUDE.md Rule N kernel containing the literal `Rule N.b` reference → pass. Positive B (card-only, rc11): synthetic Rule N.b deferred sub-clause cited only in docs/governance/rules/rule-NN.md card → pass (proves the card-only path is intentional). Negative: synthetic Rule N.b deferred sub-clause with no `Rule N.b` reference in either the kernel or the card → fail."
 
 - id: E135
-  constraint_ref: "CLAUDE.md Rule 97 (release_note_numeric_truth); rc10 category-sweep I-α-2; ADR-0084"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .g (release_note_numeric_truth); rc10 category-sweep I-α-2; ADR-0084"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#release_note_numeric_truth
-  asserts: "The LATEST release note under docs/releases/*.md (lex-sort tail -1) MUST NOT contain an absolute `<N> nodes` or `<M> edges` prose claim disagreeing with the live values in docs/governance/architecture-graph.yaml#node_count + #edge_count, unless the line carries a historical/rc[N] snapshot/rc[N] correction/rc[N] first cut/superseded marker within ±3 lines. Delta-formatted claims (`+N nodes / +M edges`) are exempt. Closes rc10 I-α-2: rc9 first cut declared 360 nodes / 510 edges while live header was 369 / 520 — no rule caught the prose drift because Rule 91 only checked architecture-status.yaml#baseline_metrics.active_gate_checks."
+  asserts: "The LATEST release note under docs/logs/releases/*.md (lex-sort tail -1) MUST NOT contain an absolute `<N> nodes` or `<M> edges` prose claim disagreeing with the live values in docs/governance/architecture-graph.yaml#node_count + #edge_count, unless the line carries a historical/rc[N] snapshot/rc[N] correction/rc[N] first cut/superseded marker within ±3 lines. Delta-formatted claims (`+N nodes / +M edges`) are exempt. Closes rc10 I-α-2: rc9 first cut declared 360 nodes / 510 edges while live header was 369 / 520 — no rule caught the prose drift because Rule G-5 sub-clause .c only checked architecture-status.yaml#baseline_metrics.active_gate_checks."
 
 - id: E136
-  constraint_ref: "CLAUDE.md Rule 97 (release_note_numeric_truth); ADR-0084"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .g (release_note_numeric_truth); ADR-0084"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_97_release_note_numeric_pos
-  asserts: "Positive + negative self-test fixtures for Rule 97. Positive: synthetic latest release note with `369 nodes / 520 edges` matching live values → pass. Negative: synthetic latest release note with `360 nodes / 510 edges` and no historical/correction marker → fail. Also positive: same wrong values BUT with `rc10 correction` marker within ±3 lines → pass."
+  asserts: "Positive + negative self-test fixtures for Rule G-2 sub-clause .g. Positive: synthetic latest release note with `369 nodes / 520 edges` matching live values → pass. Negative: synthetic latest release note with `360 nodes / 510 edges` and no historical/correction marker → fail. Also positive: same wrong values BUT with `rc10 correction` marker within ±3 lines → pass."
 
 - id: E137
-  constraint_ref: "CLAUDE.md Rule 98 (broad_corpus_deleted_module_name_truth); rc10 category-sweep I-ε family; ADR-0078; ADR-0084"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .h (broad_corpus_deleted_module_name_truth); rc10 category-sweep I-ε family; ADR-0078; ADR-0084"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/check_architecture_sync.sh#broad_corpus_deleted_module_name_truth
-  asserts: "Widens Rule 94 file-discovery scope to ops/**/*.{yaml,yml,tpl}, docs/contracts/*.yaml, **/module-metadata.yaml (excluding archive). Same word-boundary regex (`agent-platform` or `agent-runtime` not -core), same exemption-marker set (historical, pre-ADR-NNNN, pre-Phase-C, consolidated, formerly, superseded, ADR-NNNN, forbidden_dependencies, etc.) within ±3 lines. Closes rc10 I-ε family hidden defects: Helm chart files (values.yaml, deployment.yaml, Chart.yaml), live OpenAPI contract owner, BoM module-metadata.yaml description — all carried pre-Phase-C names but were outside Rule 94's narrow ARCHITECTURE.md + rule-card + test-Javadoc scope."
+  asserts: "Widens Rule G-2 sub-clause .f file-discovery scope to ops/**/*.{yaml,yml,tpl}, docs/contracts/*.yaml, **/module-metadata.yaml (excluding archive). Same word-boundary regex (`agent-platform` or `agent-runtime` not -core), same exemption-marker set (historical, pre-ADR-NNNN, pre-Phase-C, consolidated, formerly, superseded, ADR-NNNN, forbidden_dependencies, etc.) within ±3 lines. Closes rc10 I-ε family hidden defects: Helm chart files (values.yaml, deployment.yaml, Chart.yaml), live OpenAPI contract owner, BoM module-metadata.yaml description — all carried pre-Phase-C names but were outside Rule G-2 sub-clause .f's narrow ARCHITECTURE.md + rule-card + test-Javadoc scope."
 
 - id: E138
-  constraint_ref: "CLAUDE.md Rule 98 (broad_corpus_deleted_module_name_truth); ADR-0084"
+  constraint_ref: "CLAUDE.md Rule G-2 sub-clause .h (broad_corpus_deleted_module_name_truth); ADR-0084"
   kind: gate-script
   level: L0
   view: development
   artifact: gate/test_architecture_sync_gate.sh#test_rule_98_broad_corpus_pos
-  asserts: "Positive + negative self-test fixtures for Rule 98. Positive: synthetic ops/helm/test.yaml with `agent-service` reference → pass. Negative: synthetic ops/helm/test.yaml with bare `agent-platform` reference → fail. Also positive: same `agent-platform` reference but with `pre-Phase-C` marker on adjacent line → pass."
+  asserts: "Positive + negative self-test fixtures for Rule G-2 sub-clause .h. Positive: synthetic ops/helm/test.yaml with `agent-service` reference → pass. Negative: synthetic ops/helm/test.yaml with bare `agent-platform` reference → fail. Also positive: same `agent-platform` reference but with `pre-Phase-C` marker on adjacent line → pass."
 
 - id: E139
-  constraint_ref: "CLAUDE.md Rule 99 (kernel_terminal_verb_vs_shipped_decision_check); rc10 post-corrective review P1-1; ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .e (kernel_terminal_verb_vs_shipped_decision_check); rc10 post-corrective review P1-1; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#kernel_terminal_verb_vs_shipped_decision_check
-  asserts: "For every #### Rule N kernel block in CLAUDE.md, if a matching ## Rule N.<letter> sub-clause exists in docs/CLAUDE-deferred.md AND the kernel body contains an end-state verb token (`are SUSPENDED`, `is SUSPENDED`, `transitions to FAILED`, `consumes the * capacity`, `is rejected, not failed`, `admits the caller`), the gate FAILS — the active kernel is overclaiming shipped behaviour when the matching obligation is deferred. Closes rc10 post-corrective review P1-1: Rule 41 kernel said `over-cap callers are SUSPENDED, not rejected` while DefaultSkillResilienceContract.resolve returns a SkillResolution decision envelope (the actual Run.SUSPENDED transition is deferred to Rule 41.c)."
+  asserts: "For every #### Rule N kernel block in CLAUDE.md, if a matching ## Rule N.<letter> sub-clause exists in docs/CLAUDE-deferred.md AND the kernel body contains an end-state verb token (`are SUSPENDED`, `is SUSPENDED`, `transitions to FAILED`, `consumes the * capacity`, `is rejected, not failed`, `admits the caller`), the gate FAILS — the active kernel is overclaiming shipped behaviour when the matching obligation is deferred. Closes rc10 post-corrective review P1-1: Rule R-K kernel said `over-cap callers are SUSPENDED, not rejected` while DefaultSkillResilienceContract.resolve returns a SkillResolution decision envelope (the actual Run.SUSPENDED transition is deferred to Rule R-K.c)."
 
 - id: E140
-  constraint_ref: "CLAUDE.md Rule 99 (kernel_terminal_verb_vs_shipped_decision_check); ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .e (kernel_terminal_verb_vs_shipped_decision_check); ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_99_kernel_verb_pos
-  asserts: "Positive + negative self-test fixtures for Rule 99. Positive: synthetic CLAUDE.md Rule N kernel saying `MUST return SkillResolution.reject(...)` with matching Rule N.c deferred sub-clause → pass. Negative: synthetic CLAUDE.md Rule N kernel saying `callers are SUSPENDED` with matching Rule N.c deferred sub-clause → fail."
+  asserts: "Positive + negative self-test fixtures for Rule G-3 sub-clause .e. Positive: synthetic CLAUDE.md Rule N kernel saying `MUST return SkillResolution.reject(...)` with matching Rule N.c deferred sub-clause → pass. Negative: synthetic CLAUDE.md Rule N kernel saying `callers are SUSPENDED` with matching Rule N.c deferred sub-clause → fail."
 
 - id: E141
-  constraint_ref: "CLAUDE.md Rule 100 (kernel_implementation_disjunction_truth); rc10 post-corrective review P1-3; ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .f (kernel_implementation_disjunction_truth); rc10 post-corrective review P1-3; ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#kernel_implementation_disjunction_truth
-  asserts: "For every rule listed in gate/rule-100-disjunction-allowlist.txt, BOTH the #### Rule N kernel block in CLAUDE.md AND the matching docs/governance/rules/rule-NN.md card MUST contain explicit disjunction wording (EITHER / OR / either surface / either ... or ... / either kernel / either the). Initial allow-list (rc11): Rule 96. Closes rc10 post-corrective review P1-3: Rule 96 kernel said `the matching CLAUDE.md kernel block MUST contain` while the impl accepted EITHER kernel OR rule card — a kernel-AND-impl-OR drift in the rule whose job is preventing kernel/deferred drift."
+  asserts: "For every rule listed in gate/rule-100-disjunction-allowlist.txt, BOTH the #### Rule N kernel block in CLAUDE.md AND the matching docs/governance/rules/rule-NN.md card MUST contain explicit disjunction wording (EITHER / OR / either surface / either ... or ... / either kernel / either the). Initial allow-list (rc11): Rule G-3 sub-clause .d. Closes rc10 post-corrective review P1-3: Rule G-3 sub-clause .d kernel said `the matching CLAUDE.md kernel block MUST contain` while the impl accepted EITHER kernel OR rule card — a kernel-AND-impl-OR drift in the rule whose job is preventing kernel/deferred drift."
 
 - id: E142
-  constraint_ref: "CLAUDE.md Rule 100 (kernel_implementation_disjunction_truth); ADR-0085"
+  constraint_ref: "CLAUDE.md Rule G-3 sub-clause .f (kernel_implementation_disjunction_truth); ADR-0085"
   kind: gate-script
   level: L0
   view: process
   artifact: gate/test_architecture_sync_gate.sh#test_rule_100_disjunction_pos
-  asserts: "Positive + negative self-test fixtures for Rule 100. Positive: synthetic Rule 96 kernel + card both saying `EITHER the kernel block OR the rule card` → pass. Negative: synthetic Rule 96 kernel saying only `the kernel block MUST contain` with `96` in the allow-list → fail (kernel=0)."
+  asserts: "Positive + negative self-test fixtures for Rule G-3 sub-clause .f. Positive: synthetic Rule G-3 sub-clause .d kernel + card both saying `EITHER the kernel block OR the rule card` → pass. Negative: synthetic Rule G-3 sub-clause .d kernel saying only `the kernel block MUST contain` with `96` in the allow-list → fail (kernel=0)."

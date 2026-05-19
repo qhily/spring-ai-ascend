@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-14
-- Authority: External L1 architecture expert review at `docs/reviews/2026-05-14-l1-architecture-expert-review.en.md`.
+- Authority: External L1 architecture expert review at `docs/logs/reviews/2026-05-14-l1-architecture-expert-review.en.md`.
 - Scope: L1 release readiness — three release-blocking gaps and four supporting gaps surfaced by the external review.
 - Supersedes-in-part: §5 "Risks Carried Forward (After Phase K)" of the L1 release note (rewritten by Phase L).
 
@@ -23,11 +23,11 @@ Four supporting findings (P1/P2):
 - **P1-1**: Reviewer suspected `IdempotencyHeaderFilter` consumed the request body before the controller. Verified: Spring's `ContentCachingRequestWrapper` does replay (per Javadoc + code comment), so this is **REFUTED**. But the underlying gap — no authenticated end-to-end POST `/v1/runs` test — is real.
 - **P1-2**: `architecture-status.yaml` carried two rows (`w1_http_contract_reconciliation`, `micrometer_mandatory_tenant_tag`) as `design_accepted, shipped: false` while L1 had actually shipped the relevant code.
 - **P1-4**: `agent-service/ARCHITECTURE.md` §6–9 still described the W0 boundary as if L1 had not happened (test table, "JWT validation: W1 out of scope", "No JDBC at W0; risk not active").
-- **P2-1**: Rule 28 meta-check (`constraint_enforcer_coverage`) was a baseline presence check, not the full constraint inventory implied by its name and ADR-0059's wording.
+- **P2-1**: Rule R-C.a meta-check (`constraint_enforcer_coverage`) was a baseline presence check, not the full constraint inventory implied by its name and ADR-0059's wording.
 
 ## Decision
 
-Phase L closes P0-1/2/3 and P1-2/4 and P2-1 in this commit. P1-3 (PowerShell mirror port of 11 Rule-28 sub-rules) is explicitly deferred to W2 per §3 below.
+Phase L closes P0-1/2/3 and P1-2/4 and P2-1 in this commit. P1-3 (PowerShell mirror port of 11 Rule-R-C.a sub-rules) is explicitly deferred to W2 per §3 below.
 
 ### 1. Anchor-level truth (closes P0-2, hardens P0-2 root cause)
 
@@ -70,7 +70,7 @@ Two new gate self-tests under `gate/test_architecture_sync_gate.sh` exercise the
 
 ### 4. Meta-check truthful naming (closes P2-1)
 
-The body of Rule 28 (`constraint_enforcer_coverage`) is annotated to make the scope explicit:
+The body of Rule R-C.a (`constraint_enforcer_coverage`) is annotated to make the scope explicit:
 
 > **L1 scope (Phase L truthful naming, per reviewer P2-1):** baseline presence check only. Verifies that `docs/governance/enforcers.yaml` references `CLAUDE.md` AND `ARCHITECTURE.md`. This is the smallest viable bootstrap meta-check — it does NOT parse every "must"/"forbidden"/"required" sentence in the corpus and cross-reference each one. Full natural-language parsing is deferred (no executable enforcer is feasible without committing to a brittle regex over evolving prose).
 
@@ -88,7 +88,7 @@ The function name `constraint_enforcer_coverage` is retained because many existi
 
 ## 3. Explicitly deferred (W2 trigger)
 
-**PowerShell mirror port of Rule 28a–28j + Rule 28j hardening (P1-3).** The reviewer recommends porting all 11 Rule-28 sub-checks to `gate/check_architecture_sync.ps1` so contributors running only the PowerShell gate cannot miss L1 Rule 28 violations. Phase L explicitly **does not** land this port. Reasons:
+**PowerShell mirror port of Rule 28a–28j + Rule 28j hardening (P1-3).** The reviewer recommends porting all 11 Rule-R-C.a sub-checks to `gate/check_architecture_sync.ps1` so contributors running only the PowerShell gate cannot miss L1 Rule R-C.a violations. Phase L explicitly **does not** land this port. Reasons:
 
 1. The reviewer's verification command was `bash gate/check_architecture_sync.sh`. Bash is the canonical release gate at L1.
 2. The 11 sub-checks (28a–28j + meta) contain non-trivial Bash idioms (`mktemp`, `<<<`, process substitution, `while IFS= read`) whose PowerShell equivalents would be substantial work and would re-introduce parity-drift risk if rushed.
@@ -99,7 +99,7 @@ The function name `constraint_enforcer_coverage` is retained because many existi
 
 ## Alternatives considered
 
-- **Rename Rule 28 meta-check to `baseline_rule28_index_presence` (reviewer suggestion).** Rejected because the name `constraint_enforcer_coverage` is referenced in multiple ADRs, the release note, CLAUDE.md, and `enforcers.yaml`. Renaming would induce widespread reference churn for a cosmetic gain. The truthful-naming intent is met by the explicit scope annotation in the rule body.
+- **Rename Rule R-C.a meta-check to `baseline_rule28_index_presence` (reviewer suggestion).** Rejected because the name `constraint_enforcer_coverage` is referenced in multiple ADRs, the release note, CLAUDE.md, and `enforcers.yaml`. Renaming would induce widespread reference churn for a cosmetic gain. The truthful-naming intent is met by the explicit scope annotation in the rule body.
 - **Delete the broken anchors (P0-2 alternative).** Rejected. Removing `#cancelTerminalReturns409` and similar anchors weakens the enforcer rather than fixing the underlying gap. Implementing the real authenticated tests is the load-bearing fix.
 - **Allow live `/v1/**` additive endpoints (P0-3 alternative).** Rejected. The L1 surface is public API; additive live endpoints absent from the pinned snapshot is exactly the drift class the snapshot is meant to prevent.
 
@@ -114,6 +114,6 @@ The function name `constraint_enforcer_coverage` is retained because many existi
 
 - [x] Identifies the constraint at risk (release-note baseline truth, anchor truth, public-contract truth)
 - [x] Names the failure mode (gate fail / overclaimed enforcer / undocumented live endpoint)
-- [x] Names the enforcer (Gate Rule 28, Rule 28j strengthening, `OpenApiContractIT.noUndocumentedV1OperationsExposedByLive`, `RunHttpContractIT.{createReturnsPending,tenantMismatchReturns403,cancelTerminalReturns409,duplicateIdempotencyKeyReturns409}`)
+- [x] Names the enforcer (Gate Rule R-C.a, Rule 28j strengthening, `OpenApiContractIT.noUndocumentedV1OperationsExposedByLive`, `RunHttpContractIT.{createReturnsPending,tenantMismatchReturns403,cancelTerminalReturns409,duplicateIdempotencyKeyReturns409}`)
 - [x] Records the alternative considered (anchor deletion, additive-live tolerance, meta-check rename)
 - [x] Lists the test coverage (35 + 2 new self-tests = 37 cases; 4 new RunHttpContractIT methods; 1 new OpenApiContractIT method; updated `w1_http_contract_reconciliation` evidence list)

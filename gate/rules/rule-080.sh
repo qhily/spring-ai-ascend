@@ -15,7 +15,12 @@
 # S2cCallbackSignal are forbidden in authoritative docs.
 # ---------------------------------------------------------------------------
 _r80_fail=0
-_r80_marker_re='historical|deleted|refactored|rc3-unification|amendment|forClientCallback|prior parallel|2026-05-16 design|unifies|unified|rc3 unif'
+_r80_vocab="gate/historical-marker-vocabulary.txt"
+if [[ ! -f "$_r80_vocab" ]]; then
+  fail_rule "s2c_callback_signal_historical_only_in_authority" "$_r80_vocab missing -- Rule 80 / E113 (Wave 2 vocabulary externalisation)"
+  _r80_fail=1
+fi
+_r80_marker_re="$(grep -vE '^[[:space:]]*(#|$)' "$_r80_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 for _r80_file in CLAUDE.md README.md ARCHITECTURE.md docs/contracts/*.v1.yaml docs/adr/*.yaml docs/adr/*.md agent-*/ARCHITECTURE.md; do
   [[ -f "$_r80_file" ]] || continue
   while IFS= read -r _r80_match; do

@@ -22,7 +22,7 @@ decision_one_liner: |
   ResilienceContract is dual-surface: resolve(operationId) is operation-policy
   routing (W0+; the legacy axis from ADR-0030) and resolve(tenant, skill) is
   skill-capacity arbitration (W1.x Phase 9+; introduced by ADR-0070 and enforced
-  by Rule 41.b). The pre-ADR-0070 plan to extend the operation surface to
+  by Rule R-K.b). The pre-ADR-0070 plan to extend the operation surface to
   (tenantId, operationId) is superseded by ADR-0070's skill axis — capacity uses
   (tenant, skill), NOT a renamed operation argument. The two axes MUST NOT be
   conflated. Contract catalog, ADR-0030, and ADR-0044 are amended in place.
@@ -42,7 +42,7 @@ context: |
   shifted: instead of routing an operation's resilience policy by tenant, the
   new overload arbitrates *skill capacity* across tenants. The skill axis is
   the cross-cutting capacity dimension; the operation axis is the legacy
-  per-operation policy routing surface. CLAUDE.md Rule 41.b enforces the new
+  per-operation policy routing surface. CLAUDE.md Rule R-K.b enforces the new
   overload at runtime via SkillCapacityRegistry.
 
   At v2.0.0-rc6 (2026-05-18) the Java SPI exposes BOTH methods. The
@@ -55,7 +55,7 @@ context: |
   The Codex rc6 post-response architecture review (P1-1, 2026-05-18) found
   that contract-catalog.md:58, ADR-0030:223, and ADR-0044:77 still
   described only the pre-ADR-0070 "(tenantId, operationId) at W2" future
-  even though the active rule (Rule 41.b) ships the (tenant, skill) overload.
+  even though the active rule (Rule R-K.b) ships the (tenant, skill) overload.
   The risk is W2 implementer drift: a future contributor reading the older
   ADR text would add a third (tenantId, operationId) overload to the
   contract, conflating operation routing with skill capacity.
@@ -70,7 +70,7 @@ decision: |
     contract; this ADR codifies the semantics across the authority corpus):
       * resolve(String operationId) — OPERATION-POLICY ROUTING.
         - Axis: operation identifier -> ResiliencePolicy triple.
-        - Authority: ADR-0030 (origin), Rule 41 (general resilience routing).
+        - Authority: ADR-0030 (origin), Rule R-K (general resilience routing).
         - Status: W0+ shipped; production binding is YamlResilienceContract.
         - Forward evolution: kept open for operation-attribute extensions
           (e.g., operation-side hedging policy). Future extensions MUST NOT
@@ -78,14 +78,14 @@ decision: |
           (tenant, skill) surface.
       * resolve(String tenant, String skill) — SKILL-CAPACITY ARBITRATION.
         - Axis: (tenant, skill) -> SkillResolution {admitted, suspendReason?}.
-        - Authority: ADR-0070 (origin), Rule 41.b (runtime enforcement).
+        - Authority: ADR-0070 (origin), Rule R-K.b (runtime enforcement).
         - Status: W1.x Phase 9+ shipped; production binding is
           DefaultSkillResilienceContract, backed by YamlSkillCapacityRegistry
           consulting docs/governance/skill-capacity.yaml.
         - Over-cap callers receive admitted=false carrying
           SuspendReason.RateLimited so the orchestrator maps to
           RunStatus.SUSPENDED, not FAILED (Chronos Hydration interlock
-          with Rule 38).
+          with Rule R-H).
         - Forward evolution: kept open for skill-graph routing
           (skill -> sub-skill capacity inheritance). Future extensions MUST
           NOT add an operationId axis here — operation-side policy routing
@@ -123,14 +123,14 @@ alternatives_considered:
   - alternative: "Mark ADR-0030 as fully superseded and remove the W2 evolution claim."
     why_rejected: "Full supersession erases ADR-0030's role as the operation-policy axis origin authority. Future operation-attribute extensions still need to cite ADR-0030. Partial supersession (W2 evolution claim only) preserves both axes' authority trails."
   - alternative: "Defer the reconciliation; mark the catalog row with a TODO."
-    why_rejected: "The rc6 reviewer's risk (W2 implementer drift) is real and immediate — the next person to read ADR-0030 would build the (tenantId, operationId) extension and conflict with the live (tenant, skill) overload. Deferral re-creates the dual-classification defect Rule 85 was supposed to prevent."
+    why_rejected: "The rc6 reviewer's risk (W2 implementer drift) is real and immediate — the next person to read ADR-0030 would build the (tenantId, operationId) extension and conflict with the live (tenant, skill) overload. Deferral re-creates the dual-classification defect Rule R-D sub-clause .f was supposed to prevent."
 
 verification:
   cli:
     - "./mvnw clean verify -> BUILD SUCCESS (no Java change in rc7 or rc8)"
     - "bash gate/check_architecture_sync.sh -> GATE: PASS (74 active gate rules; rc8 baseline)"
-    - "bash gate/check_parallel.sh -> GATE: PASS; parallel_summary trailer shows 74/74 rule parity per Rule 88 (rc8 baseline)"
-    - "bash gate/test_architecture_sync_gate.sh -> Tests passed: 149/149 (rc8 baseline; TOTAL derived at runtime per Rule 89)"
+    - "bash gate/check_parallel.sh -> GATE: PASS; parallel_summary trailer shows 74/74 rule parity per Rule G-5 sub-clause .a (rc8 baseline)"
+    - "bash gate/test_architecture_sync_gate.sh -> Tests passed: 149/149 (rc8 baseline; TOTAL derived at runtime per Rule G-5 sub-clause .b)"
   corpus:
     - "docs/contracts/contract-catalog.md ResilienceContract row carries 'dual-surface' language with ADR-0070 + ADR-0081 pointers"
     - "docs/adr/0030-skill-spi-lifecycle-resource-matrix.md:223 paragraph amended with supersession marker pointing to ADR-0070 + ADR-0081"
@@ -143,7 +143,7 @@ notes: |
   No new gate rule added for ADR-0081. The pattern (multi-axis SPI scope drift)
   is rare — the rc7 corpus-wide F-β sweep found only ResilienceContract as a
   real case; SuspendSignal, ExecutorAdapter, HookPoint are accurately
-  documented. Rule 25 (architecture-text truth) + Rule 28 (code-as-contract)
+  documented. Rule G-2 sub-clause .a (architecture-text truth) + Rule R-C.a (code-as-contract)
   already cover the general invariant; a dedicated prevention rule would
   over-fit on a single instance. If a second multi-axis SPI scope drift is
   found in a future wave, a Rule 88-style prevention gate should be revisited.

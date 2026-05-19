@@ -221,8 +221,8 @@ W2+ work.
 
 ## References
 
-- Fifth-reviewer document: `docs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §4
-- Response document: `docs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-D)
+- Fifth-reviewer document: `docs/logs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §4
+- Response document: `docs/logs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-D)
 - ADR-0019: SuspendReason taxonomy (Cancel → RunStatus.CANCELLED via RunControlSink)
 - ADR-0021: Layered SPI taxonomy (CapabilityRegistry, W4 Temporal tier)
 - ADR-0022: PayloadCodec SPI (NodeCompleted.output is EncodedPayload)

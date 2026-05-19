@@ -31,7 +31,7 @@ Before any artifact leaves the repo, the following must pass in a clean environm
 1. **Long-lived process** — managed process supervisor (systemd / docker / kubernetes); not a foreground shell run.
 2. **Real external dependencies** — real LLM provider, real database — pointing at what downstream will use.
 3. **Sequential real-dependency runs (N≥3)** — three back-to-back invocations; each reaches terminal success in ≤ `2 × observed_p95`; fallback count `== 0`.
-4. **Cross-context resource stability** — runs 2 and 3 reuse the same client instances as run 1 (Rule 5 stress test).
+4. **Cross-context resource stability** — runs 2 and 3 reuse the same client instances as run 1 (Rule D-7 stress test).
 5. **Lifecycle observability** — each run reports a non-null current stage within 30 s; finished-at populated on terminal.
 6. **Cancellation round-trip** — cancel on live run → 200 + terminal; cancel on unknown id → 404.
 
@@ -140,7 +140,7 @@ Composes with: ARCHITECTURE.md §4 #21 (`payload_codec_spi`); ADR-0022.
 2. Wrap both writes in a single Postgres `@Transactional` block (same `DataSource`), OR use the transactional outbox pattern (ADR-0007) for non-DB Checkpointer backends.
 3. Enforce the contract with an integration test that kills the JVM mid-write and asserts post-restart consistency (e.g., via `ProcessBuilder` + DB state check).
 
-An implementation that cannot demonstrate this contract is a ship-blocking defect per Rule 9 (category: "Run lifecycle — checkpoint/resume atomicity").
+An implementation that cannot demonstrate this contract is a ship-blocking defect per Rule D-5 (category: "Run lifecycle — checkpoint/resume atomicity").
 
 Composes with: ARCHITECTURE.md §4 #23 (`suspension_write_atomicity_contract`); ADR-0024; ADR-0007.
 
@@ -183,24 +183,24 @@ Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); 
 **Rule**: In `research` or `prod` posture, any `Skill` with `SkillTrustTier.UNTRUSTED` MUST be routed through a non-`NoOpSandboxExecutor` implementation:
 
 1. **Startup gate**: on application startup in `research`/`prod` posture, if any registered Skill carries `UNTRUSTED` trust tier, the container MUST assert that a non-NoOp `SandboxExecutor` bean is present. Missing sandbox → startup failure with clear error message referencing ADR-0030.
-2. **Posture model**: `dev` posture emits a `[WARN]` log when `UNTRUSTED` skills execute without a real sandbox (allows iteration without Docker/GraalVM setup). `research`/`prod` posture fails-closed per Rule 10.
+2. **Posture model**: `dev` posture emits a `[WARN]` log when `UNTRUSTED` skills execute without a real sandbox (allows iteration without Docker/GraalVM setup). `research`/`prod` posture fails-closed per Rule D-6.
 3. **VETTED bypass**: `SkillTrustTier.VETTED` skills may route through `NoOpSandboxExecutor` in all postures. Trust-tier assignment is declared in `Skill.metadata()` and is immutable at runtime.
 
-Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); ADR-0030; ADR-0018 (`SandboxExecutor` SPI); Rule 10 (posture-aware defaults).
+Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); ADR-0030; ADR-0018 (`SandboxExecutor` SPI); Rule D-6 (posture-aware defaults).
 
 ---
 
-## Rule 30.b — Baseline Regression → ADR Pairing [Deferred to W1]
+## Rule R-B.b — Baseline Regression → ADR Pairing [Deferred to W1]
 
 **Re-introduction trigger**: first revision of `docs/governance/competitive-baselines.yaml` that lowers a `current_value` vs the prior git revision (target: W1, when at least one dimension is measurable).
 
 **Rule (draft)**: A git-diff gate rule MUST compare the previous and current revision of `docs/governance/competitive-baselines.yaml`. Any dimension whose `current_value` regresses MUST carry a `regression_adr: ADR-NNNN` reference in the same row pointing to a justification ADR. Missing regression-ADR → gate failure.
 
-Composes with: ARCHITECTURE.md §4 #61; ADR-0065; Rule 30 (Competitive Baselines).
+Composes with: ARCHITECTURE.md §4 #61; ADR-0065; Rule R-B (Competitive Baselines).
 
 ---
 
-## Rule 30.d — Automated Pillar Measurement [Deferred to W2 / W3]
+## Rule R-B.d — Automated Pillar Measurement [Deferred to W2 / W3]
 
 **Re-introduction trigger**: (i) first perf benchmark harness in CI for `30.d.performance`; (ii) first cost-accounting hook landing per Rule 13 trigger for `30.d.cost`; (iii) CI-timed onboarding script for `30.d.developer_onboarding`; (iv) governance dashboard for `30.d.governance`.
 
@@ -210,178 +210,178 @@ Composes with: ARCHITECTURE.md §4 #61; ADR-0065; Rule 13 (P1 cost-of-use, defer
 
 ---
 
-## Rule 31.b — Runtime Semver Compatibility Enforcement [Deferred to W2]
+## Rule R-C.b.b — Runtime Semver Compatibility Enforcement [Deferred to W2]
 
 **Re-introduction trigger**: first BoM release that drops a previously-published artifact, OR first starter that introduces a breaking config change without a major-version bump (target: W2).
 
 **Rule (draft)**: A gate rule MUST cross-check `<module>/module-metadata.yaml`'s `semver_compatibility` against the artifact's actual API delta. A starter that introduces a breaking config change without a major-version bump → gate failure. A BoM revision that removes a coordinate without a deprecation window declared in `module-metadata.yaml` → gate failure.
 
-Composes with: ARCHITECTURE.md §4 #62; ADR-0066; Rule 31 (Independent Module Evolution).
+Composes with: ARCHITECTURE.md §4 #62; ADR-0066; Rule R-C.b (Independent Module Evolution).
 
 ---
 
-## Rule 32.b — TCK Reactor Module Scaffolding [Deferred to W2]
+## Rule R-D sub-clause .a.b — TCK Reactor Module Scaffolding [Deferred to W2]
 
 **Re-introduction trigger**: first alternative implementation of any `agent-runtime` SPI is proposed — Postgres `Checkpointer`, Temporal `RunRepository`, or Redis `IdempotencyStore` (target: W2).
 
 **Rule (draft)**: A sibling `agent-runtime-tck` reactor module MUST exist with a single `@TckSurfaceMarker` test asserting the SPI interface signatures it covers. Adding the module bumps `module_count_invariant` (Gate Rule 28e) from 4 to 5.
 
-**Pre-promotion holding tank** (added 2026-05-18 by the Beyond-SDD review response, see [`docs/reviews/spring-ai-ascend-beyond-sdd-response.en.md`](reviews/spring-ai-ascend-beyond-sdd-response.en.md) §4): the SPI-contract semantics that the future TCK module will assert are already executable today, in two locations that lift-and-shift cleanly when the trigger fires:
+**Pre-promotion holding tank** (added 2026-05-18 by the Beyond-SDD review response, see [`docs/logs/reviews/spring-ai-ascend-beyond-sdd-response.en.md`](logs/reviews/spring-ai-ascend-beyond-sdd-response.en.md) §4): the SPI-contract semantics that the future TCK module will assert are already executable today, in two locations that lift-and-shift cleanly when the trigger fires:
 
 1. **`agent-runtime-core/src/test/java/...`** — pure-JUnit library-mode tests (`RunStateMachineLibraryTest`, `SuspendSignalLibraryTest`, `S2cCallbackEnvelopeLibraryTest`, `RunRecordTenantLibraryTest`) exercise the SPI value-type algebra with no Spring context. These tests are universal — they apply to every conformant impl.
-2. **`agent-service/src/test/java/.../inmemory/`** — `InMemoryCheckpointerTest`, `InMemoryCheckpointerSizeCapTest`, `InMemoryRunRegistryFindRootRunsTest` carry a `// TCK-promotion-candidate` class-level marker. On Rule 32.b trigger they move to `agent-runtime-tck/src/main/java/.../tck/` and the in-memory impl becomes one test target alongside Postgres/Temporal/Redis.
+2. **`agent-service/src/test/java/.../inmemory/`** — `InMemoryCheckpointerTest`, `InMemoryCheckpointerSizeCapTest`, `InMemoryRunRegistryFindRootRunsTest` carry a `// TCK-promotion-candidate` class-level marker. On Rule R-D sub-clause .a.b trigger they move to `agent-runtime-tck/src/main/java/.../tck/` and the in-memory impl becomes one test target alongside Postgres/Temporal/Redis.
 
-This holding tank honours Rule 2 (Simplicity) — no module is scaffolded today for a single implementation — while making the W2 promotion mechanical.
+This holding tank honours Rule D-2 (Simplicity) — no module is scaffolded today for a single implementation — while making the W2 promotion mechanical.
 
-Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32 (SPI + DFX + TCK Co-Design); Rule 79 (Evidence-First Debug Sequence) — the library-mode tests above ARE the evidence layer Rule 79 calls for.
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule R-D sub-clause .a (SPI + DFX + TCK Co-Design); Rule D-3.b (Evidence-First Debug Sequence) — the library-mode tests above ARE the evidence layer Rule D-3.b calls for.
 
 ---
 
-## Rule 32.c — TCK Conformance Suite [Deferred to W2]
+## Rule R-D sub-clause .a.c — TCK Conformance Suite [Deferred to W2]
 
 **Re-introduction trigger**: first alternative implementation is proposed AND its author requests "conformant" status (target: W2).
 
 **Rule (draft)**: For every SPI under `<module>/spi_packages` declared in `module-metadata.yaml`, there MUST be a `<module>-tck` test class that an alternative implementation runs against to be accepted as conformant. The TCK MUST cover (a) happy-path semantics, (b) error contract (which exceptions on which inputs), (c) thread-safety claim, (d) tenant-scope honouring.
 
-Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32.
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule R-D sub-clause .a.
 
 ---
 
-## Rule 32.d — Vulnerability Scanner Integration [Deferred to W2]
+## Rule R-D sub-clause .a.d — Vulnerability Scanner Integration [Deferred to W2]
 
 **Re-introduction trigger**: first CVE-bearing transitive dependency flagged manually OR first regulated-customer deployment requiring SCA reports (target: W2).
 
 **Rule (draft)**: A CI workflow MUST run a CVE/SCA scanner (Dependency-Check, Snyk, Trivy, or equivalent) on every PR. Findings at severity ≥ HIGH block merge unless an allow-list entry with a `risk_acceptance_adr:` reference is present.
 
-Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32; per-module `docs/dfx/<module>.yaml` `vulnerability:` block.
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule R-D sub-clause .a; per-module `docs/dfx/<module>.yaml` `vulnerability:` block.
 
 ---
 
-## Rule 35.b — Three-Track Channel Physical Implementation [Deferred to W2]
+## Rule R-E.b — Three-Track Channel Physical Implementation [Deferred to W2]
 
 **Re-introduction trigger**: first deployable `agent-bus-java` reactor module shipping in research/prod posture with > 1 service instance (target: W2).
 
 **Rule (draft)**: Each of the three channels declared in `docs/governance/bus-channels.yaml` MUST be backed by a distinct physical transport — Kafka topics with isolated partitions, separate Redis Streams, OR equivalent broker primitives. The `physical_channel:` identifier in the YAML MUST map to a concrete broker resource. Co-locating two channels on the same physical transport (even with different routing keys) is forbidden — the failure-isolation guarantee requires distinct underlying queues.
 
-Composes with: ARCHITECTURE.md §6.4; ADR-0069; Rule 35; LucioIT W1 §6.4.
+Composes with: ARCHITECTURE.md §6.4; ADR-0069; Rule R-E; LucioIT W1 §6.4.
 
 ---
 
-## Rule 37.c — agent-platform JdbcTemplate → R2DBC Migration [Deferred to W2]
+## Rule R-G.c — agent-platform JdbcTemplate → R2DBC Migration [Deferred to W2]
 
 **Re-introduction trigger**: first move of any HTTP edge endpoint from blocking Servlet to reactive WebFlux (target: W2 telemetry vertical).
 
-**Rule (draft)**: `HealthCheckRepository` and `PlatformOssApiProbe` (the two existing `JdbcTemplate` consumers in `agent-platform`) MUST be migrated to `R2dbcEntityTemplate`. Once migrated, Rule 37 widens to cover `agent-platform/src/main/java/**` in addition to the current `agent-runtime` scope.
+**Rule (draft)**: `HealthCheckRepository` and `PlatformOssApiProbe` (the two existing `JdbcTemplate` consumers in `agent-platform`) MUST be migrated to `R2dbcEntityTemplate`. Once migrated, Rule R-G widens to cover `agent-platform/src/main/java/**` in addition to the current `agent-runtime` scope.
 
-Composes with: ARCHITECTURE.md §6.3; ADR-0069; Rule 37; LucioIT W1 §6.3.
+Composes with: ARCHITECTURE.md §6.3; ADR-0069; Rule R-G; LucioIT W1 §6.3.
 
 ---
 
-## Rule 40.b — RLS Retrofit for Grandfathered Tables [Deferred to W2]
+## Rule R-J.a.b — RLS Retrofit for Grandfathered Tables [Deferred to W2]
 
 **Re-introduction trigger**: first multi-tenant production tenant goes live with the `idempotency_dedup` table populated (target: W2).
 
-**Rule (draft)**: A new Flyway migration (V3 or later) MUST `ALTER TABLE idempotency_dedup ENABLE ROW LEVEL SECURITY` and add per-tenant `CREATE POLICY` rules. After landing, the table is removed from `gate/rls-baseline-grandfathered.txt` and Rule 40 enforces RLS on it directly.
+**Rule (draft)**: A new Flyway migration (V3 or later) MUST `ALTER TABLE idempotency_dedup ENABLE ROW LEVEL SECURITY` and add per-tenant `CREATE POLICY` rules. After landing, the table is removed from `gate/rls-baseline-grandfathered.txt` and Rule R-J.a enforces RLS on it directly.
 
-Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
-
----
-
-## Rule 41.c — Run/Step Suspension Transition [Deferred to W2]
-
-**Re-introduction trigger**: first W2 async orchestrator implementation that consumes a `SkillResolution.reject(SuspendReason.RateLimited)` and emits a corresponding `Run.withSuspension(...)` (or dependent-step suspension) transition. Conditioned on the same trigger as Rule 46.c (W2 async orchestrator landing).
-
-**Rule (draft)**: When `ResilienceContract.resolve(tenant, skill)` returns `SkillResolution.admitted = false` with `SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED)`, the W2 orchestrator MUST translate the rejection into an actual `RunStatus.SUSPENDED` transition (per Rule 20 state-machine validity) on the dependent step that owns the skill call. The parent `Run` stays `RUNNING` so unrelated sub-branches continue (sub-Run granularity — composes with Rule 46.b "post-review strengthening"). The suspension MUST carry the `SuspendReason.RateLimited` payload into the persisted `Run.suspendReason` field so observability surfaces the saturating skill key. Failure to translate the rejection is a ship-blocking defect under Rule 9.
-
-**Background**: At W1.x scope, the active Rule 41 kernel only commits to the decision-envelope behaviour — `ResilienceContract.resolve` returns a `SkillResolution` carrying the reason, and the caller (today: no W2 orchestrator yet) is responsible for the actual `Run` transition. ADR-0070 §Consequences explicitly notes: *"Run-row carries no suspendReason field — the reason lives on SkillResolution. W2 orchestrator wiring will add Run.suspendReason when it actually transitions runs to SUSPENDED."* The rc10 post-corrective architecture review (finding P1-1) flagged the W1.x Rule 41 kernel for overclaiming end-state behaviour; rc11 narrows the kernel and lands Rule 41.c as the deferred companion.
-
-**Why deferral, not immediate fix**: The runtime translation requires the W2 async orchestrator's bus-level suspension primitive (`SuspendSignal` Chronos Hydration per Rule 38) plus a durable `Run.suspendReason` column (Flyway V3+). Retrofitting `SyncOrchestrator` alone would either (a) require reimplementing the bus wake-pulse in-memory (massive W1 scope creep) or (b) emit a half-measure that block-waits on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships — same logic as Rule 46.c (S2C non-blocking lifecycle promotion).
-
-Composes with: Rule 41 (Skill Capacity Matrix); Rule 20 (Run State Transition Validity); Rule 38 (Chronos Hydration); Rule 46.b ("post-review strengthening" — sub-Run granularity for skill saturation, identical pattern); Rule 46.c (W2 async orchestrator landing — shared trigger); ADR-0070 §Consequences; ADR-0085 (rc11 corpus-truth wave authority).
+Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule R-J.a; LucioIT W1 §7.2.
 
 ---
 
-## Rule 42.b — SandboxExecutor Subsumption Runtime Check [Deferred to W2]
+## Rule R-K.c — Run/Step Suspension Transition [Deferred to W2]
+
+**Re-introduction trigger**: first W2 async orchestrator implementation that consumes a `SkillResolution.reject(SuspendReason.RateLimited)` and emits a corresponding `Run.withSuspension(...)` (or dependent-step suspension) transition. Conditioned on the same trigger as Rule R-M sub-clause .d.c (W2 async orchestrator landing).
+
+**Rule (draft)**: When `ResilienceContract.resolve(tenant, skill)` returns `SkillResolution.admitted = false` with `SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED)`, the W2 orchestrator MUST translate the rejection into an actual `RunStatus.SUSPENDED` transition (per Rule R-C.d state-machine validity) on the dependent step that owns the skill call. The parent `Run` stays `RUNNING` so unrelated sub-branches continue (sub-Run granularity — composes with Rule R-M sub-clause .d.b "post-review strengthening"). The suspension MUST carry the `SuspendReason.RateLimited` payload into the persisted `Run.suspendReason` field so observability surfaces the saturating skill key. Failure to translate the rejection is a ship-blocking defect under Rule D-5.
+
+**Background**: At W1.x scope, the active Rule R-K kernel only commits to the decision-envelope behaviour — `ResilienceContract.resolve` returns a `SkillResolution` carrying the reason, and the caller (today: no W2 orchestrator yet) is responsible for the actual `Run` transition. ADR-0070 §Consequences explicitly notes: *"Run-row carries no suspendReason field — the reason lives on SkillResolution. W2 orchestrator wiring will add Run.suspendReason when it actually transitions runs to SUSPENDED."* The rc10 post-corrective architecture review (finding P1-1) flagged the W1.x Rule R-K kernel for overclaiming end-state behaviour; rc11 narrows the kernel and lands Rule R-K.c as the deferred companion.
+
+**Why deferral, not immediate fix**: The runtime translation requires the W2 async orchestrator's bus-level suspension primitive (`SuspendSignal` Chronos Hydration per Rule R-H) plus a durable `Run.suspendReason` column (Flyway V3+). Retrofitting `SyncOrchestrator` alone would either (a) require reimplementing the bus wake-pulse in-memory (massive W1 scope creep) or (b) emit a half-measure that block-waits on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships — same logic as Rule R-M sub-clause .d.c (S2C non-blocking lifecycle promotion).
+
+Composes with: Rule R-K (Skill Capacity Matrix); Rule R-C.d (Run State Transition Validity); Rule R-H (Chronos Hydration); Rule R-M sub-clause .d.b ("post-review strengthening" — sub-Run granularity for skill saturation, identical pattern); Rule R-M sub-clause .d.c (W2 async orchestrator landing — shared trigger); ADR-0070 §Consequences; ADR-0085 (rc11 corpus-truth wave authority).
+
+---
+
+## Rule R-L.b — SandboxExecutor Subsumption Runtime Check [Deferred to W2]
 
 **Re-introduction trigger**: first sandboxed skill ships (`code-interpreter` or `untrusted-tool`) in research or prod posture (target: W2).
 
 **Rule (draft)**: `SandboxExecutor.execute(skill, logical_grant)` MUST cross-reference `logical_grant` against the per-skill row in `docs/governance/sandbox-policies.yaml`. If `logical_grant` declares any capability (outbound destination, filesystem path, syscall) wider than what the per-skill physical limit allows, the executor MUST reject the call with `SandboxSubsumptionViolation` BEFORE invoking the sandboxed code. Test: a synthetic request granting `outbound_network: allow_all` to a skill whose YAML declares an allowlist of `["api.openai.com:443"]` MUST be rejected.
 
-Composes with: ARCHITECTURE.md §7.4; ADR-0069; Rule 42; LucioIT W1 §7.4.
+Composes with: ARCHITECTURE.md §7.4; ADR-0069; Rule R-L; LucioIT W1 §7.4.
 
 ---
 
-## Rule 44.b — Run.engineType Field Persistence [Deferred to W2]
+## Rule R-M sub-clause .b.b — Run.engineType Field Persistence [Deferred to W2]
 
 **Re-introduction trigger**: first W2+ orchestrator implementation that persists `Run` to Postgres and requires a discriminator column independent of `Run.mode` (target: W2; promoted when a third engine type ships or when `Run.mode` ceases to be 1:1 with engine identity).
 
 **Rule (draft)**: Promote `Run.mode` (`GRAPH | AGENT_LOOP`) to a first-class `Run.engineType` field. Flyway migration V3+ adds `engine_type VARCHAR(64) NOT NULL` with a check constraint against the `known_engines[].id` set declared in `docs/contracts/engine-envelope.v1.yaml`. A backfill statement maps `mode='GRAPH' → engine_type='spring_ai_graph_v1'` and `mode='AGENT_LOOP' → engine_type='iterative_agent_loop_v1'` (or whichever ids ship). The Java `Run` record gains `String engineType()` as a non-null accessor; `RunMode` is retained for backward-compatible reads but deprecated. Dispatch routing prefers `Run.engineType` over `Run.mode`.
 
-Composes with: ARCHITECTURE.md (Run record §source-tree); ADR-0072 §Consequences (the deferral was first declared here); Rule 44; Rule 11 (Contract Spine Completeness).
+Composes with: ARCHITECTURE.md (Run record §source-tree); ADR-0072 §Consequences (the deferral was first declared here); Rule R-M sub-clause .b; Rule R-C.c (Contract Spine Completeness).
 
 ---
 
-## Rule 44.c — Parent-Run Propagation on Child Failure [Deferred to W2]
+## Rule R-M sub-clause .b.c — Parent-Run Propagation on Child Failure [Deferred to W2]
 
 **Re-introduction trigger**: first W2 async orchestrator implementation that processes child-run failures asynchronously across JVM-boundary (target: W2 Postgres-backed orchestrator).
 
-**Rule (draft)**: When a child Run terminates with `FAILED` (including `engine_mismatch` per Rule 44), the parent Run MUST also transition to `FAILED` with a propagated reason that names the failing child (`child_failed:<childRunId>:<originalReason>`). The current `SyncOrchestrator.executeLoop()` only transitions the originating child Run; the parent remains in `SUSPENDED` waiting for a child result that will never arrive. W2 async orchestrator MUST add a parent-propagation hook that fires on every terminal child transition.
+**Rule (draft)**: When a child Run terminates with `FAILED` (including `engine_mismatch` per Rule R-M sub-clause .b), the parent Run MUST also transition to `FAILED` with a propagated reason that names the failing child (`child_failed:<childRunId>:<originalReason>`). The current `SyncOrchestrator.executeLoop()` only transitions the originating child Run; the parent remains in `SUSPENDED` waiting for a child result that will never arrive. W2 async orchestrator MUST add a parent-propagation hook that fires on every terminal child transition.
 
-Composes with: Rule 20 (Run State Transition Validity); Rule 44 (Strict Engine Matching); ARCHITECTURE.md §4 #20.
+Composes with: Rule R-C.d (Run State Transition Validity); Rule R-M sub-clause .b (Strict Engine Matching); ARCHITECTURE.md §4 #20.
 
 ---
 
-## Rule 45.b — HookOutcome Run-State Consumption [Deferred to W2 Telemetry Vertical]
+## Rule R-M sub-clause .c.b — HookOutcome Run-State Consumption [Deferred to W2 Telemetry Vertical]
 
 **Re-introduction trigger**: first consumer hook (TokenCounterHook / PiiRedactionHook / CostAttributionHook / LlmSpanEmitterHook) lands in W2 Telemetry Vertical. At that point a real middleware will return `HookOutcome.Fail` / `ShortCircuit` and the orchestrator must consume the outcome.
 
 **Rule (draft)**: When a middleware returns `HookOutcome.Fail(reason)`, the orchestrator MUST transition the Run to `RunStatus.FAILED` with `finishedAt` set, fire `HookPoint.ON_ERROR` carrying the failure reason, and re-throw a typed exception so the caller observes failure. When a middleware returns `HookOutcome.ShortCircuit(value)`, the orchestrator MUST skip the wrapped engine call and treat `value` as the engine's return. The fail-fast property within the dispatcher chain (already enforced by `HookDispatcher` at W2.x) is preserved.
 
-Authority: post-release architecture review §P0-3 (plan D); ADR-0073 §Consequences ("Outcomes are LOGGED, NOT acted upon at Phase 2 (W2 wires Fail → Run.FAILED, ShortCircuit → return result)"); CLAUDE.md Rule 45 W2.x scope clarification paragraph.
+Authority: post-release architecture review §P0-3 (plan D); ADR-0073 §Consequences ("Outcomes are LOGGED, NOT acted upon at Phase 2 (W2 wires Fail → Run.FAILED, ShortCircuit → return result)"); CLAUDE.md Rule R-M sub-clause .c W2.x scope clarification paragraph.
 
-Composes with: Rule 45 (Runtime-Owned Middleware via Engine Hooks); Rule 20 (Run State Transition Validity); ADR-0073.
+Composes with: Rule R-M sub-clause .c (Runtime-Owned Middleware via Engine Hooks); Rule R-C.d (Run State Transition Validity); ADR-0073.
 
 ---
 
-## Rule 46.b — ResilienceContract s2c.client.callback Wiring [Deferred to W2]
+## Rule R-M sub-clause .d.b — ResilienceContract s2c.client.callback Wiring [Deferred to W2]
 
 **Re-introduction trigger**: first production S2C deployment with > 1 concurrent client (target: W2; conditioned on the first non-in-memory `S2cCallbackTransport` implementation shipping).
 
-**Rule (draft)**: `ResilienceContract.resolve(tenant, "s2c.client.callback")` MUST consult the `s2c.client.callback` row in `docs/governance/skill-capacity.yaml` at runtime. When per-tenant or global capacity is exhausted, the second concurrent caller MUST be SUSPENDED (Chronos Hydration per Rule 38) carrying `SuspendReason.RateLimited(S2C_CALLBACK_CAPACITY_EXCEEDED)`, NOT failed. The in-memory transport at W2.x consults the matrix but does not yet enforce it because there is only one client; production transports (webhook, SSE, WebSocket) must enforce on every dispatch.
+**Rule (draft)**: `ResilienceContract.resolve(tenant, "s2c.client.callback")` MUST consult the `s2c.client.callback` row in `docs/governance/skill-capacity.yaml` at runtime. When per-tenant or global capacity is exhausted, the second concurrent caller MUST be SUSPENDED (Chronos Hydration per Rule R-H) carrying `SuspendReason.RateLimited(S2C_CALLBACK_CAPACITY_EXCEEDED)`, NOT failed. The in-memory transport at W2.x consults the matrix but does not yet enforce it because there is only one client; production transports (webhook, SSE, WebSocket) must enforce on every dispatch.
 
-**Post-review strengthening (plan G):** Over-capacity skill use MUST suspend **only the dependent step**, NOT the whole run nor unrelated LLM inference threads in the same Run. The W2 orchestrator-admission path is the contract surface: a step blocked on skill capacity is suspended via `SuspendSignal` carrying the step key + skill key; the parent Run stays `RUNNING` so unrelated branches continue. This is the 2D defence net (Tenant Quota × Global Skill Capacity per Rule 41) applied at sub-Run granularity.
+**Post-review strengthening (plan G):** Over-capacity skill use MUST suspend **only the dependent step**, NOT the whole run nor unrelated LLM inference threads in the same Run. The W2 orchestrator-admission path is the contract surface: a step blocked on skill capacity is suspended via `SuspendSignal` carrying the step key + skill key; the parent Run stays `RUNNING` so unrelated branches continue. This is the 2D defence net (Tenant Quota × Global Skill Capacity per Rule R-K) applied at sub-Run granularity.
 
-Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 41 (Skill Capacity Matrix); ADR-0074; ADR-0069 / LucioIT W1 §7.3; post-release review §4 skill-capacity orchestration binding.
+Composes with: Rule R-M sub-clause .d (S2C Callback Envelope + Lifecycle Bound); Rule R-K (Skill Capacity Matrix); ADR-0074; ADR-0069 / LucioIT W1 §7.3; post-release review §4 skill-capacity orchestration binding.
 
 ---
 
-## Rule 46.c — S2C Non-Blocking Lifecycle Promotion [Deferred to W2]
+## Rule R-M sub-clause .d.c — S2C Non-Blocking Lifecycle Promotion [Deferred to W2]
 
 **Re-introduction trigger**: W2 async orchestrator lands (target: W2 scheduler wave). The synchronous `SyncOrchestrator.handleClientCallback` is replaced by a non-blocking equivalent that suspends the parent Run via the bus and resumes on the response wake-pulse without holding an OS thread.
 
 **Rule (draft)**: `SyncOrchestrator.handleClientCallback` (or its W2 successor) MUST NOT block the orchestrator thread on the S2C response future. The waiting Run is suspended via the existing `SuspendSignal.forClientCallback(...)` checked-suspension path (already in place as of v2.0.0-rc3 per cross-constraint audit α-2 / β-5), but the *thread* must be released back to the scheduler instead of awaiting `.toCompletableFuture().join()`. Resume happens when the bus delivers the response wake-pulse.
 
-**Background**: ADR-0074 §Consequences accepted a synchronous W2.x bridge for the SPI. The v2.0.0-rc1 cross-constraint audit (P0-1) noted this directly contradicts Rule 46's "MUST suspend, must not block a thread" and Principles P-F/P-G/P-H. The rc3 response: narrow Rule 46's prose to acknowledge the W2.x bridge as a deferred exception (this sub-clause); the structural fix lands when the async orchestrator ships.
+**Background**: ADR-0074 §Consequences accepted a synchronous W2.x bridge for the SPI. The v2.0.0-rc1 cross-constraint audit (P0-1) noted this directly contradicts Rule R-M sub-clause .d's "MUST suspend, must not block a thread" and Principles P-F/P-G/P-H. The rc3 response: narrow Rule R-M sub-clause .d's prose to acknowledge the W2.x bridge as a deferred exception (this sub-clause); the structural fix lands when the async orchestrator ships.
 
-**Why deferral, not immediate fix**: A non-blocking S2C resume requires the bus-level wake-pulse machinery that lands in W2 alongside `SuspendSignal` Chronos Hydration (Rule 38 / Rule 41.b runtime integration). Retrofitting `SyncOrchestrator` alone would require either (a) reimplementing the wake-pulse in-memory (massive scope creep into W1) or (b) a half-measure that still blocks on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships.
+**Why deferral, not immediate fix**: A non-blocking S2C resume requires the bus-level wake-pulse machinery that lands in W2 alongside `SuspendSignal` Chronos Hydration (Rule R-H / Rule R-K.b runtime integration). Retrofitting `SyncOrchestrator` alone would require either (a) reimplementing the wake-pulse in-memory (massive scope creep into W1) or (b) a half-measure that still blocks on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships.
 
-Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 38 (No Thread.sleep in Business Code); Principle P-F (Cursor Flow); Principle P-G (Absolute Non-Blocking I/O); Principle P-H (Chronos Hydration); ADR-0074 §Consequences.
+Composes with: Rule R-M sub-clause .d (S2C Callback Envelope + Lifecycle Bound); Rule R-H (No Thread.sleep in Business Code); Principle P-F (Cursor Flow); Principle P-G (Absolute Non-Blocking I/O); Principle P-H (Chronos Hydration); ADR-0074 §Consequences.
 
 ---
 
-## Rule 48.b — W3 Prose-Enum Schema-First Retrofit [Deferred to W3]
+## Rule M-2 sub-clause .a.b — W3 Prose-Enum Schema-First Retrofit [Deferred to W3]
 
 **Re-introduction trigger**: W3 contract-design sprint kickoff (default target: 2026-09-30 — the working sunset date encoded in `gate/schema-first-grandfathered.txt`). Activates earlier if any grandfather entry's `sunset_date` is moved earlier via ADR.
 
-**Rule (draft)**: Every entry remaining in `gate/schema-first-grandfathered.txt` after its declared `sunset_date` MUST be retrofitted to a yaml schema under `docs/contracts/` or `docs/governance/`. The retrofit (a) replaces the prose enum with a fenced code block referencing the schema file, (b) lands a Java enum + ctor-level schema validation per Rule 48 doctrine, (c) removes the entry from the grandfather list. ADR-0078 (or successor) MUST schedule the retrofit waves; gate Rule 60 fails closed once any entry's sunset_date passes without retrofit (the sunset-fail logic is gate-enforced as of W2.x Phase 8).
+**Rule (draft)**: Every entry remaining in `gate/schema-first-grandfathered.txt` after its declared `sunset_date` MUST be retrofitted to a yaml schema under `docs/contracts/` or `docs/governance/`. The retrofit (a) replaces the prose enum with a fenced code block referencing the schema file, (b) lands a Java enum + ctor-level schema validation per Rule M-2 sub-clause .a doctrine, (c) removes the entry from the grandfather list. ADR-0078 (or successor) MUST schedule the retrofit waves; gate Rule 60 fails closed once any entry's sunset_date passes without retrofit (the sunset-fail logic is gate-enforced as of W2.x Phase 8).
 
-Composes with: Rule 48 (Schema-First Domain Contracts); ADR-0077; ADR-0068 (Layered 4+1 corpus); gate Rule 60 self-tests.
+Composes with: Rule M-2 sub-clause .a (Schema-First Domain Contracts); ADR-0077; ADR-0068 (Layered 4+1 corpus); gate Rule 60 self-tests.
 
 ---
 
 ## Rule 28k.b — Schema↔Java-Shape Parity ArchUnit [Deferred to W3]
 
-**Re-introduction trigger**: W3 contract-design sprint kickoff — the same trigger as Rule 48.b, since both close the structural gap surfaced by the v2.0.0-rc1 second-pass review F-α category audit.
+**Re-introduction trigger**: W3 contract-design sprint kickoff — the same trigger as Rule M-2 sub-clause .a.b, since both close the structural gap surfaced by the v2.0.0-rc1 second-pass review F-α category audit.
 
 **Rule (draft)**: For every `docs/contracts/*.v1.yaml` schema that declares a `required_fields:` or `hooks:` (or equivalent ordered enum) block AND a paired Java type whose name is named in the YAML header comment, an ArchUnit test MUST assert bidirectional shape parity:
 - Every Java record component / enum constant has a matching YAML entry (no extra Java symbols).
@@ -394,20 +394,20 @@ Composes with: Rule 48 (Schema-First Domain Contracts); ADR-0077; ADR-0068 (Laye
 
 The rc2 second-pass review flagged these as P1 F-α instances (parity claims without binding cross-check). The reviewer's narrowed wording closes them at the prose level; this deferral records the structural fix.
 
-Composes with: Rule 28 (Code-as-Contract Coverage); Rule 48 (Schema-First Domain Contracts); ADR-0072; ADR-0073; ADR-0075; v2.0.0-rc1 second-pass review F-α category audit (`docs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md` §2).
+Composes with: Rule R-C.a (Code-as-Contract Coverage); Rule M-2 sub-clause .a (Schema-First Domain Contracts); ADR-0072; ADR-0073; ADR-0075; v2.0.0-rc1 second-pass review F-α category audit (`docs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md` §2).
 
 ---
 
-## Rule 48.c — EngineEnvelope Strict-Construction Validation [Deferred to W2]
+## Rule M-2 sub-clause .a.c — EngineEnvelope Strict-Construction Validation [Deferred to W2]
 
 **Re-introduction trigger**: first `EngineEnvelope` construction outside a Spring-boot test harness — i.e., production code that constructs envelopes from external input (REST controller, message-bus consumer, client SDK) rather than from a programmer-controlled literal.
 
 **Rule (draft)**: The `EngineEnvelope` record constructor MUST reject `engineType` values not present in `docs/contracts/engine-envelope.v1.yaml#known_engines[].id`. Today the constructor validates only nullability; `engineType` membership is enforced lazily by `EngineRegistry.resolve()` at dispatch time. W2 promotion: load `known_engines` once at JVM startup (or on first envelope construction), cache, and reject in the ctor. Rationale for the deferral: today every envelope is built inside a Spring-managed context where `EngineRegistry.validateAgainstSchema()` has already run at boot per ADR-0076; user-supplied envelopes do not yet exist.
 
-Composes with: Rule 48 (Schema-First Domain Contracts); Rule 44 (Strict Engine Matching); ADR-0072; ADR-0076.
+Composes with: Rule M-2 sub-clause .a (Schema-First Domain Contracts); Rule R-M sub-clause .b (Strict Engine Matching); ADR-0072; ADR-0076.
 ---
 
-## Rule 29.c — Quickstart Smoke Run in CI (ACTIVATED 2026-05-18)
+## Rule R-A.c — Quickstart Smoke Run in CI (ACTIVATED 2026-05-18)
 
 **Activated 2026-05-18 per Wave 4 Track E.** See `docs/governance/rules/rule-29c.md` for
 the active rule card. The original deferred draft below is preserved for audit.
@@ -418,6 +418,6 @@ workflow) that boots a Spring Boot reactor end-to-end. Fired 2026-05-18 when
 
 **Rule (now active)**: A CI job MUST execute the `docs/quickstart.md` instructions on a clean
 container and assert that `GET /v1/health` returns 200 within 60 s of `spring-boot:run` start.
-Failure of this job is a ship-blocking finding under Rule 9.
+Failure of this job is a ship-blocking finding under Rule D-5.
 
-Composes with: ARCHITECTURE.md §4 #60; ADR-0064; Rule 29.
+Composes with: ARCHITECTURE.md §4 #60; ADR-0064; Rule R-A.

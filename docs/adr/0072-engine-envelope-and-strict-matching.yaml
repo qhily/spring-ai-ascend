@@ -19,13 +19,13 @@ decision_one_liner: |
   ascend.springai.service.runtime.engine.EngineEnvelope) and a central EngineRegistry
   that strictly matches envelope.engineType to a registered ExecutorAdapter.
   Pattern-matching on ExecutorDefinition subtypes is forbidden outside the
-  registry — Rule 43 enforces it. A mismatch raises EngineMatchingException;
+  registry — Rule R-M sub-clause .a enforces it. A mismatch raises EngineMatchingException;
   the calling Run transitions to FAILED with reason engine_mismatch. No
   fallback policy.
 
 triggering_inputs:
   external_reviews:
-    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+    - path: "docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
       authors: ["LucioIT architecture review team"]
       thesis: |
         Proposal §3 (Lightweight Engine Configuration Envelope) and §4 (Engine
@@ -33,7 +33,7 @@ triggering_inputs:
         governance / observability, NOT a universal DSL. The Runtime must not
         silently reinterpret a payload as another engine's configuration.
   internal_signal:
-    - "Code inspection: SyncOrchestrator.java:86-90 used implicit instanceof switch on ExecutorDefinition subtypes — every new engine integration would either patch this site (Rule 6 violation) or invent a parallel registration path."
+    - "Code inspection: SyncOrchestrator.java:86-90 used implicit instanceof switch on ExecutorDefinition subtypes — every new engine integration would either patch this site (Rule D-8 violation) or invent a parallel registration path."
     - "Run.java:21-44 has no engineType discriminator field; envelope-time engine identification was therefore impossible."
 
 context: |
@@ -48,7 +48,7 @@ context: |
   SyncOrchestrator.java:86-90 used an implicit sealed-pattern switch on
   ExecutorDefinition subtypes. Adding any new engine — even at W2 when the
   Postgres-backed Orchestrator lands — would have required either patching
-  that switch (a Rule 6 fallback violation) or inventing a parallel
+  that switch (a Rule D-8 fallback violation) or inventing a parallel
   registration path that fragments the dispatch authority. The envelope +
   registry pattern solves both.
 
@@ -99,7 +99,7 @@ decision: |
 consequences:
   positive:
     - "Future engine integrations register a single ExecutorAdapter — no orchestrator patches."
-    - "The class-to-engineType mapping has exactly one location (the registry); Rule 43 archunit fences off pattern-matching elsewhere."
+    - "The class-to-engineType mapping has exactly one location (the registry); Rule R-M sub-clause .a archunit fences off pattern-matching elsewhere."
     - "Strict matching is enforceable at boot via EngineRegistry.validateAgainstSchema() (Phase 5 wires this into the platform startup path)."
     - "ExecutorAdapter is the natural carrier for the Phase 2 hook surface (EngineHookSurface) — adapters can advertise their hook capabilities alongside engineType + payloadType."
     - "Post-impl note (2026-05-17 six-module materialization PR): the AgentExecutionEngine team workspace landed as the `agent-execution-engine/` skeleton (kind: domain, deployment_plane: compute_control, spi_packages: [ascend.springai.engine.spi], depends on agent-middleware for HookPoint). The physical extraction of EngineRegistry / EngineEnvelope / ExecutorAdapter / ExecutorDefinition / GraphExecutor / AgentLoopExecutor from agent-runtime to agent-execution-engine is deferred to T2.B2 follow-up PR — those classes reference Run / RunContext / SuspendSignal from the runtime kernel, and a naive move would create a cycle. The follow-up PR resolves this via either (a) a shared agent-runtime-core base module or (b) carrying primitives through the engine SPI. See agent-execution-engine/ARCHITECTURE.md for the deferral record. This ADR remains the authoritative contract; the current home of the engine surface (agent-runtime/engine/) is transitional."

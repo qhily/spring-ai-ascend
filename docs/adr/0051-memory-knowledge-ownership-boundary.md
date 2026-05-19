@@ -3,7 +3,7 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer finding P0-5 (`docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper §2.4 splits memory ownership into C-Side (business ontology + business facts) and S-Side (execution trajectory + platform state). Current ADR-0034 defines the M1–M6 memory taxonomy from the S-Side perspective but does **not** codify the ownership boundary. Without it, `GraphMemoryRepository`, M3 Semantic Long-Term, M4 Graph Relationship Memory, and M5 Knowledge Index can be misread as platform-owned business memory. ADR-0034 is amended; this ADR adds the ownership boundary, the `BusinessFactEvent` emission path, and the `PlaceholderPreservationPolicy` as a first-class rule.
+**Technical story:** Reviewer finding P0-5 (`docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper §2.4 splits memory ownership into C-Side (business ontology + business facts) and S-Side (execution trajectory + platform state). Current ADR-0034 defines the M1–M6 memory taxonomy from the S-Side perspective but does **not** codify the ownership boundary. Without it, `GraphMemoryRepository`, M3 Semantic Long-Term, M4 Graph Relationship Memory, and M5 Knowledge Index can be misread as platform-owned business memory. ADR-0034 is amended; this ADR adds the ownership boundary, the `BusinessFactEvent` emission path, and the `PlaceholderPreservationPolicy` as a first-class rule.
 
 ## Context
 
@@ -160,7 +160,7 @@ ADR-0034 defines six memory categories M1–M6. Under this ADR's ownership bound
 
 ## References
 
-- Reviewer source: `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (finding P0-5)
+- Reviewer source: `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (finding P0-5)
 - Whitepaper: `docs/spring-ai-ascend-architecture-whitepaper-en.md` §2.4
 - ARCHITECTURE.md §4 #49 (this ADR's anchoring constraint)
 - ADR-0034: Memory and Knowledge Taxonomy at L0 (amended with forward note)

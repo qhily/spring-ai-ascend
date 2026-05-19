@@ -41,7 +41,7 @@ class SyncOrchestratorPostureGuardTest {
     }
 
     /**
-     * Stub graph + agent-loop executors registered via EngineRegistry — Rule 43
+     * Stub graph + agent-loop executors registered via EngineRegistry — Rule R-M.a
      * forbids pattern-matching on ExecutorDefinition subtypes outside the registry.
      */
     private static EngineRegistry stubEngineRegistry() {

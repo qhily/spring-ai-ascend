@@ -3,7 +3,7 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer finding P0 (`docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md`): an architecture review proposed naming five L0 contracts for "long-connection containment via managed runtime handles" — `LogicalCallHandle`, `ConnectionLease`, `LongCallAdmissionPolicy`, `ConnectionPressureSignal`, `SuspendInsteadOfHold` — and requested that "long-running calls must be admitted through a bounded runtime-resource model" be promoted to a §4 architecture constraint. The reviewer also flagged Netty/epoll as implementation guidance, NOT L0 contract. The class-based self-audit (14th cycle) found that **5 of 5 concepts already exist semantically**, with `AdmissionDecision` (ADR-0050) and `BackpressureSignal` (ADR-0050) already exactly named, but **three resource-explosion vectors are uncovered**: socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap.
+**Technical story:** Reviewer finding P0 (`docs/logs/reviews/2026-05-13-l0-capability-labels-platformization.en.md`): an architecture review proposed naming five L0 contracts for "long-connection containment via managed runtime handles" — `LogicalCallHandle`, `ConnectionLease`, `LongCallAdmissionPolicy`, `ConnectionPressureSignal`, `SuspendInsteadOfHold` — and requested that "long-running calls must be admitted through a bounded runtime-resource model" be promoted to a §4 architecture constraint. The reviewer also flagged Netty/epoll as implementation guidance, NOT L0 contract. The class-based self-audit (14th cycle) found that **5 of 5 concepts already exist semantically**, with `AdmissionDecision` (ADR-0050) and `BackpressureSignal` (ADR-0050) already exactly named, but **three resource-explosion vectors are uncovered**: socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap.
 
 ## Context
 
@@ -128,5 +128,5 @@ The L0 requirement is naming + invariant statement + deferred-vector visibility.
 - ADR-0048 — Service-Layer Microservice Commitment.
 - ADR-0050 — Workflow Intermediary + Mailbox Backpressure + Rhythm Track.
 - ADR-0052 — Skill Topology Scheduler and Capability Bidding (SkillSaturationYield).
-- `docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md` — reviewer input.
-- `docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` — class-organized response.
+- `docs/logs/reviews/2026-05-13-l0-capability-labels-platformization.en.md` — reviewer input.
+- `docs/logs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` — class-organized response.

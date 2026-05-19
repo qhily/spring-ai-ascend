@@ -10,7 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
  * Enforcer for plan §11 row E34 / Phase K audit fix F9 (META-PATTERN
- * side-effect of Phase B's Gate Rule 10 amendment).
+ * side-effect of Phase B's Gate Rule D-6 amendment).
  *
  * <p>ADR-0055 permits {@code agent-platform → agent-runtime} for the W1 HTTP
  * run handoff, but only through the runtime's PUBLIC API surface. Internal
@@ -45,7 +45,7 @@ class PlatformImportsOnlyRuntimePublicApiTest {
     @Test
     void platform_does_not_depend_on_internal_runtime_packages() {
         // W1.x Phase 9 / ADR-0070 promoted ascend.springai.service.runtime.resilience.spi..
-        // to a PUBLIC SPI surface — ADR-0080 (v2.0.0-rc6, 2026-05-18) moved the surface
+        // to a PUBLIC SPI surface — ADR-0080 moved the surface
         // types (ResilienceContract, ResiliencePolicy, SkillResolution, SuspendReason,
         // SkillCapacityRegistry) under the .spi sub-package; implementations stay in
         // runtime.resilience.* (Default*, Yaml*). The two-arg resolve is consumed by
@@ -77,7 +77,7 @@ class PlatformImportsOnlyRuntimePublicApiTest {
         // the runtime, not from the platform.
         //
         // W2.x Phase 5 (ADR-0076) exception: ascend.springai.service.platform.engine..
-        // IS the centralized engine-discovery wiring point per Rule 43 (Engine
+        // IS the centralized engine-discovery wiring point per Rule R-M.a (Engine
         // Envelope Single Authority). EngineAutoConfiguration legitimately
         // constructs the two W0 reference executors as @Bean methods so Spring
         // can wire them into EngineRegistry. This is NOT HTTP-edge coupling —
@@ -103,7 +103,7 @@ class PlatformImportsOnlyRuntimePublicApiTest {
                         + "edge wires. Sync/Sequential/Iterative executors + InMemoryCheckpointer "
                         + "stay internal to the runtime EXCEPT inside ascend.springai.service.platform.engine.. "
                         + "(EngineAutoConfiguration — the single authorized engine-discovery wiring "
-                        + "point per Rule 43).");
+                        + "point per Rule R-M.a).");
         rule.check(PLATFORM_MAIN_CLASSES);
     }
 }

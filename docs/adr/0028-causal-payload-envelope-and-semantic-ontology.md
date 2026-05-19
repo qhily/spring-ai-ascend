@@ -158,8 +158,8 @@ added without breaking existing code.
 
 ## References
 
-- Fifth-reviewer document: `docs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §1
-- Response document: `docs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-A)
+- Fifth-reviewer document: `docs/logs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §1
+- Response document: `docs/logs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-A)
 - ADR-0022: PayloadCodec SPI and typed payload contract
 - ADR-0019: SuspendReason taxonomy (HD-A.3 resume-payload schema per-variant)
 - ADR-0039: normative migration path `Object → Payload → CausalPayloadEnvelope` with `PayloadAdapter.wrap(Object)` (seventh-reviewer Cluster 6)

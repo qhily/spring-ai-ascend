@@ -3,7 +3,7 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer finding P0-2 (`docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper's central agent contract is C/S separation with a lightweight C-side `Task Cursor` and an S-side dynamic hydration engine. Current L0 architecture contains orchestration SPI contracts and microservice topology, but it does NOT define the wire vocabulary, ownership boundary, or handoff protocol for `Task Cursor + Business Rule Subset + Available Skill Pool Limitations`. `RunContext` is an internal S-side execution context and is NOT the C/S protocol. Reviewer P1-2 (degradation authority red line) is incorporated into the same ADR because it shares the C/S boundary semantics.
+**Technical story:** Reviewer finding P0-2 (`docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper's central agent contract is C/S separation with a lightweight C-side `Task Cursor` and an S-side dynamic hydration engine. Current L0 architecture contains orchestration SPI contracts and microservice topology, but it does NOT define the wire vocabulary, ownership boundary, or handoff protocol for `Task Cursor + Business Rule Subset + Available Skill Pool Limitations`. `RunContext` is an internal S-side execution context and is NOT the C/S protocol. Reviewer P1-2 (degradation authority red line) is incorporated into the same ADR because it shares the C/S boundary semantics.
 
 ## Context
 
@@ -155,7 +155,7 @@ Every future resilience or fallback ADR MUST reference this red line and classif
 
 ## References
 
-- Reviewer source: `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (findings P0-2 + P1-2)
+- Reviewer source: `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (findings P0-2 + P1-2)
 - Whitepaper: `docs/spring-ai-ascend-architecture-whitepaper-en.md` §2.1, §2.3, §4.2
 - ARCHITECTURE.md §4 #47 (this ADR's anchoring constraint)
 - ADR-0050: Workflow Intermediary, Mailbox Backpressure, Rhythm Track (companion ADR — same review cycle)

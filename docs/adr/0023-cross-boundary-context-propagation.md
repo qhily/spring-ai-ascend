@@ -4,7 +4,7 @@
 **Deciders:** architecture
 **Date:** 2026-05-12
 
-> **L1 update (2026-05-14).** Rule 21 was generalised from `TenantContextHolder` to the whole
+> **L1 update (2026-05-14).** Rule R-C.e was generalised from `TenantContextHolder` to the whole
 > `ascend.springai.service.platform..` package by ADR-0055. The original narrow rule below remains correct
 > as the most-likely-violation case but is no longer the full contract. The generalised contract is
 > asserted by `RuntimeMustNotDependOnPlatformTest`; the narrow case is preserved as defence-in-depth
@@ -67,7 +67,7 @@ Timer-driven or internal resume:
   → TenantContextHolder is NOT accessed
 ```
 
-### Rule 21 — Tenant Propagation Purity (active, enforced now)
+### Rule R-C.e — Tenant Propagation Purity (active, enforced now)
 
 No class in `ascend.springai.service.runtime.*` (main sources) may import
 `ascend.springai.service.platform.tenant.TenantContextHolder`.
@@ -124,10 +124,10 @@ Low — ArchUnit rule and MDC addition are small; the canonical-carrier decision
 
 ## References
 
-- Third-reviewer document: `docs/reviews/Architectural Perspective Review` (Issue 7)
-- Response document: `docs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-E)
+- Third-reviewer document: `docs/logs/reviews/Architectural Perspective Review` (Issue 7)
+- Response document: `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-E)
 - §4 #22 (canonical run context propagation)
-- Rule 21 (active): tenant propagation purity
+- Rule R-C.e (active): tenant propagation purity
 - `architecture-status.yaml` rows: `tenant_propagation_purity`, `logbook_mdc_tenant_id`,
   `micrometer_mandatory_tenant_tag`, `otel_trace_propagation_across_suspend`
 - W1 wave plan: Keycloak integration + UUID tenantId migration

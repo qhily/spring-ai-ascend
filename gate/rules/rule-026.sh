@@ -4,7 +4,7 @@
 # Authority: PR-E5 (D:/.claude/plans/spicy-mixing-galaxy.md).
 
 # Rule 26 — release_note_shipped_surface_truth
-# ADR-0046: docs/releases/*.md must not overclaim shipped surfaces.
+# ADR-0046: docs/logs/releases/*.md must not overclaim shipped surfaces.
 #   26a — RunLifecycle name guard: line containing 'RunLifecycle' must be in a one-line
 #         context window with a wave qualifier W1/W2/W3/W4, OR the same line must contain
 #         one of: design-only|deferred|not shipped|remains design|materialised at W.
@@ -17,7 +17,7 @@
 # Closes GATE-SCOPE-GAP for release artifact class.
 # ---------------------------------------------------------------------------
 _r26_fail=0
-if [[ -d docs/releases ]]; then
+if [[ -d docs/logs/releases ]]; then
   while IFS= read -r _rf26; do
     [[ -z "$_rf26" ]] && continue
     # Pre-read file into an array of lines for context-window 26a.
@@ -98,7 +98,7 @@ if [[ -d docs/releases ]]; then
         _r26_fail=1
       fi
     done
-  done < <(find docs/releases -name '*.md' -type f 2>/dev/null | sort || true)
+  done < <(find docs/logs/releases -name '*.md' -type f 2>/dev/null | sort || true)
 fi
 if [[ $_r26_fail -eq 0 ]]; then pass_rule "release_note_shipped_surface_truth"; fi
 

@@ -135,8 +135,8 @@ requires updating all executor implementations again.
 
 ## References
 
-- Third-reviewer document: `docs/reviews/Architectural Perspective Review` (Issue 6)
-- Response document: `docs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-D)
+- Third-reviewer document: `docs/logs/reviews/Architectural Perspective Review` (Issue 6)
+- Response document: `docs/logs/reviews/2026-05-12-third-reviewer-response.en.md` (Cat-D)
 - §4 #21 (typed payload + PayloadCodec SPI)
 - Rule 22 (deferred, W2): PayloadCodec discipline
 - `architecture-status.yaml` rows: `payload_codec_spi`, `typed_run_event_schema`, `payload_pii_filter_dependency`

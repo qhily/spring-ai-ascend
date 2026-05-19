@@ -12,7 +12,7 @@ kernel: |
   clients consume process state via SSE and intermediate-result checkpoints
   via Webhook.
   No long-poll, no synchronous blocking.
-  Enforced by Rule 36.
+  Enforced by Rule R-F.
 ---
 
 ## Motivation
@@ -21,12 +21,12 @@ This principle exists because **synchronous long-poll dies under enterprise load
 
 ## Operationalising rules
 
-- Rule 36 — Cursor Flow Mandate ([`docs/governance/rules/rule-36.md`](../rules/rule-36.md))
+- Rule R-F — Cursor Flow Mandate ([`docs/governance/rules/rule-R-F.md`](../rules/rule-R-F.md))
 
 ## Cross-references
 
 - ADR-0069 (origin of Rules 35–42 and the LucioIT W1 §6.1 cursor flow doctrine)
 - Contract source of truth: [`docs/contracts/openapi-v1.yaml`](../../contracts/openapi-v1.yaml) — declares at least one 202-returning endpoint with cursor schema
-- Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53) per ADR-0070
+- Rule R-F.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53) per ADR-0070
 - Related: P-E (Bus Channel Isolation) — cursor cancellation flows through `control` channel
 - Related: P-G (Non-Blocking I/O) — non-blocking client boundary is meaningless if internal I/O blocks

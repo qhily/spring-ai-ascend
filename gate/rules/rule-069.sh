@@ -28,10 +28,15 @@ else
   # failures on Linux CI even when local WSL passes consistently).
   _r69_active_f=$(mktemp 2>/dev/null || echo "/tmp/r69_active.$$")
   _r69_cards_f=$(mktemp 2>/dev/null || echo "/tmp/r69_cards.$$")
-  grep -oE '^#### Rule [0-9]+' "$_r69_claude" 2>/dev/null \
-    | grep -oE '[0-9]+' | sort -un > "$_r69_active_f"
+  # Active rule IDs: extract the identifier after `#### Rule ` (can be integer
+  # OR namespaced: D-1, R-C.a, G-3.f, M-2.b). Normalise zero-padding away for
+  # comparison with card filenames (which may also still have integer form during
+  # transition).
+  grep -oE '^#### Rule [A-Za-z0-9.-]+' "$_r69_claude" 2>/dev/null \
+    | sed -E 's/^#### Rule //; s/^0*([0-9])/\1/' | sort -u > "$_r69_active_f"
+  # Card filenames: rule-<id>.md where <id> may be integer or namespaced.
   find "$_r69_cards_dir" -maxdepth 1 -name 'rule-*.md' -type f 2>/dev/null \
-    | sed -E 's|.*/rule-0*([0-9]+)[a-z]?\.md|\1|' | sort -un > "$_r69_cards_f"
+    | sed -E 's|.*/rule-(.+)\.md$|\1|; s/^0*([0-9])/\1/' | sort -u > "$_r69_cards_f"
   # Missing cards: active - cards (set difference via comm).
   _r69_missing=$(comm -23 "$_r69_active_f" "$_r69_cards_f" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
   if [[ -n "$_r69_missing" ]]; then

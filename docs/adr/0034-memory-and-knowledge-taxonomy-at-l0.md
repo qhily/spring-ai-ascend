@@ -83,7 +83,7 @@ adapter and any future production implementations:
 | `query(tenantId, subject, maxDepth)` | bounded traversal | Walks the relationship graph from `subject` up to `maxDepth` hops; returns the bounded edge frontier. |
 | `search(tenantId, queryText, topK)` | full-text | Embedding-similarity search across the indexed graph; returns top-K matches. |
 
-The three-method surface is tenant-scoped (Rule 11 first-argument tenant carrier on every method);
+The three-method surface is tenant-scoped (Rule R-C.c first-argument tenant carrier on every method);
 W2 adapter triggers in `CLAUDE-deferred.md` (memory-and-knowledge wave) reference this enumeration as
 the contract surface to implement. ADR-0051 (Memory and Knowledge Ownership Boundary) governs whether
 each call operates on platform graph state, delegated business graph state, or both — the surface
@@ -111,7 +111,7 @@ This is NOT a permanent exclusion of mem0 or Cognee. It is a clarification that 
 
 ## References
 
-- Seventh reviewer P1.5: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Seventh reviewer P1.5: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
 - ADR-0033: Deployment-locus vocabulary (memory may be scoped to a deployment locus)
 - `GraphMemoryRepository.java` — current minimal SPI
 - `docs/cross-cutting/oss-bill-of-materials.md` — Graphiti selected as W1 example; mem0/Cognee not-selected

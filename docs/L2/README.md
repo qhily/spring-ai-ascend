@@ -33,7 +33,7 @@ A single-file form (`docs/L2/<feature>.md`) is permitted when only one view is i
 
 - Gate Rule 37 (`architecture_artefact_front_matter`): every file in this tree (excluding this README) must declare `level: L2` + `view:` front-matter.
 - Gate Rule 38 (`architecture_graph_well_formed`): every L2 file must link upward to at least one L1 or L0 node (resolves through the `relates_to:` or `extends:` edges in the L2 front-matter).
-- Gate Rule 39 (`review_proposal_front_matter`): proposals in `docs/reviews/` touching L2 files must declare `affects_level: L2`.
+- Gate Rule 39 (`review_proposal_front_matter`): proposals in `docs/logs/reviews/` touching L2 files must declare `affects_level: L2`.
 
 ## Current contents
 

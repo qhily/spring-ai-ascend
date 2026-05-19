@@ -83,7 +83,7 @@ run at S-Cloud or S-Edge. Do not conflate these two vocabularies.
 
 ## References
 
-- Sixth reviewer L2: `docs/reviews/2026-05-12-architecture-LucioIT-wave-1-request.en.md`
+- Sixth reviewer L2: `docs/logs/reviews/2026-05-12-architecture-LucioIT-wave-1-request.en.md`
 - ADR-0016: A2A Federation (reversal trigger updated to reference this ADR)
 - ADR-0034: Memory & Knowledge Taxonomy (uses deployment-locus vocabulary)
 - Rule 17 (substitution-authority S-side/C-side — preserved unchanged)

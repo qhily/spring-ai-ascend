@@ -6,7 +6,7 @@
 # Rule 63 — release_note_retracted_tag_qualified (v2.0.0-rc2 / second-pass review F-γ structural prevention)
 #
 # Every tag listed in docs/governance/retracted-tags.txt MUST, wherever it is
-# mentioned in an active release note under docs/releases/*.md, appear either
+# mentioned in an active release note under docs/logs/releases/*.md, appear either
 #   (a) on the same line as "(retracted)" (case-insensitive), OR
 #   (b) under a markdown heading (line starting with '#') containing
 #       "Historical" or "Superseded" (case-insensitive).
@@ -34,7 +34,7 @@ else
     pass_rule "release_note_retracted_tag_qualified"
   else
     shopt -s nullglob
-    for _r63_doc in docs/releases/*.md; do
+    for _r63_doc in docs/logs/releases/*.md; do
       [[ -f "$_r63_doc" ]] || continue
       while IFS= read -r _r63_tag; do
         [[ -z "$_r63_tag" ]] && continue
@@ -76,7 +76,7 @@ if [[ $_r63_fail -eq 0 ]]; then pass_rule "release_note_retracted_tag_qualified"
 
 # ===========================================================================
 # Cross-corpus consistency audit prevention rules (2026-05-17)
-# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# Authority: docs/logs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
 # Closes structural design flaws G1, G2, G3 surfaced by the audit:
 #   G1 — module count was hardcoded in 4 places
 #   G2 — no metadata-vs-pom dependency cross-check

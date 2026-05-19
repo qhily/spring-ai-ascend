@@ -3,7 +3,7 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer finding P1-1 (`docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper §4.1 requires a global Skill Topology Scheduler with prediction and saturation queuing; §5.3 requires pre-authorized capability access, bidding, and explicit permission issuance to delegates. The current Skill SPI design (ADR-0030 lifecycle, ADR-0038 resource-tier classification) is a Java SPI shape, **NOT** a distributed scheduling and bidding contract. This ADR adds the missing topology scheduler + bidding + permission issuance vocabulary at L0 contract level. Java types deferred to W2+.
+**Technical story:** Reviewer finding P1-1 (`docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md`): the whitepaper §4.1 requires a global Skill Topology Scheduler with prediction and saturation queuing; §5.3 requires pre-authorized capability access, bidding, and explicit permission issuance to delegates. The current Skill SPI design (ADR-0030 lifecycle, ADR-0038 resource-tier classification) is a Java SPI shape, **NOT** a distributed scheduling and bidding contract. This ADR adds the missing topology scheduler + bidding + permission issuance vocabulary at L0 contract level. Java types deferred to W2+.
 
 ## Context
 
@@ -186,7 +186,7 @@ When a Run's planned skill step hits saturation:
 
 ## References
 
-- Reviewer source: `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (finding P1-1)
+- Reviewer source: `docs/logs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` (finding P1-1)
 - Whitepaper: `docs/spring-ai-ascend-architecture-whitepaper-en.md` §4.1, §5.3
 - ARCHITECTURE.md §4 #50 (this ADR's anchoring constraint)
 - ADR-0030: Skill SPI lifecycle + `SkillResourceMatrix` + `SkillTrustTier` (Java SPI level — preserved, cross-ref forward note)

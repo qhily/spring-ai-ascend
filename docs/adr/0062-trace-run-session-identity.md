@@ -60,7 +60,7 @@ span_id     (TraceExtractFilter — new L1.x)
 run_id      (RunIdMdcFilter      — new L1.x, populated once Run is materialised)
 ```
 
-`session_id` is NOT in MDC at L1.x; it is carried only on the persisted Run row + in baggage when W2 OTel SDK lands. Reason: keeping MDC carriers minimal (Rule 2).
+`session_id` is NOT in MDC at L1.x; it is carried only on the persisted Run row + in baggage when W2 OTel SDK lands. Reason: keeping MDC carriers minimal (Rule D-2).
 
 ### 6. Reversal cost (back to 1:1, if ever needed)
 
@@ -71,7 +71,7 @@ If a future review decides 1:1 is preferable, the migration is additive:
 3. Remove `RunContext.sessionId()` accessor.
 4. Remove `list_sessions` MCP tool.
 
-Cost is bounded; no domain model rewrite required. The choice is reversible, so we pick the more expressive model now (Rule 1 strongest-interpretation default — "session" reading aligns with Langfuse's conversation/session concept).
+Cost is bounded; no domain model rewrite required. The choice is reversible, so we pick the more expressive model now (Rule D-1 strongest-interpretation default — "session" reading aligns with Langfuse's conversation/session concept).
 
 ## Alternatives considered
 
@@ -79,7 +79,7 @@ Cost is bounded; no domain model rewrite required. The choice is reversible, so 
 
 **Alt B — Trace = Session.** Collapse the two into one identity. Rejected because Langfuse keeps them distinct (a single API request emits one Trace; a multi-request conversation aggregates multiple Traces via `session_id`); preserving the distinction means we never need to disambiguate later.
 
-**Alt C — Defer session_id to W2.** Cleaner L1.x. Rejected because the column is nullable at L1.x so the cost is just two extra column declarations and one SPI accessor — well below the Rule 2 simplicity threshold.
+**Alt C — Defer session_id to W2.** Cleaner L1.x. Rejected because the column is nullable at L1.x so the cost is just two extra column declarations and one SPI accessor — well below the Rule D-2 simplicity threshold.
 
 ## Consequences
 
@@ -87,7 +87,7 @@ Cost is bounded; no domain model rewrite required. The choice is reversible, so 
 - **Negative**: Three IDs to populate on every Run creation (`runId`, `traceId`, `sessionId`); MDC carries four correlation IDs after L1.x (`tenant_id`, `trace_id`, `span_id`, `run_id`); `session_id` is nullable through L1.x and W2 dev, which means dashboards must tolerate nulls.
 - **Risk surfaced**: Cross-suspend trace federation is non-trivial — the default policy (new Trace per child Run) loses span nesting for child-spawned work. ADR-0017's `trace_store.parent_span_id` column does NOT carry the parent-trace linkage; that linkage is `attributes_json.parent_trace_id`. W4 MCP replay tool implementations must follow the `parent_trace_id` attribute to re-stitch.
 
-## Enforcers (Rule 28)
+## Enforcers (Rule R-C.a)
 
 - `RunContextIdentityAccessorsTest` (ArchUnit) — asserts `RunContext` exposes `traceId()`, `spanId()`, `sessionId()` returning `String`.
 - `RunTraceSessionConsistencyIT` (integration) — creates a Run; asserts `Run.traceId` is non-null 32-char hex, `Run.sessionId` MAY be null at L1.x; creates a child Run via `SuspendForChild`; asserts child's `parent_trace_id` attribute points to parent's `traceId`; asserts child inherits parent's `sessionId`.
@@ -100,5 +100,5 @@ Cost is bounded; no domain model rewrite required. The choice is reversible, so 
 - [x] Child-Run default policy (new Trace) vs alternate (nested sub-span) named, with implementation locus.
 - [x] L1.x column nullability rules + W2 NOT NULL migration plan stated.
 - [x] Reversal cost (drop one column) documented so the decision is genuinely reversible.
-- [x] MDC carrier set listed; `session_id` exclusion from MDC at L1.x justified by Rule 2.
+- [x] MDC carrier set listed; `session_id` exclusion from MDC at L1.x justified by Rule D-2.
 - [x] Every accessor / column has an enforcer row.

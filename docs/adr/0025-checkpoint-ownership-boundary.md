@@ -93,8 +93,8 @@ Low: renaming checkpoint key ownership is a refactor with no user-visible surfac
 
 ## References
 
-- Fourth-reviewer document: `docs/reviews/2026-05-12-architecture-code-consistency-feedback.en.md` (F1)
-- Response document: `docs/reviews/2026-05-12-fourth-reviewer-response.en.md`
+- Fourth-reviewer document: `docs/logs/reviews/2026-05-12-architecture-code-consistency-feedback.en.md` (F1)
+- Response document: `docs/logs/reviews/2026-05-12-fourth-reviewer-response.en.md`
 - §4 #9 (revised wording)
 - ADR-0024 (suspension write atomicity — the atomicity contract for both writes)
 - `architecture-status.yaml` row: `checkpoint_ownership_boundary`

@@ -20,8 +20,8 @@
       bash gate/test_architecture_sync_gate.sh
 
   Authority for deprecation: v2.0.0-rc1 second-pass architecture review
-  finding P0-1 (docs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-
-  review.en.md) and the rc2 response (docs/reviews/2026-05-17-l0-w2x-rc1-
+  finding P0-1 (docs/logs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-
+  review.en.md) and the rc2 response (docs/logs/reviews/2026-05-17-l0-w2x-rc1-
   second-pass-review-response.en.md). Gate Rule 61
   (`legacy_powershell_gate_deprecated`) asserts this stub remains in place.
 #>
@@ -40,5 +40,5 @@ Write-Host "Self-tests:"
 Write-Host ""
 Write-Host "    bash gate/test_architecture_sync_gate.sh"
 Write-Host ""
-Write-Host "See docs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md (P0-1)."
+Write-Host "See docs/logs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md (P0-1)."
 exit 2

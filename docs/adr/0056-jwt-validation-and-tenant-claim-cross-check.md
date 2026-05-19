@@ -66,7 +66,7 @@ Replaces the L0 permissive config:
 
 Tenant cross-check itself is Phase D / ADR-0056 §3 of this ADR's sibling.
 
-### 5. Enforcers (per Rule 28)
+### 5. Enforcers (per Rule R-C.a)
 
 - **E9** (`JwtValidationIT`) — exercises every failure row in the table above.
 - **E10** (`JwtTenantClaimCrossCheckTest`) — header/claim mismatch.
@@ -77,7 +77,7 @@ Tenant cross-check itself is Phase D / ADR-0056 §3 of this ADR's sibling.
 
 ### Positive
 
-- One construction path for `JwtDecoder` (Rule 6 satisfied).
+- One construction path for `JwtDecoder` (Rule D-8 satisfied).
 - `dev-local-mode` makes local development tractable without leaking into prod.
 - Auth failures emit stable codes and metrics; reviewers can audit the failure surface from `enforcers.yaml#E9`.
 
@@ -114,7 +114,7 @@ Rejected. Architect guidance §15.3 lists JWT validation as W1 scope. Without it
 - [x] Metrics and logs exist for failure paths (`springai_ascend_auth_failure_total{reason}`).
 - [x] Tests cover unit, integration, and public contract layers (E9–E11, E21).
 - [x] `architecture-status.yaml` truth matches implementation (row at line 892 promoted in Phase J).
-- [x] The design does not weaken existing Rule 20, Rule 21, or Rule 25 constraints.
+- [x] The design does not weaken existing Rule R-C.d, Rule R-C.e, or Rule G-2 sub-clause .a constraints.
 
 ## References
 
@@ -122,4 +122,4 @@ Rejected. Architect guidance §15.3 lists JWT validation as W1 scope. Without it
 - Architect guidance §9.
 - ADR-0055 (module direction).
 - ADR-0058 (PostureBootGuard — required-config enforcement).
-- ADR-0059 (Rule 28).
+- ADR-0059 (Rule R-C.a).

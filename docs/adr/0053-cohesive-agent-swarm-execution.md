@@ -3,7 +3,7 @@
 **Status:** accepted
 **Deciders:** architecture, chaos.xing.xc@gmail.com
 **Date:** 2026-05-13
-**Technical story:** Reviewer finding P0 (`docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md`): an architecture review proposed naming five L0 contracts for "cohesive Agent Swarm execution" — `SwarmRun`, `ParentRunRef`, `SpawnEnvelope`, `SwarmJoinPolicy`, `CrossWorkflowHandoff` — and requested that "agent-spawned child work remain under the same workflow authority by default" be promoted to a §4 architecture constraint. The class-based self-audit (14th cycle) confirmed that four of the five concepts already have semantic backing in §4 #9/#19/#29 + ADRs 0019/0024/0032 but lack consolidated naming, and **discovered a major hidden-defect cluster**: parent→child Run propagation today covers only 1 of 15 lifecycle dimensions explicitly. The rest are scattered, partial, or design gaps.
+**Technical story:** Reviewer finding P0 (`docs/logs/reviews/2026-05-13-l0-capability-labels-platformization.en.md`): an architecture review proposed naming five L0 contracts for "cohesive Agent Swarm execution" — `SwarmRun`, `ParentRunRef`, `SpawnEnvelope`, `SwarmJoinPolicy`, `CrossWorkflowHandoff` — and requested that "agent-spawned child work remain under the same workflow authority by default" be promoted to a §4 architecture constraint. The class-based self-audit (14th cycle) confirmed that four of the five concepts already have semantic backing in §4 #9/#19/#29 + ADRs 0019/0024/0032 but lack consolidated naming, and **discovered a major hidden-defect cluster**: parent→child Run propagation today covers only 1 of 15 lifecycle dimensions explicitly. The rest are scattered, partial, or design gaps.
 
 ## Context
 
@@ -130,7 +130,7 @@ The L0 requirement is contract shape, named carriers, and the workflow-authority
 - `ARCHITECTURE.md` §4 #9 — parent-child entity model (Run + parentRunId + parentNodeKey).
 - `ARCHITECTURE.md` §4 #19 — sealed `SuspendReason` taxonomy (ChildRun, AwaitChildren, JoinPolicy, ChildFailurePolicy, deadline).
 - `ARCHITECTURE.md` §4 #20 — RunStatus DFA + audit trail; attemptId.
-- `ARCHITECTURE.md` §4 #22 — tenant propagation purity (Rule 21); MDC + Run.tenantId.
+- `ARCHITECTURE.md` §4 #22 — tenant propagation purity (Rule R-C.e); MDC + Run.tenantId.
 - `ARCHITECTURE.md` §4 #29 — RunScope STEP_LOCAL / SWARM + findRootRuns.
 - `ARCHITECTURE.md` §4 #32 — posture single-construction-path (AppPostureGate).
 - `ARCHITECTURE.md` §4 #47 — C/S Dynamic Hydration Protocol (HydrationRequest, ResumeEnvelope, BusinessRuleSubset).
@@ -149,5 +149,5 @@ The L0 requirement is contract shape, named carriers, and the workflow-authority
 - ADR-0049 — C/S Dynamic Hydration Protocol.
 - ADR-0051 — Memory and Knowledge Ownership Boundary.
 - ADR-0052 — Skill Topology Scheduler and Capability Bidding (PermissionEnvelope).
-- `docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md` — reviewer input.
-- `docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` — class-organized response with hidden-defect callouts.
+- `docs/logs/reviews/2026-05-13-l0-capability-labels-platformization.en.md` — reviewer input.
+- `docs/logs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` — class-organized response with hidden-defect callouts.

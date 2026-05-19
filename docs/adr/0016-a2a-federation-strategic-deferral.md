@@ -100,5 +100,5 @@ SDK stabilizes and demand materializes.
 - [Google A2A Java SDK (io.github.a2asdk)](https://github.com/a2aproject/a2a-java)
 - [SAA A2A Nacos starter (alibaba/spring-ai-alibaba)](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos)
 - [AS-Java A2A extensions (agentscope-ai/agentscope-java)](https://github.com/agentscope-ai/agentscope-java/tree/main/agentscope-extensions)
-- competitive analysis: `docs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`
+- competitive analysis: `docs/logs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`
 - `architecture-status.yaml` row: `a2a_federation_strategic`

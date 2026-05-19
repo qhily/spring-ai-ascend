@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 /**
- * Enforces Rule 45 (Runtime-Owned Middleware via Engine Hooks): every
+ * Enforces Rule R-M.c (Runtime-Owned Middleware via Engine Hooks): every
  * concrete {@link ExecutorAdapter} implementation under
  * the runtime main sources (post-Phase-C: {@code agent-service/src/main/.../runtime}; pre-Phase-C: {@code agent-runtime/src/main} per ADR-0078) MUST be assignable to
  * {@link EngineHookSurface} (which it is by default — both are functional
@@ -27,7 +27,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  * in the hook surface contract. The actual hook-firing test lives in
  * {@code RuntimeMiddlewareInterceptsHooksIT} (E80).
  *
- * <p>Authority: ADR-0073; CLAUDE.md Rule 45.
+ * <p>Authority: ADR-0073; CLAUDE.md Rule R-M.c.
  * Enforcer row: {@code docs/governance/enforcers.yaml#E79}.
  */
 class EveryEngineDeclaresHookSurfaceTest {

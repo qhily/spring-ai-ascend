@@ -68,7 +68,7 @@ reflects decisions made at the time; they are excluded from drift-detection scan
 | Directory | Reason |
 |---|---|
 | `docs/archive/**` | Archived planning docs; ARCHIVED banner present |
-| `docs/reviews/**` | Reviewer feedback and response documents |
+| `docs/logs/reviews/**` | Reviewer feedback and response documents |
 | `docs/adr/**` | Immutable decision records; may reference past text and rejected options |
 | `docs/delivery/**` | Delivery-log snapshots frozen at commit time |
 | `docs/v6-rationale/**` | Pre-refresh design rationale; ARCHIVED banner present |
@@ -88,13 +88,13 @@ match this list.
 Previously scanned 3 files only. Now scans the full ACTIVE_NORMATIVE_DOCS corpus (same exclusion
 list as Gate Rule 15): any `.md` file not under a HISTORICAL_EXCLUSION directory.
 
-### Gate Rule 20 — `module_metadata_truth`
+### Gate Rule R-C.d — `module_metadata_truth`
 
 Module `README.md` files must not reference Java class names that do not exist in the repository.
 Specifically: `spring-ai-ascend-graphmemory-starter/README.md` must not reference
 `GraphitiRestGraphMemoryRepository` unless a corresponding `.java` file exists.
 
-### Gate Rule 21 — `bom_glue_paths_exist`
+### Gate Rule R-C.e — `bom_glue_paths_exist`
 
 `docs/cross-cutting/oss-bill-of-materials.md` must not contain the 8 known ghost implementation
 paths (`agent-runtime/llm/ChatClientFactory`, etc.) unless the path exists on disk.
@@ -139,4 +139,4 @@ enforce this at commit time. See ADR-0043.
 - `gate/check_architecture_sync.ps1` (Rules 18–23)
 - `gate/check_architecture_sync.sh` (mirror)
 - ADR-0041 §3 (superseded partial exclusion list)
-- Second-pass review: `docs/reviews/2026-05-13-post-seventh-l0-readiness-second-pass.en.md`
+- Second-pass review: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-second-pass.en.md`

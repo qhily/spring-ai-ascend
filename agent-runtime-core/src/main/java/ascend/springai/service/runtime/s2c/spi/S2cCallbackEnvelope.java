@@ -10,7 +10,7 @@ import java.util.UUID;
  *
  * <p>Schema authority: {@code docs/contracts/s2c-callback.v1.yaml#request}.
  * The Phase 3a cross-rule audit matrix (see
- * {@code docs/reviews/2026-05-16-engine-contract-structural-response.en.md} §5.2)
+ * {@code docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md} §5.2)
  * defines six mandatory fields that MUST appear on every S2C envelope at every
  * layer (envelope class, transport SPI, response validator, integration test,
  * audit log). The record below validates the six on construction.

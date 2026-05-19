@@ -2,7 +2,7 @@
 #
 # Authority: ADR-0075 (Server-Controlled Evolution Scope Boundary).
 # Wave: W2.x Phase 4.
-# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §7).
+# Driver review: docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §7).
 #
 # This file is the SINGLE SOURCE OF TRUTH for which categories of platform
 # observation are eligible to feed the evolution plane (deployment_plane:

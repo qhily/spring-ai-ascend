@@ -36,10 +36,10 @@ Three contradictory signals existed before this ADR:
 ## Decision Drivers
 
 - `RunStatus.java` is the ground truth: no `CREATED` value exists. Introducing it would be
-  a new enum value with no state-machine role — a ship-blocking defect per Rule 9.
+  a new enum value with no state-machine role — a ship-blocking defect per Rule D-5.
 - `DELETE /v1/runs/{runId}` contradicts the immutable-run-record model: a cancelled run
   transitions to `CANCELLED` (terminal); the run record is never physically deleted.
-  Rule 20 (RunStateMachine) confirms `RUNNING → CANCELLED` is a state transition, not deletion.
+  Rule R-C.d (RunStateMachine) confirms `RUNNING → CANCELLED` is a state transition, not deletion.
 - Replacing `X-Tenant-Id` entirely at W1 would break all W0 clients without a deprecation
   window. The cross-check model is additive: it adds JWT validation on top of the existing
   header, with no breaking change.
@@ -79,7 +79,7 @@ POST /v1/runs → 201 Created, body: { runId, status: "PENDING", ... }
 POST /v1/runs/{runId}/cancel → 200 OK (idempotent if already CANCELLED)
                              → 409 Conflict if terminal-non-CANCELLED (SUCCEEDED, FAILED, EXPIRED)
   DELETE /v1/runs/{runId} is NOT the cancel mechanism.
-  Cancellation is a state transition (RUNNING/SUSPENDED → CANCELLED per Rule 20 DFA).
+  Cancellation is a state transition (RUNNING/SUSPENDED → CANCELLED per Rule R-C.d DFA).
   The run record is never deleted; only its status changes.
 ```
 
@@ -123,7 +123,7 @@ X-Tenant-Id", "JWT cross-check on top of X-Tenant-Id", "X-Tenant-Id stays requir
 **Positive:**
 - W0 clients continue working at W1 — no breaking change.
 - `RunStatus` enum requires no new value.
-- Cancel route is consistent with Rule 20 RunStateMachine DFA.
+- Cancel route is consistent with Rule R-C.d RunStateMachine DFA.
 - Single canonical statement (this ADR) replaces five contradicting partial statements.
 
 **Negative:**
@@ -139,11 +139,11 @@ implemented (W0 DFA + http-api-contracts.md:110-120).
 
 ## References
 
-- Post-seventh L0 readiness follow-up: `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup.en.md` (P1.2)
-- Response document: `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md` (Cluster B)
+- Post-seventh L0 readiness follow-up: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-followup.en.md` (P1.2)
+- Response document: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md` (Cluster B)
 - `http-api-contracts.md:19` — canonical JWT cross-check wording (correct before this ADR)
 - ADR-0020: RunLifecycle SPI + RunStatus formal DFA (RUNNING → CANCELLED transition)
-- Rule 20 (active): RunStatus transition validity
+- Rule R-C.d (active): RunStatus transition validity
 - §4 #37 (new, this ADR): W1 HTTP contract reconciliation
 - Gate Rule 16: `http_contract_w1_tenant_and_cancel_consistency`
 - `architecture-status.yaml` row: `w1_http_contract_reconciliation`

@@ -75,7 +75,7 @@ therefore must be archived alongside its peer.
 ### Gate Rule 15 (§4 #38)
 
 `no_active_refs_deleted_wave_plan_paths` — active `.md` files (excluding
-`docs/archive/`, `docs/reviews/`, `third_party/`, `target/`, `.git/`) must not contain
+`docs/archive/`, `docs/logs/reviews/`, `third_party/`, `target/`, `.git/`) must not contain
 either of the deleted plan paths:
 - `docs/plans/engineering-plan-W0-W4.md`
 - `docs/plans/roadmap-W0-W4.md`
@@ -103,7 +103,7 @@ Get-ChildItem -Recurse -Filter *.md |
 - Companion plan is no longer an orphan; it lives with its peer in the archive.
 
 **Negative:**
-- Gate Rule 15 excludes `docs/reviews/` from the scan: reviewer-submitted documents may
+- Gate Rule 15 excludes `docs/logs/reviews/` from the scan: reviewer-submitted documents may
   reference the old path and that is acceptable (they are frozen historical artifacts).
 - Any future archived document that legitimately references the archived plan path must ensure
   the file lands in an excluded directory.
@@ -115,8 +115,8 @@ files listed above.
 
 ## References
 
-- Post-seventh L0 readiness follow-up: `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup.en.md` (P1.1)
-- Response document: `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md` (Cluster A)
+- Post-seventh L0 readiness follow-up: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-followup.en.md` (P1.1)
+- Response document: `docs/logs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md` (Cluster A)
 - ADR-0037: Wave Authority Consolidation (motivation for archiving the plans)
 - §4 #38 (new, this ADR): active-corpus truth contract
 - Gate Rule 15: `no_active_refs_deleted_wave_plan_paths`

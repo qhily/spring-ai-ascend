@@ -27,7 +27,7 @@ decision_one_liner: |
 
 triggering_inputs:
   external_reviews:
-    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+    - path: "docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
       authors: ["LucioIT architecture review team"]
       thesis: |
         Proposal §5: middleware integration belongs to the Runtime; engines

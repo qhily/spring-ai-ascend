@@ -12,7 +12,7 @@ kernel: |
   When a skill capacity pool fills, the scheduler suspends only the Agent
   processes blocked on that specific skill,
   freeing OS threads for unrelated work.
-  Enforced by Rule 41.
+  Enforced by Rule R-K.
 ---
 
 ## Motivation
@@ -21,12 +21,12 @@ This principle exists because **a single high-frequency skill (a slow external A
 
 ## Operationalising rules
 
-- Rule 41 — Skill Capacity Matrix ([`docs/governance/rules/rule-41.md`](../rules/rule-41.md))
+- Rule R-K — Skill Capacity Matrix ([`docs/governance/rules/rule-R-K.md`](../rules/rule-R-K.md))
 
 ## Cross-references
 
 - ADR-0069 (origin of Rules 35–42 and the LucioIT W1 §7.3 skill-capacity doctrine)
 - Matrix source of truth: [`docs/governance/skill-capacity.yaml`](../skill-capacity.yaml)
-- Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54) per ADR-0070
+- Rule R-K.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54) per ADR-0070
 - Related: P-H (Chronos Hydration) — suspension is the mechanism by which capacity overflow becomes non-blocking
-- Related: Rule 46 (S2C Callback) — `s2c.client.callback` skill capacity is declared in this matrix
+- Related: Rule R-M sub-clause .d (S2C Callback) — `s2c.client.callback` skill capacity is declared in this matrix

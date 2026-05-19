@@ -16,13 +16,21 @@
 # file" but the implementation scanned a tiny subset.
 # ---------------------------------------------------------------------------
 _r98_fail=0
-_r98_markers='historical|pre-ADR-[0-9]+|pre-Phase-C|consolidated into|consolidation of|consolidated from|merged into|merged in|merger of|was rooted|formerly|superseded|deprecated|archived|moved|extracted per ADR-[0-9]+|Extracted from|extracted from|post-ADR-[0-9]+|post-Phase-C|after Phase C|Phase-C|Phase C|ADR-[0-9]+|subsumes prior|deleted module|stale|drift|prevented|prevents|widens Rule|forbidden_dependencies|forbidden imports|Forbidden imports'
+# Rule 98 reuses Rule 94's marker vocabulary (Wave 2 externalisation).
+_r98_marker_vocab="gate/active-corpus-name-exemption-markers.txt"
+if [[ ! -f "$_r98_marker_vocab" ]]; then
+  fail_rule "broad_corpus_deleted_module_name_truth" "$_r98_marker_vocab missing -- Rule 98 / E137 (Wave 2 vocabulary externalisation)"
+  _r98_fail=1
+fi
+_r98_markers="$(grep -vE '^[[:space:]]*(#|$)' "$_r98_marker_vocab" 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
 _r98_violations=""
 while IFS= read -r _r98_file; do
   [[ -z "$_r98_file" ]] && continue
+  # Rule 98 only scans ops/, docs/contracts/, **/module-metadata.yaml; the docs/logs/
+  # and docs/archive/ partitions are NEVER reached by the find pipeline below, so no
+  # per-file exemption needed beyond build-artefact paths (already excluded at find time).
   case "$_r98_file" in
-    docs/archive/*|docs/reviews/*) continue ;;
-    docs/releases/2026-05-1[0-7]-*) continue ;;
+    docs/archive/*|docs/logs/*) continue ;;
   esac
   _r98_hits=$(awk -v markers="$_r98_markers" '
     BEGIN {

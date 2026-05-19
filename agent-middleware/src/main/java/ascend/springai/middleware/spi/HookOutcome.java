@@ -20,7 +20,7 @@ public sealed interface HookOutcome
     }
 
     /**
-     * <b>Status (v2.0.0-rc2+):</b> the dispatcher returns this outcome but the
+     * <b>Status:</b> the dispatcher returns this outcome but the
      * SyncOrchestrator does NOT consume it; engine-bypass is logged only.
      *
      * <p>TARGET behavior (Rule 45.b, W2 Telemetry Vertical): a middleware
@@ -31,7 +31,7 @@ public sealed interface HookOutcome
     record ShortCircuit(Object result) implements HookOutcome {}
 
     /**
-     * <b>Status (v2.0.0-rc2+):</b> the dispatcher returns this outcome but the
+     * <b>Status:</b> the dispatcher returns this outcome but the
      * SyncOrchestrator does NOT consume it; Run-state transition is NOT applied.
      *
      * <p>TARGET behavior (Rule 45.b, W2 Telemetry Vertical): the middleware

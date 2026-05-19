@@ -39,7 +39,7 @@ Locking the protocol contract now means the server-side L1.x and W2 work cannot 
 **Language priority**:
 
 1. **Java/Kotlin** — ships in W3. Built on `opentelemetry-api` 1.x; provides a `SpringaiAscendClient` facade that wraps OTel `Tracer` + `BatchSpanProcessor`. Coexists with user-managed OTel SDKs (the client uses whatever `OpenTelemetry` instance is on the classpath).
-2. **JS/TS** — deferred to W3+ once Java/Kotlin is hardened. Rule 2: ship one language, harden it, then expand.
+2. **JS/TS** — deferred to W3+ once Java/Kotlin is hardened. Rule D-2: ship one language, harden it, then expand.
 3. **Python** — deferred to W3++. Same reason.
 
 The SDK MUST NOT pull a heavy OTel exporter dep transitively; it relies on the host application's exporter configuration. SDK glue LOC ≤ 600 (per §4.6 budget).
@@ -92,7 +92,7 @@ The SDK launch in W3 is gated on W2 completion.
 - **Negative**: Customers who need JS/Python today must use vanilla OTel SDKs (acceptable — they all speak `traceparent`); the platform commits to a `springai-ascend-client` module name and reactor entry at W3.
 - **Risk surfaced**: The server-side L1.x MDC + `traceresponse` emission MUST land before any vanilla-OTel integration tests; otherwise external customers cannot validate the protocol against our server.
 
-## Enforcers (Rule 28)
+## Enforcers (Rule R-C.a)
 
 L1.x enforcers (server-side prerequisites of the W3 contract):
 

@@ -15,7 +15,7 @@ relates_to:
 
 decision_one_liner: |
   Activate the two W1.x deferred sub-clauses whose preconditions Phase 6
-  satisfied: Rule 36.b (Cursor Flow integration test) and Rule 41.b
+  satisfied: Rule R-F.b (Cursor Flow integration test) and Rule R-K.b
   (ResilienceContract.resolve runtime enforcement). Both are L1 process-view
   concerns and ship via narrowly-scoped enforcers — a Cursor Flow integration
   test (E72 / gate Rule 53) and a SkillCapacityRegistry-backed ResilienceContract
@@ -57,7 +57,7 @@ context: |
            the behaviour.
 
 decision: |
-  - Phase 8 (Rule 36.b):
+  - Phase 8 (Rule R-F.b):
       Introduce AsyncRunDispatcher SPI under agent-platform.web.runs.
       Ship NoOpAsyncRunDispatcher as the default (registered via
       @ConditionalOnMissingBean). RunController.create() invokes the dispatcher
@@ -69,7 +69,7 @@ decision: |
       that sleeps 30 seconds inside dispatch(); the test asserts the HTTP
       response arrives within 200 ms.
 
-  - Phase 9 (Rule 41.b):
+  - Phase 9 (Rule R-K.b):
       Introduce SuspendReason sealed interface (variant: RateLimited(skill,
       code)) under agent-runtime.resilience. Add SkillResolution record. Add
       SkillCapacityRegistry interface with YamlSkillCapacityRegistry default —
@@ -106,7 +106,7 @@ alternatives_considered:
   - alternative: "Plain enum for SuspendReason (single constant SKILL_CAPACITY_EXCEEDED) instead of sealed interface."
     why_rejected: "ADR-0019 commits to a sealed interface with four future variants (AwaitChild / AwaitTimer / AwaitExternal / AwaitApproval). Shipping an enum and migrating to a sealed interface later would churn every consumer's switch statement. The sealed declaration is no more code today and prevents the churn."
   - alternative: "Postgres-backed SkillCapacityRegistry."
-    why_rejected: "W2 scope — durability across restart is not required at L1.x. The in-memory ConcurrentHashMap + AtomicInteger CAS matches the existing W1 InMemoryRunRegistry pattern (Rule 6 — single construction path per resource class)."
+    why_rejected: "W2 scope — durability across restart is not required at L1.x. The in-memory ConcurrentHashMap + AtomicInteger CAS matches the existing W1 InMemoryRunRegistry pattern (Rule D-8 — single construction path per resource class)."
 
 verification:
   cli:
@@ -116,7 +116,7 @@ verification:
     - "bash gate/check_architecture_sync.sh → GATE: PASS with 54 rules."
     - "bash gate/test_architecture_sync_gate.sh → Tests passed: 70/70."
   manual:
-    - "grep 'Rule 36.b\\|Rule 41.b' docs/CLAUDE-deferred.md returns no matches."
+    - "grep 'Rule R-F.b\\|Rule R-K.b' docs/CLAUDE-deferred.md returns no matches."
     - "docs/contracts/openapi-v1.yaml POST /v1/runs declares 202 + TaskCursor."
 
 enforcer_rows:

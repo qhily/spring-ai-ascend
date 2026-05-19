@@ -6,12 +6,12 @@
 **Technical story:** Seventh reviewer (P1.1, P2.4) found the contract catalog listed 10 deleted SPIs
 and 8 deleted starter coordinates. Reviewer (P2.4) found status-ledger stale claims and a module-doc
 method-name drift. Gate item 9 requested gate coverage for these truth-drift patterns. Cluster 3
-self-audit surfaced 12 hidden defects. This ADR generalises Rule 25 (Architecture-Text Truth) with
+self-audit surfaced 12 hidden defects. This ADR generalises Rule G-2 sub-clause .a (Architecture-Text Truth) with
 two new gate rules.
 
 ## Context
 
-Rule 25 enforces four specific truth-gate cases (shipped-impl paths, no-hardcoded-versions,
+Rule G-2 sub-clause .a enforces four specific truth-gate cases (shipped-impl paths, no-hardcoded-versions,
 OpenAPI path consistency, module dep direction). It does NOT cover:
 - Contract-catalog deleted-name references (7 of 10 listed SPIs were deleted in the Occam pass).
 - Module ARCHITECTURE.md method-name drift (`probe.check()` vs actual `probe.probe()`).
@@ -26,13 +26,13 @@ most common drift patterns.
 - Seventh reviewer P1.1: contract-catalog must reflect the current SPI inventory.
 - Seventh reviewer P2.4: module-doc method names must exist in the named class.
 - Gate item 9: gate must catch these drift patterns at commit time, not review time.
-- Hidden defect 3.11: Rule 25 gate covers 4 cases; at least 8 more truth-drift patterns observed.
+- Hidden defect 3.11: Rule G-2 sub-clause .a gate covers 4 cases; at least 8 more truth-drift patterns observed.
 
 ## Considered Options
 
 1. **Add Gate Rules 13 and 14; rewrite contract-catalog; fix all known drift** — this decision.
 2. **LLM-assisted full-repo truth audit on each commit** — too slow; not deterministic.
-3. **Manual checklist in PR template** — already tried (Rule 25); insufficient for the deleted-name pattern.
+3. **Manual checklist in PR template** — already tried (Rule G-2 sub-clause .a); insufficient for the deleted-name pattern.
 
 ## Decision Outcome
 
@@ -81,7 +81,7 @@ via grep on `OssApiProbe.java`).
 
 ### §4 #33 — Contract-Surface Truth Generalization
 
-Extending §4 #24 (Rule 25): the following truth-claim documents are subject to Gate Rules 13 and 14
+Extending §4 #24 (Rule G-2 sub-clause .a): the following truth-claim documents are subject to Gate Rules 13 and 14
 in addition to the original four gate rules (7, 8, 9, 10):
 - `docs/contracts/contract-catalog.md` — subject to Gate Rule 13 (deleted-name scan).
 - `agent-service/ARCHITECTURE.md`, `agent-service/ARCHITECTURE.md` — subject to Gate Rule 14 (method-name truth).
@@ -91,15 +91,15 @@ in addition to the original four gate rules (7, 8, 9, 10):
 **Positive:**
 - Deleted-SPI reference drift is now caught at commit time, not review time.
 - Module ARCHITECTURE.md method-name drift is caught within one sweep per commit.
-- Rule 25 now covers 14 gate rules instead of 4 specific cases; the pattern is extensible.
+- Rule G-2 sub-clause .a now covers 14 gate rules instead of 4 specific cases; the pattern is extensible.
 
 **Negative:**
 - Gate Rule 14's regex sweep may produce false positives if method names collide across classes. Pragmatic: flag and manual-verify if the pattern fires unexpectedly.
 
 ## References
 
-- Seventh reviewer P1.1, P2.4, gate item 9: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
-- Rule 25 (Architecture-Text Truth): extended by this ADR
-- ADR-0025, ADR-0026, ADR-0027: original Rule 25 ADRs
+- Seventh reviewer P1.1, P2.4, gate item 9: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Rule G-2 sub-clause .a (Architecture-Text Truth): extended by this ADR
+- ADR-0025, ADR-0026, ADR-0027: original Rule G-2 sub-clause .a ADRs
 - `gate/check_architecture_sync.ps1` Gate Rules 13 and 14
 - `architecture-status.yaml` row: `contract_surface_truth_gate`

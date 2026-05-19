@@ -27,15 +27,15 @@ The negative invariant — **`agent-runtime` MUST NOT depend on `agent-platform`
 
 **`agent-runtime` MUST NOT depend on `agent-platform` (Maven level, source level).**
 
-The previously-symmetric Gate Rule 10 is amended to enforce only the runtime→platform direction. A new ArchUnit test (`RuntimeMustNotDependOnPlatformTest`) generalises Rule 21 from the single `TenantContextHolder` class to the whole `ascend.springai.service.platform..` package.
+The previously-symmetric Gate Rule D-6 is amended to enforce only the runtime→platform direction. A new ArchUnit test (`RuntimeMustNotDependOnPlatformTest`) generalises Rule R-C.e from the single `TenantContextHolder` class to the whole `ascend.springai.service.platform..` package.
 
 The `agent-platform-contracts` module is **not** introduced at L1. If a future wave (W2+) identifies a real handoff that benefits from a third module, that decision lands in its own ADR.
 
 ## Enforcement
 
-Rule 28 (Code-as-Contract) requires every constraint to have an executable enforcer. This ADR's invariants are backed by:
+Rule R-C.a (Code-as-Contract) requires every constraint to have an executable enforcer. This ADR's invariants are backed by:
 
-- **E1** — `gate/check_architecture_sync.sh` Rule 10: agent-service/pom.xml does not depend on agent-platform.
+- **E1** — `gate/check_architecture_sync.sh` Rule D-6: agent-service/pom.xml does not depend on agent-platform.
 - **E2** — `RuntimeMustNotDependOnPlatformTest` (ArchUnit): no class under `ascend.springai.service.runtime..` imports `ascend.springai.service.platform..`.
 - **E4** — `HttpEdgeMustNotImportMemorySpiTest` (ArchUnit): `agent-platform` does not import `runtime.memory.spi..`.
 - **E27** — `module_count_invariant`: root pom declares exactly 9 modules (bumped from 4 to 9 by the 2026-05-17 six-module materialization PR; canonical count now lives in `docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules` and is data-driven cross-checked by Rule 64).
@@ -77,19 +77,19 @@ Rejected: defeats L1's purpose. The W1 HTTP API is the headline deliverable of L
 - [x] No future-wave capability is described as shipped (no contracts module introduced).
 - [x] Spring bean construction has one owner (unchanged).
 - [x] Configuration properties are validated and consumed (n/a for this ADR).
-- [x] Tenant identity flow is explicit (Rule 21 generalised, not weakened).
+- [x] Tenant identity flow is explicit (Rule R-C.e generalised, not weakened).
 - [x] Idempotency behavior is tenant-scoped (unchanged).
 - [x] Persistence survives restart when claimed (n/a for this ADR).
 - [x] Error status codes are stable (n/a for this ADR).
 - [x] Metrics and logs exist for failure paths (gate/ArchUnit failures emit clear messages).
 - [x] Tests cover unit, integration, and public contract layers (ArchUnit + gate-script).
 - [x] `architecture-status.yaml` truth matches implementation (new `module_dep_direction_l1` row added).
-- [x] The design does not weaken existing Rule 20, Rule 21, or Rule 25 constraints (Rule 21 strictly generalised; Rule 20, 25 unchanged).
+- [x] The design does not weaken existing Rule R-C.d, Rule R-C.e, or Rule G-2 sub-clause .a constraints (Rule R-C.e strictly generalised; Rule R-C.d, 25 unchanged).
 
 ## References
 
 - Supersedes ADR-0026.
 - L1 plan: `D:\.claude\plans\l1-modular-russell.md` §5, §11 (E1, E2, E4, E27).
-- ADR-0023 (tenant propagation purity, Rule 21 origin).
-- ADR-0059 (Rule 28, governs enforcement).
+- ADR-0023 (tenant propagation purity, Rule R-C.e origin).
+- ADR-0059 (Rule R-C.a, governs enforcement).
 - Architect guidance §7.3, §15.5.

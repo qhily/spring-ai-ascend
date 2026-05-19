@@ -230,7 +230,8 @@ def build_graph(repo: Path) -> dict:
 
     # -- 2. Enforcers + rule→enforcer + enforcer→artefact edges --
     enforcers = load_yaml(GOV / "enforcers.yaml") or []
-    rule_extract = re.compile(r"Rule\s*(\d+)", re.IGNORECASE)
+    # Match both integer (Rule 28) and namespaced (Rule D-1, R-C.a, G-3.f, M-2.b) refs.
+    rule_extract = re.compile(r"Rule\s+([A-Z]-[A-Z0-9]+(?:\.[a-z])?|\d+[a-z]?)", re.IGNORECASE)
     for row in enforcers:
         eid = row["id"]
         add_node(

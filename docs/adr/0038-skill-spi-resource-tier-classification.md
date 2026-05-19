@@ -72,7 +72,7 @@ is unchanged; the tier classification is a documentation constraint on how field
 
 ## References
 
-- Seventh reviewer P2.1: `docs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
+- Seventh reviewer P2.1: `docs/logs/reviews/2026-05-13-l0-architecture-readiness-agent-systems-review.en.md`
 - ADR-0030: Skill SPI lifecycle + resource matrix (updated by this ADR)
 - ADR-0018: SandboxExecutor SPI (Tier B enforcement mechanism)
 - Rule 27 (deferred W3): posture-mandatory sandbox for UNTRUSTED skills

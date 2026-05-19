@@ -24,7 +24,7 @@ decision_one_liner: |
 
 triggering_inputs:
   external_reviews:
-    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+    - path: "docs/logs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
       authors: ["LucioIT architecture review team"]
       thesis: |
         Proposal §4.4: "the Runtime should reject the execution request" if a
@@ -85,7 +85,7 @@ decision: |
 
 consequences:
   positive:
-    - "Misconfiguration cannot reach request-serving state - the process refuses to start. This is the Rule 9 ship-gate posture for the engine-dispatch surface."
+    - "Misconfiguration cannot reach request-serving state - the process refuses to start. This is the Rule D-5 ship-gate posture for the engine-dispatch surface."
     - "Establishes the R2 pattern (governance-as-runtime-contract) as a first-class technique in the codebase. Reusable for sandbox-policies.yaml, skill-capacity.yaml runtime enforcement, future engine-hooks.v1.yaml consumer registration."
     - "Adapter registration happens once at boot, not per request. Zero hot-path overhead."
     - "@ConditionalOnMissingBean defaults allow integrators to substitute production engine implementations without touching the auto-config class."
@@ -95,7 +95,7 @@ consequences:
 
 alternatives_considered:
   - alternative: "Leave EngineRegistry.validateAgainstSchema() unwired; rely on the EngineMatchingException at first request to surface misconfiguration."
-    why_rejected: "Defers the failure to the request path. A misconfigured production deployment would pass health checks, accept traffic, and only fail when a specific tenant submitted a Run that required the missing engine. Boot-time fail-closed is the Rule 9 ship-gate posture."
+    why_rejected: "Defers the failure to the request path. A misconfigured production deployment would pass health checks, accept traffic, and only fail when a specific tenant submitted a Run that required the missing engine. Boot-time fail-closed is the Rule D-5 ship-gate posture."
   - alternative: "Implement EngineRegistry as an @PostConstruct method inside an existing config class (e.g. RunControllerAutoConfiguration)."
     why_rejected: "Couples engine wiring to run-controller wiring. Phase 5 keeps engine concerns in a dedicated ascend.springai.service.platform.engine package consistent with the wave's structural-downstreaming theme - each governance YAML gets its own auto-config class."
   - alternative: "Use Spring's SmartLifecycle to defer validation to after-context-refresh."

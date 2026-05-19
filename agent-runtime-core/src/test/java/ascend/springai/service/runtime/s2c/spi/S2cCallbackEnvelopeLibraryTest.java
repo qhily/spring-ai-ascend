@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Library-mode SPI conformance test for S2cCallbackEnvelope + S2cCallbackResponse
- * (Rule 46 + ADR-0074; package move to runtime.s2c.spi in v2.0.0-rc3).
+ * (Rule R-M.d + ADR-0074; package move to runtime.s2c.spi in v2.0.0-rc3).
  *
  * <p>Pure JUnit Jupiter — no Spring context, no transport. Asserts the six
  * mandatory-field invariants validated on construction + the W3C 32-char
  * lowercase-hex traceId rule added in v2.0.0-rc3 (cross-constraint audit α-5).
  *
- * <p>Part of the Rule 79 evidence layer + Rule 32.b TCK-promotion holding tank.
+ * <p>Part of the Rule D-3.b evidence layer + Rule R-D.a.b TCK-promotion holding tank.
  */
 class S2cCallbackEnvelopeLibraryTest {
 

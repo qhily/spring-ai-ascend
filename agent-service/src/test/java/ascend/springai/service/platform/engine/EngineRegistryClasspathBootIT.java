@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Enforcer row: {@code docs/governance/enforcers.yaml#E91}.
  *
- * <p>Authority: ADR-0076; CLAUDE.md Rule 28 / Rule 9 (Phase 7 audit-response).
+ * <p>Authority: ADR-0076; CLAUDE.md Rule R-C.a / Rule D-5 (Phase 7 audit-response).
  */
 class EngineRegistryClasspathBootIT {
 

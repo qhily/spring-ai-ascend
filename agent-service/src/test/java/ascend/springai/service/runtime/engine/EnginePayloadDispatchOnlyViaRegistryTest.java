@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 /**
- * Enforces Rule 43 (Engine Envelope Single Authority) at the structural level:
+ * Enforces Rule R-M.a (Engine Envelope Single Authority) at the structural level:
  * every concrete {@link Orchestrator} implementation in the runtime production
  * sources MUST depend on {@link EngineRegistry}. Pattern-matching on
  * {@code ExecutorDefinition} subtypes outside the registry is the prohibited
@@ -24,7 +24,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  * scan ships as gate Rule 55 (source-level) — ArchUnit operates on bytecode
  * dependencies and cannot directly observe the {@code instanceof} keyword.
  *
- * <p>Authority: ADR-0072; CLAUDE.md Rule 43.
+ * <p>Authority: ADR-0072; CLAUDE.md Rule R-M.a.
  * Enforcer row: {@code docs/governance/enforcers.yaml#E74}.
  */
 class EnginePayloadDispatchOnlyViaRegistryTest {
@@ -45,7 +45,7 @@ class EnginePayloadDispatchOnlyViaRegistryTest {
                     if (!dependsOnRegistry) {
                         events.add(SimpleConditionEvent.violated(clazz,
                                 clazz.getName() + " implements Orchestrator but does not depend on EngineRegistry — "
-                                        + "Rule 43 requires dispatch to go through EngineRegistry.resolveByPayload "
+                                        + "Rule R-M.a requires dispatch to go through EngineRegistry.resolveByPayload "
                                         + "or EngineRegistry.resolve(envelope)."));
                     }
                 }
@@ -57,7 +57,7 @@ class EnginePayloadDispatchOnlyViaRegistryTest {
                 .that().implement(Orchestrator.class)
                 .and().areNotInterfaces()
                 .should(DEPEND_ON_ENGINE_REGISTRY)
-                .because("ADR-0072 + Rule 43: dispatch authority is centralised in EngineRegistry.")
+                .because("ADR-0072 + Rule R-M.a: dispatch authority is centralised in EngineRegistry.")
                 .check(RUNTIME_MAIN);
     }
 }

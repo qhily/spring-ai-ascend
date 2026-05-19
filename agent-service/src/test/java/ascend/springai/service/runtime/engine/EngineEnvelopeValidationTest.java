@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Verifies the EngineEnvelope record validates required fields on construction
  * and applies safe defaults for optional fields. Schema authority:
- * docs/contracts/engine-envelope.v1.yaml. ADR-0072 + CLAUDE.md Rule 43.
+ * docs/contracts/engine-envelope.v1.yaml. ADR-0072 + CLAUDE.md Rule R-M.a.
  */
 class EngineEnvelopeValidationTest {
 

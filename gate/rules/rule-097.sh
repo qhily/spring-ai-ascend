@@ -17,7 +17,7 @@
 # ---------------------------------------------------------------------------
 _r97_fail=0
 _r97_graph="docs/governance/architecture-graph.yaml"
-_r97_releases_dir="docs/releases"
+_r97_releases_dir="docs/logs/releases"
 if [[ ! -f "$_r97_graph" ]]; then
   fail_rule "release_note_numeric_truth" "$_r97_graph missing — Rule 97 / E135 (cannot establish live node/edge baseline)"
   _r97_fail=1

@@ -26,8 +26,8 @@ This file is intentionally a **thin operational wrapper** for Codex / autonomous
 
 The following conventions are stable across rule-count changes and apply to every coding agent loaded into this repo:
 
-1. **Before writing any code or plan**, follow Rule 1 in CLAUDE.md (Root-Cause + Strongest-Interpretation). Surface assumptions; name the root cause in one sentence with `file:line` evidence; pick the strongest valid reading of the requirement.
-2. **Before every commit**, run the Rule 3 Pre-Commit Checklist (contract truth · orphan config · error visibility · lint green · test honesty).
+1. **Before writing any code or plan**, follow Rule D-1 in CLAUDE.md (Root-Cause + Strongest-Interpretation). Surface assumptions; name the root cause in one sentence with `file:line` evidence; pick the strongest valid reading of the requirement.
+2. **Before every commit**, run the Rule D-3.a Pre-Commit Checklist (contract truth · orphan config · error visibility · lint green · test honesty).
 3. **For UI / frontend changes**, drive the feature through a real browser before declaring done (Rule from `Doing tasks` section).
 4. **For Java verification**, use `./mvnw clean verify` not `./mvnw test` — the latter skips `*IT.java` (Failsafe) tests. This is a recurring trap; the v2.0.0-rc1 post-release wave landed 4 IT regressions because `test` was used.
 5. **For gate verification**, use `bash gate/check_architecture_sync.sh` (canonical). The PowerShell entrypoint `gate/check_architecture_sync.ps1` was deprecated in v2.0.0-rc2 — it now exits 2 with a `DEPRECATED` banner.

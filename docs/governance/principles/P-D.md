@@ -12,7 +12,7 @@ kernel: |
   (releasability, resilience, availability, vulnerability, observability);
   contracts precede implementation;
   alternative implementations must pass a TCK to be conformant.
-  Enforced by Rule 32 (TCK content deferred per `CLAUDE-deferred.md` 32.b/32.c).
+  Enforced by Rule R-D sub-clause .a (TCK content deferred per `CLAUDE-deferred.md` 32.b/32.c).
 ---
 
 ## Motivation
@@ -21,11 +21,11 @@ This principle exists because a platform without a published **SPI** ends up wit
 
 ## Operationalising rules
 
-- Rule 32 — SPI + DFX + TCK Co-Design ([`docs/governance/rules/rule-32.md`](../rules/rule-32.md))
+- Rule R-D sub-clause .a — SPI + DFX + TCK Co-Design ([`docs/governance/rules/rule-R-D.md`](../rules/rule-R-D.md))
 
 ## Cross-references
 
-- ADR-0067 (origin of Rule 32 and the per-module DFX yaml schema)
+- ADR-0067 (origin of Rule R-D sub-clause .a and the per-module DFX yaml schema)
 - Deferred sub-clauses 32.b (TCK module scaffolding), 32.c (TCK conformance content), 32.d (vulnerability-scanner integration) — see [`docs/CLAUDE-deferred.md`](../../CLAUDE-deferred.md)
 - Related: P-C (Independent Modules) — SPI surface is what makes independent evolution safe
-- Related: Rule 48 (Schema-First Domain Contracts) — extends spec-driven discipline to every fixed-vocabulary taxonomy
+- Related: Rule M-2 sub-clause .a (Schema-First Domain Contracts) — extends spec-driven discipline to every fixed-vocabulary taxonomy

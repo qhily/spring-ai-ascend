@@ -9,7 +9,7 @@ authority: "ADR-0068 (Layered 4+1 + Architecture Graph)"
 
 This table is the canonical per-ADR `level:` + `view:` classification consumed by `gate/migrate_adrs_to_yaml.py` and `gate/build_architecture_graph.sh`. It is hand-maintained because the classification reflects intent (does this ADR govern a cross-module principle, or a per-module contract, or a feature detail?), not surface syntax.
 
-When a new ADR is added, its row MUST be added here in the same PR (Rule 33, Gate Rule 37).
+When a new ADR is added, its row MUST be added here in the same PR (Rule G-1 sub-clause .a, Gate Rule R-G).
 
 ## Levels
 
@@ -72,9 +72,9 @@ When a new ADR is added, its row MUST be added here in the same PR (Rule 33, Gat
 | 0041 | sealed-status-taxonomies | L1 | logical | Status taxonomies are sealed types |
 | 0042 | meta-pattern-peripheral-lag | L0 | scenarios | META: peripheral entry-points lag central truth |
 | 0043 | test-evidence-gate | L0 | scenarios | Rule 19 — test evidence must resolve |
-| 0044 | peripheral-wave-qualifier | L0 | scenarios | Rule 25 — peripheral wave qualifier |
+| 0044 | peripheral-wave-qualifier | L0 | scenarios | Rule G-2 sub-clause .a — peripheral wave qualifier |
 | 0045 | four-shape-defect-model | L0 | scenarios | REF-DRIFT / HISTORY-PARADOX / PERIPHERAL-DRIFT / GATE-PROMISE-GAP |
-| 0046 | release-note-contract-review | L0 | scenarios | GATE-SCOPE-GAP for docs/releases/*.md |
+| 0046 | release-note-contract-review | L0 | scenarios | GATE-SCOPE-GAP for docs/logs/releases/*.md |
 | 0047 | l0-final-entrypoint-truth-review | L0 | scenarios | Active-entrypoint baseline truth gate |
 | 0048 | service-layer-microservice-commitment | L1 | physical | Service Layer as long-running microservices |
 | 0049 | c-s-dynamic-hydration-protocol | L1 | logical | TaskCursor / BusinessRuleSubset / HydrationRequest |
@@ -87,7 +87,7 @@ When a new ADR is added, its row MUST be added here in the same PR (Rule 33, Gat
 | 0056 | jwt-validation-and-tenant-claim-cross-check | L1 | process | Full JWT validation contract |
 | 0057 | durable-idempotency-claim-replay | L1 | process | Durable idempotency claim + replay |
 | 0058 | posture-boot-guard | L1 | process | PostureBootGuard + @RequiredConfig |
-| 0059 | code-as-contract-architectural-enforcement | L0 | scenarios | Rule 28 — Code-as-Contract |
+| 0059 | code-as-contract-architectural-enforcement | L0 | scenarios | Rule R-C.a — Code-as-Contract |
 | 0060 | phase-l-reviewer-remediation | L1 | scenarios | Phase L reviewer P0/P1 closure |
 | 0061 | telemetry-vertical-layer | L1 | process | Telemetry vertical as first-class layer |
 | 0062 | trace-run-session-identity | L1 | logical | RunContext.traceId / spanId / sessionId |
