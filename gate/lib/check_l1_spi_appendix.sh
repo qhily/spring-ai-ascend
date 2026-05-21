@@ -29,8 +29,12 @@ if [[ -z "${GATE_REPO_ROOT:-}" ]]; then
 fi
 
 # Extract every FQN that appears in any line under a "SPI Interface
-# Appendix" heading. Captures `com.huawei.ascend.X.Y.ClassName` patterns
-# inside backticks or table cells.
+# Appendix" heading, but ONLY from Markdown table rows (lines starting
+# with `|`). rc29 fix (ADV3-2 follow-up): out-of-table prose like
+# "Implementation home (NOT SPI):" + bullet lists is explicitly excluded
+# from the SPI surface set. This lets ARCHITECTURE.md document structural
+# carriers / implementation classes without triggering Rule G-1.1.b
+# false-positives.
 _l1_extract_spi_fqns() {
   local _file="$1"
   awk '
@@ -42,8 +46,8 @@ _l1_extract_spi_fqns() {
       # Any other ## section ends the SPI appendix
       if (in_spi) in_spi=0
     }
-    in_spi {
-      # Extract com.huawei.ascend.XYZ.ClassName patterns
+    # Only consider table-row lines (start with `|`) per rc29 fix.
+    in_spi && /^[[:space:]]*\|/ {
       while (match($0, /com\.huawei\.ascend\.[a-zA-Z0-9_.]+/)) {
         print substr($0, RSTART, RLENGTH)
         $0 = substr($0, RSTART + RLENGTH)
@@ -87,22 +91,31 @@ check_l1_spi_appendix_for_file() {
     echo "FAIL	$_file	module-has-declared-spi-but-architecture-md-has-empty-or-missing-SPI-Interface-Appendix"
     return 1
   fi
-  # rc27 corrective + rc28 fix (ADV-8/NEW-1): allow cross-module SPI references
-  # in the appendix (e.g., agent-client's appendix lists agent-bus's
-  # IngressGateway as a CONSUMED SPI). The rule is satisfied when each FQN
-  # whose package starts with the CURRENT module's prefix resolves to that
-  # module's spi_packages; cross-module references are documentation only.
-  #
-  # rc28: derive the prefix from the LONGEST common dotted prefix of
-  # module-metadata.yaml#spi_packages, not from `module#agent-` (which
-  # silently broke for hyphenated module names like agent-execution-engine
-  # → "com.huawei.ascend.execution-engine" which is an invalid Java package
-  # and matches nothing).
+  # rc27/28/29 corrective (ADV-8 + ADV3-2): derive the module's Java package
+  # prefix as the LONGEST COMMON DOTTED PREFIX of all declared
+  # `module-metadata.yaml#spi_packages` entries — not just `head -1`. The
+  # rc28 head -1 fix silently broke when sorted-first entry has a sub-subpath
+  # (e.g., agent-evolve sorts `evolve.online.spi` before `evolve.spi`, so the
+  # prefix wrongly became `com.huawei.ascend.evolve.online` and any future
+  # `evolve.spi.*` SPI FQN was skipped as cross-module).
   local _module_prefix
   if [[ -n "$_declared_pkgs" ]]; then
-    # Take first declared spi_packages entry, drop trailing `.spi*` suffix,
-    # yielding the module's Java package root (e.g., com.huawei.ascend.engine).
-    _module_prefix=$(echo "$_declared_pkgs" | head -1 | sed -E 's/\.spi(\..*)?$//')
+    # Strip each entry's `.spi*` suffix, then compute the longest common
+    # dotted-segment prefix across all entries.
+    local _roots
+    _roots=$(echo "$_declared_pkgs" | sed -E 's/\.spi(\..*)?$//' | sort -u)
+    # Compute LCP using awk
+    _module_prefix=$(echo "$_roots" | awk '
+      NR == 1 { split($0, a, "."); n = length(a); for (i=1; i<=n; i++) lcp[i] = a[i]; lcp_n = n; next }
+      { split($0, b, "."); m = length(b); newn = 0
+        for (i=1; i<=lcp_n && i<=m; i++) {
+          if (lcp[i] == b[i]) newn = i
+          else break
+        }
+        lcp_n = newn
+      }
+      END { out = lcp[1]; for (i=2; i<=lcp_n; i++) out = out "." lcp[i]; print out }
+    ')
   else
     _module_prefix="com.huawei.ascend.${_module#agent-}"
   fi
