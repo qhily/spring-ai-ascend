@@ -4,12 +4,13 @@ import com.huawei.ascend.service.engine.spi.AgentInvokeRequest;
 import com.huawei.ascend.service.engine.spi.StateDelta;
 import com.huawei.ascend.service.engine.spi.StatelessEngine;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Reference in-memory implementation of {@link StatelessEngine} per
- * ADR-0100 (rc24).
+ * ADR-0100.
  *
  * <p>Posture-gated for dev/research; production wiring lands when the
  * actual Workflow / ReAct engine adapters land via
@@ -35,11 +36,19 @@ public class InMemoryStatelessEngine implements StatelessEngine {
         // Reference impl: no-op delta. Real engines plug in via the
         // service.engine.adapter sub-package as adapters over
         // ExecutorAdapter (from agent-execution-engine).
+        //
+        // use HashMap instead of Map.of(...). The runId is
+        // already non-null per the AgentInvokeRequest canonical constructor
+        //, but defence-in-depth: Map.of's null-value rejection would
+        // throw NPE if any future field added here is nullable.
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("engine", "InMemoryStatelessEngine");
+        metrics.put("request_id", request.runId());
         return new StateDelta(
                 "no_change",
                 Map.of(),
                 Map.of(),
                 List.of(),
-                Map.of("engine", "InMemoryStatelessEngine", "request_id", request.runId()));
+                metrics);
     }
 }

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Session data-context entity per ADR-0100 (rc25).
+ * Session data-context entity.
  *
  * <p>The Session is the data-context layer in the Run ≤ Task ≤ Session ≤
  * Memory lifecycle hierarchy: what was discussed, variables.
@@ -37,5 +37,9 @@ public record Session(
         Objects.requireNonNull(variables, "variables");
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");
+        // defensive immutable copies so callers
+        // can't mutate the record's internal state after construction.
+        messages = List.copyOf(messages);
+        variables = Map.copyOf(variables);
     }
 }

@@ -2,25 +2,27 @@
 level: L1
 view: logical
 module: agent-evolve
-status: skeleton
+status: active
 freeze_id: null
 covers_views: [logical]
 spans_levels: [L1]
 authority: "ADR-0075 (Evolution scope default boundary); Layer-0 principle P-I (Five-Plane Distributed Topology); Rule R-M.e (Evolution Scope Default Boundary, formerly Rule 47)"
 ---
 
-# agent-evolve — L1 architecture (skeleton)
+# agent-evolve — L1 architecture (active; SPI extracted rc26)
 
-> Owner: AgentEvolve team | Wave: W3+ | Maturity: skeleton (deferred)
-> Created: 2026-05-17 (six-module materialization PR)
+> Owner: AgentEvolve team | Wave: W3+ | Maturity: active (SlowTrackJudge SPI shipped rc26; bulk impl deferred to W3)
+> Created: 2026-05-17 (six-module materialization PR); rc26 added online-evolution SPI per ADR-0102; rc27 moved SPI under `.spi` per Rule R-D.d.
 
 ## Status
 
-**This module is a deferred skeleton.** The Evolution plane hosts
-Python ML / offline improvement loops; the Java side is just an adapter
-shell. Bulk implementation is deferred indefinitely per
-`CLAUDE-deferred.md` and the archived design under
-`docs/v6-rationale/agent-runtime/evolve/`.
+**rc26 (2026-05-21) introduced the SlowTrackJudge SPI** per ADR-0102.
+Module status flipped from `skeleton` to `active` in rc27 per Rule M-1
+(modules with extracted production code MUST NOT carry `skeleton` status).
+The Evolution plane still hosts Python ML / offline improvement loops
+externally; the Java side now ships an interface for online evolution.
+Bulk Java implementation deferred indefinitely per `CLAUDE-deferred.md`
+and the archived design under `docs/v6-rationale/agent-runtime/evolve/`.
 
 What *is* shipped today: the `EvolutionExport` discriminator
 (`IN_SCOPE | OUT_OF_SCOPE | OPT_IN`) declared in
@@ -102,7 +104,7 @@ Target directory tree (current namespace; rc22.5 migrates to `com.huawei.ascend.
 ```text
 agent-evolve/
 └── src/main/java/
-    └── ascend/springai/evolve/
+    └── com/huawei/ascend/evolve/
         ├── package-info.java                # placeholder; W3 implementation
         └── (W3+: SlowTrackJudge, ReflectionPatchHandler, OfflineExportAdapter; see ADR-0102 timeline)
 ```
@@ -112,15 +114,18 @@ Mode-B (Business-Centric per ADR-0101): `agent-evolve` STILL on the platform; on
 
 ## *SPI Interface Appendix* (Rule G-1.1.b — rc22 / ADR-0099)
 
-`agent-evolve` produces NO Java SPI today. Its current shipped surface is the `EvolutionExport` discriminator declared in `docs/governance/evolution-scope.v1.yaml` (enum: `IN_SCOPE | OUT_OF_SCOPE | OPT_IN`, consumed via `RunEvent.evolutionExport()` field per Rule R-M.e).
+`agent-evolve` ships 1 Java SPI as of rc26 (rc27 corrective moved it under `.spi`). Its current shipped surfaces:
 
-Future SPI surface (rc26 per ADR-0102 timeline):
+- The `EvolutionExport` discriminator declared in `docs/governance/evolution-scope.v1.yaml` (enum: `IN_SCOPE | OUT_OF_SCOPE | OPT_IN`, consumed via `RunEvent.evolutionExport()` field per Rule R-M.e).
+- The SlowTrackJudge SPI under `com.huawei.ascend.evolve.online.spi`.
 
-| Future FQN | SPI package | Purpose |
+Current SPI surface:
+
+| FQN | SPI package | Purpose |
 |---|---|---|
-| `com.huawei.ascend.evolve.online.spi.SlowTrackJudge` | `evolve.online.spi` | LLM-as-Judge contract; fires on AFTER_LLM_INVOCATION hook |
-| `com.huawei.ascend.evolve.online.spi.ReflectionEnvelopeRouter` | `evolve.online.spi` | S2C delivery of ReflectionEnvelope to active Session |
-| `com.huawei.ascend.evolve.offline.spi.OfflineExportAdapter` | `evolve.offline.spi` | PII-filtered trace log emission (T+1 batch) |
+| `com.huawei.ascend.evolve.online.spi.SlowTrackJudge` | `evolve.online.spi` | LLM-as-Judge contract; fires on AFTER_LLM_INVOCATION hook (rc26; rc27 moved under .spi per Rule R-D.d) |
+
+Note: ReflectionEnvelopeRouter is owned by **agent-bus** (package `com.huawei.ascend.bus.spi.s2c`) — it is the S2C transport surface, not an evolution-plane SPI. A future OfflineExportAdapter SPI is contemplated but not declared in `module-metadata.yaml#spi_packages` yet; when shipped it will register first, then appear here.
 
 ## *L2 Constraint Linkage* (Rule G-1.1.c — rc22 / ADR-0099)
 
