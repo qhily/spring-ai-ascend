@@ -21,7 +21,7 @@ status: proposed
 
 #### 1.1.1 六大核心模块
 1. **智能体客户端 (agent-client)**：在 SaaS 应用与桌面应用中被集成，负责感知业务知识与状态，操作业务环境与工具，下发管理智能体配置，调用执行智能体服务。
-2. **智能体服务端 (agent-service)**：**（本模块核心定界）** 负责把图模式执行的 workflow 智能体与循环模式执行 of ReAct 智能体封装成微服务。
+2. **智能体服务端 (agent-service)**：**（本模块核心定界）** 负责把图模式执行 of workflow 智能体与循环模式执行 of ReAct 智能体封装成微服务。
 3. **智能体执行引擎 (agent-execution-engine)**：负责提供两大类智能体的执行器，提供可供开发者使用的各种组件，如 workflow 会用到的 node、ReAct 会用到的 tool 和 hook。
 4. **智能体总线 (agent-bus)**：负责连接南北向的 C/S 通信流量，连接东西向 of A2A 通信流量。
 5. **智能体中间件 (agent-middleware)**：负责提供智能体需要的基础服务，如记忆服务、技能服务、知识服务、沙箱服务等。
@@ -56,6 +56,14 @@ status: proposed
 #### 1.3.3 异构智能体兼容设计原则
 - **向后兼容与生态解耦 (Heterogeneous Compatibility)**：支持对客户系统内现存、已在运行态的异构/存量智能体进行无缝收口。通过 `agent-service` 的服务级封装和适配器，将老系统中的智能体转化为标准服务形态，实现平滑演进与统一治理。
 
+#### 1.3.4 服务级背压与无状态原则（Reactive & Stateless）
+- **接口响应式设计（Reactive API）**：智能体服务端接口全面采用响应式设计。通过背压（Backpressure）机制，向上与总线/客户端形成系统级流量协调，向下保护执行引擎。
+- **双模入参流量适配（Pull & Push）**：服务本身除了支持主动从事件总线拉取（Pull）任务外，还需支持外部直接推送（Push）请求（如 HTTP/gRPC 直连），两者在响应式流控中统一适配。
+- **基于内部队列的非阻塞解耦（Asynchronous Decoupling）**：服务层内部引入高吞吐的“事件/任务队列”。请求到达后先快速发布（Publish）任务，再由后台线程异步消费（Consume）并派发给执行引擎。
+- **无状态与缓存/半持久化**：
+  - *在业务中心模式下*：内部事件队列可采用高效的**内存级队列**（如 JVM Reactor Sinks），实现高性能紧凑部署。
+  - *在平台中心模式下*：为了保障服务层完全无状态（Stateless）、支持极致的水平弹性缩容，内部事件队列与任务状态需接入外部分布式缓存或进行**半持久化处理（Semi-persistence）**。
+
 ## 2. 场景视图 (Scenarios View)
 本设计方案覆盖的核心业务运作场景如下：
 
@@ -78,7 +86,25 @@ status: proposed
 - 屏蔽 Workflow（图）与 ReAct（循环）引擎的具体执行语义，抽象出统一的无状态计算接口。
 - 本地共进程运行时，直接代理 `agent-execution-engine` SDK；在服务化部署时，则封装 A2A 协议客户端与 RPC 调用代理。
 
+### 3.3 内部事件队列（Internal Event Queue）
+- 位于微服务边界内的缓冲区，解耦了网络 I/O 线程与 CPU 密集型的 LLM 推理/执行引擎计算线程。
+- **多态存储底层实现（Polymorphic Queue Storage）**：
+  - *内存级事件队列（Memory-based Queue）*：服务内基于 Project Reactor Sinks / Disruptor 构建，直接打通内存级订阅消费。
+  - *分布式缓存/半持久化队列（Semi-persistent Queue）*：对接 Redis List 或外部轻量级 Task Store，存储当前挂起和执行中的 Task 状态，确保在平台中心模式下的多实例水平伸缩和节点漂移时，任务状态不丢失、计算不中断。
+
 ## 4. 进程视图 (Process View)
+聚焦于任务的状态流转与非阻塞响应式背压流控：
+
+### 4.1 异步任务发布/消费环路 (Asynchronous Task Loop)
+1. **任务发布（Task Intake）**：
+   - 接收到 Push 接口调用（如 REST / gRPC）或从总线主动 Pull 到事件请求。
+   - `ReactiveOrchestrator`（响应式协调器）将请求快速解析为标准 `Task`，向内部队列成功发布该事件，并立即向调用方返回包含 `TaskID` 的受理状态回执，保持物理连接非阻塞。
+2. **任务派发与背压（Backpressured Dispatch）**：
+   - 后台响应式消费线程组（基于 Reactor Sub）根据背压反馈 `request(N)`，按需拉取待处理任务，并调用 `Engine Adapter` 开始执行。
+3. **计算与脱水存储（Execution & State Dehydration）**：
+   - 引擎返回 `StateDelta` 与 `Yield`（挂起）信号。
+   - *平台中心模式*：服务层自动将 `StateDelta` 及执行进度脱水，同步存储至共享缓存/轻量数据库，随后当前服务节点即可释放物理计算线程，维持完全无状态特征。
+   - *业务中心模式*：直接在 JVM 进程内存或本地轻量存储中完成状态更新。
 
 ## 5. 开发视图 (Development View)
 
@@ -86,9 +112,10 @@ status: proposed
 双模态集成在部署上的拓扑映射：
 
 ### 6.1 共进程内聚部署拓扑 (Embedded Deployment)
-- `agent-service.jar` 与 `agent-execution-engine.jar` 作为一个进程（如一个 Pod 或边缘容器）整体打包，共享同一物理运行空间。
+- `agent-service.jar` 与 `agent-execution-engine.jar` 作为一个进程（如一个 Pod 或边缘容器）整体打包，共享同一物理运行空间。内部事件队列和任务控制状态全部托管在 JVM 堆内存中，零网络开销。
 
 ### 6.2 存量解耦/异构微服务部署拓扑 (Decoupled Service Deployment)
 - `agent-service` 作为主管控实例集中部署，通过网络（总线/网关）连接独立的、在边缘或客户内网运行的 `agent-execution-engine` 集群或存量第三方智能体执行实例。
+- **多实例无状态模式**：多台 `agent-service` 管控节点共享外部的 Redis 缓存集群和关系/文档数据库（Task Store）。内部事件队列被拉偏至外部中间件实现（或通过 NATS 衔接），节点任意水平伸缩。
 
 ## 7. 附录：核心 SPI 接口 (Appendix: Core SPI Interfaces)
