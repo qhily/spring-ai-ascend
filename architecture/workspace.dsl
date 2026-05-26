@@ -109,13 +109,26 @@ workspace "Spring AI Ascend" "Architecture authority workspace (W1 advisory)" {
         !include features/function-points.dsl
         !include features/verification.dsl
 
-        // Wave 3 will land:
-        //   !include generated/modules.dsl
-        //   !include generated/spi-catalog.dsl
-        //   !include generated/enforcers.dsl
-        //   !include generated/principles.dsl
-        //   !include generated/rules.dsl
-        //   !include generated/adr-graph.dsl
+        // Generated zone — W3 emitters. NEVER hand-edit these files.
+        // Re-emit via: java ... com.huawei.ascend.tools.architecture.fragment.AllFragmentsCli --repo .
+        // Idempotency enforced by Wave 5 blocking gate.
+        //
+        // Inclusion ORDER is significant: a fragment referencing another
+        // fragment's identifier must be included AFTER that fragment.
+        //   modules    -> defines genModule_*
+        //   spi-catalog -> references genModule_* (declares_spi edges)
+        //   rules      -> defines rule_*
+        //   principles -> references rule_* (operationalised_by edges)
+        //   enforcers  -> defines enforcer_* (independent)
+        //   adr-graph  -> defines adr_* (self-referencing edges within file)
+        //   surface-classification -> defines surface_* (independent)
+        !include generated/modules.dsl
+        !include generated/spi-catalog.dsl
+        !include generated/rules.dsl
+        !include generated/principles.dsl
+        !include generated/enforcers.dsl
+        !include generated/adr-graph.dsl
+        !include generated/surface-classification.dsl
     }
 
     views {
