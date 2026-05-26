@@ -1,19 +1,20 @@
 ---
 level: L1
-view: scenarios
+view: [logical, process, development, physical, scenarios]
 module: agent-service
 status: active
 freeze_id: null
-covers_views: [scenarios]
+covers_views: [logical, process, development, physical, scenarios]
 spans_levels: [L1]
 authority: "ADR-0078 (agent-service consolidation) + ADR-0068 (Layered 4+1) + ADR-0099 (rc22 L1 depth + grounding) + ADR-0100 (rc22 5-component decomposition + Run≤Task≤Session≤Memory lifecycle) + ADR-0136..0139 (rc53 vocabulary reconciliation + 5-layer L1 ratification + Fast/Slow Path narrowed semantics) + ADR-0140..0145 (rc55 Engine Adapter split + Internal Event Queue design_only + Run aggregate single owner + review-log demotion + Layer↔Package matrix + sealed RunEvent hierarchy)"
 ---
 
 # agent-service — L1 4+1 Architecture (Index)
 
-> Wave: rc55 W2 (skeleton); content arrives in rc55 W3/W4/W5.
-> Canonical 4+1 source per ADR-0143: the 5 per-view files in this directory.
+> Wave: rc55 W3-W5 + audit-2026-05-27 corrections; per-view content is active.
+> Canonical 4+1 source per ADR-0143: the 5 per-view files + spi-appendix in this directory.
 > Module-root L1 spec: [`agent-service/ARCHITECTURE.md`](../../../agent-service/ARCHITECTURE.md) carries shipped-state grounding + cross-links here.
+> Front-matter declares full 4+1 coverage per AUD-2026-05-27 PR77-P2-3 closure.
 
 ## 0. Why this directory exists
 
@@ -66,11 +67,12 @@ authored:
 |---|---|---|
 | W0 | ✅ completed | Family classification + sibling sweep ([`2026-05-26-agent-service-l1-sibling-sweep.en.md`](../../logs/reviews/2026-05-26-agent-service-l1-sibling-sweep.en.md)) |
 | W1 | ✅ completed | 6 ADRs (0140-0145) + `docs/contracts/run-event.v1.yaml` + baseline lockstep |
-| W2 | 🟡 in progress | This directory's 7 skeletons + Jinja templates + surface-classification.yaml registration + agent-service/ARCHITECTURE.md §0.5 rewrite + §0.4 deletion + frontmatter narrowing |
-| W3 | ⏳ pending | scenarios.md + logical.md content authoring |
-| W4 | ⏳ pending | process.md + physical.md content authoring |
-| W5 | ⏳ pending | development.md + spi-appendix.md content authoring |
-| W6 | ⏳ pending | rc53 review file demotion note + final family closure + release note |
+| W2 | ✅ completed | Directory skeletons + Jinja templates + surface-classification.yaml + agent-service/ARCHITECTURE.md §0.5 rewrite + frontmatter narrowing |
+| W3 | ✅ completed | scenarios.md + logical.md content authoring |
+| W4 | ✅ completed | process.md + physical.md content authoring |
+| W5 | ✅ completed | development.md + spi-appendix.md content authoring |
+| W6 | ✅ completed | rc53 review file demotion note + family closure + release note |
+| audit-2026-05-27 | ✅ completed | 4+1 view + ADR corrective wave per Wave-1+2 findings ledger (ADR-0146 SuspendReason canonicalization + 6 new defect families + 32 doc/ADR patches) |
 
 ## 4. Cross-links
 

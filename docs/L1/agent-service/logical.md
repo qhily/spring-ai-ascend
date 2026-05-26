@@ -152,7 +152,7 @@ erDiagram
     RUN ||--o{ TASK : "may carry concurrent (W2+)"
     SESSION ||--o{ TASK : "owns (1:N, ADR-0100)"
     SESSION ||--o{ RUN : "contextualises (N:M projection, ADR-0135)"
-    TASK ||--|| RUN : "current-execution-of (when WORKING)"
+    TASK ||--o{ RUN : "executes via (1:N over time; ≤1 active Run per Task when A2aState=WORKING — see §4 DFA; per audit AUD-2026-05-27 PR77-P1-1)"
     RUN ||--o{ LIFECYCLE_STATE : "emits audit trail (rc55 ADR-0145)"
 
     RUN {
@@ -230,10 +230,10 @@ stateDiagram-v2
     PENDING --> CANCELLED: POST /v1/runs/{runId}/cancel<br/>same guards
     RUNNING --> EXPIRED: deadline pass<br/>RunRepository.updateIfNotTerminal CAS
     SUSPENDED --> EXPIRED: deadline pass<br/>RunRepository.updateIfNotTerminal CAS
+    FAILED --> RUNNING: retry per ADR-0118<br/>RunRepository.updateIfNotTerminal CAS (FAILED is NOT closed-terminal per RunStateMachine.java:37; W2-scoped retry policy decides re-enter)
 
     CANCELLED --> [*]
     SUCCEEDED --> [*]
-    FAILED --> [*]
     EXPIRED --> [*]
 
     note right of CANCELLED

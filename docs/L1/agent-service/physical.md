@@ -46,8 +46,10 @@ respectively).
 |---|---|---|---|---|---|
 | `idempotency_dedup` | `(tenant_id, idempotency_key)` | NOT NULL | grandfathered in `gate/rls-baseline-grandfathered.txt` pending W2 retrofit (Rule R-J.a.b deferred) | `agent-service/src/main/resources/db/migration/V2__idempotency_dedup.sql` | **shipped W1** |
 | `runs` | `run_id (UUID)` | NOT NULL | RLS policy required at table-creation time per Rule R-J.a | `V?__runs.sql` (W2 — when durable RunRepository lands) | **W2-deferred** |
-| `tasks` | `task_id (UUID)` | NOT NULL | RLS policy required | `V?__tasks.sql` (W2 — when Task persistence lands) | **W2-deferred** |
-| `sessions` | `session_id (UUID)` | NOT NULL | RLS policy required | `V?__sessions.sql` (W2 — when Session persistence lands) | **W2-deferred** |
+| `tasks` | `task_id (String; UUID-shaped at HTTP boundary, stored TEXT)` | NOT NULL | RLS policy required | `V?__tasks.sql` (W2 — when Task persistence lands) | **W2-deferred** |
+| `sessions` | `session_id (String; UUID-shaped at HTTP boundary, stored TEXT)` | NOT NULL | RLS policy required | `V?__sessions.sql` (W2 — when Session persistence lands) | **W2-deferred** |
+<!-- Task.taskId and Session.sessionId are declared `String` in Java (`Task.java:39,41`, `Session.java:36`); persisted as TEXT in Postgres. The schema row above was previously typed `UUID` which contradicted Java reality; reconciled per AUD-2026-05-27 PR77-P1-3. -->
+
 | `lifecycle_state_audit` | `(run_id, occurred_at)` or `(task_id, occurred_at)` | NOT NULL (derived from FK) | RLS policy required; emission shape per `RunStateTransitionEvent` (ADR-0145) | `V?__lifecycle_state_audit.sql` (W2+) | **W2-deferred** |
 
 **Session-level tenant binding** (W2-deferred): `SET LOCAL app.tenant_id`

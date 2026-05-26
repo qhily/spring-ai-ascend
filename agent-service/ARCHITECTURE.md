@@ -521,7 +521,7 @@ values (keys: `spring-ai.version`, `temporal.version`, `mcp.version`,
 | `IdempotencyDurabilityIT` | Integration | row persists across simulated downstream failure (enforcer E12) | platform |
 | `InMemoryIdempotencyAllowFlagIT` | Integration | in-memory store posture-gated (enforcer E22) | platform |
 | `PostureBootGuardIT` | Integration | research/prod fail-closed on missing config (enforcer E21) | platform |
-| `RunHttpContractIT` | Integration | unauthenticated 401/403 + authenticated matrix (`createReturnsPending`, `tenantMismatchReturns403`, `cancelTerminalReturns409`, `duplicateIdempotencyKeyReturns409`, `cancel_route_is_post_not_delete`); enforcers E5/E6/E7/E10/E24 | platform |
+| `RunHttpContractIT` | Integration | unauthenticated 401/403 + authenticated matrix (`createReturnsPending`, `getCrossTenantRunReturns404` (cross-tenant access collapses to 404 not_found at W0 per Rule R-J.b; legacy `tenantMismatchReturns403` name retired per AUD-2026-05-27 PR77-P2-4), `cancelTerminalReturns409`, `duplicateIdempotencyKeyReturns409`, `cancel_route_is_post_not_delete`); enforcers E5/E6/E7/E10/E24 | platform |
 | `RunStatusEnumTest` | Unit | enum pinned at 7 values; no `CREATED` (enforcer E5) | runtime |
 | `ErrorEnvelopeContractTest` | Unit | every 4xx/5xx response has `{error:{code,message,details}}` shape (enforcer E8) | platform |
 | `TenantTagMeterFilterTest` | Unit | forbidden high-cardinality tags stripped from `springai_ascend_*` (enforcer E19) | platform |
@@ -674,7 +674,7 @@ The 2026-05-21 proposal `docs/logs/reviews/2026-05-21-agent-service-l1-expansion
 |---|---|---|
 | 1 | `dispatcher/` — Polymorphic Dispatcher | Unified entry point for BOTH local function-call and remote bus-call invocations |
 | 2 | `orchestrator/` — Reactive Orchestrator | Task tempo control, backpressure request handling, A2A protocol envelope packaging |
-| 3 | `task/` — Task Center | TaskControlState persistence (`Task` entity + `TaskRepository` SPI; lifecycle: Run ≤ Task) |
+| 3 | `task/` — Task Center | TaskControlState persistence (`Task` entity + `TaskStateStore` SPI — canonical name; the historical `TaskRepository` label was retired per AUD-2026-05-27 AUD-PARITY-1; lifecycle: Run ≤ Task) |
 | 4 | `session/` — Session Manager | Middle/long-context data management; "context projection" toward compute nodes (`Session` entity + `ContextProjector` SPI) |
 | 5 | `engine/adapter/` + `engine/spi/` — Execution Engine Adapter | Masks Workflow vs ReAct engine differences; pure-function compute injection (`StatelessEngine` SPI) |
 
@@ -781,7 +781,7 @@ Mode-B (Business-Centric per ADR-0101): `agent-service` deploys on the business 
 
 ### SPI-adjacent structural carriers
 
-These types live near the SPI packages because they are request, response, or decision carriers. They are contract-relevant, but they are not extension interfaces and are not included in the 7-interface count.
+These types live near the SPI packages because they are request, response, or decision carriers. They are contract-relevant, but they are not extension interfaces and are not included in the 9-interface count (canonical post-rc43 count of public Java SPI interfaces under `agent-service/src/main/java/.../spi/*.java`; the legacy "7-interface count" phrasing was retired per AUD-2026-05-27 AUD-PARITY-2).
 
 | Carrier type | Home | Purpose |
 |---|---|---|

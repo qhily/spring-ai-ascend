@@ -1350,6 +1350,215 @@ placeholder + `(impl rcNN+1)` marker.
 
 ---
 
+### F-half-built-state-machine — Multi-State Enum Declares Lifecycle Members the Code Never Writes
+
+**Pattern.** An enum / sealed marker / hook-point taxonomy is
+declared with N members representing an intended lifecycle (CLAIMED →
+COMPLETED / FAILED; phase_2_fired hooks; suspend-reason placeholder
+records). The shipped code writes ≤K (K<N) of those members; the
+remaining members are aspirational / future-wave. Javadoc honestly
+admits the gap, but reviewers reading the type assume the full
+lifecycle is live. Sibling of F-discriminator-without-discriminated-
+type at the VALUE level rather than TYPE level. Surfaced 2026-05-27
+by `IdempotencyStore.Status.{COMPLETED, FAILED}` (only CLAIMED
+written), `RunStatus.EXPIRED` (declared terminal but zero production
+write-paths), `SuspendReason.{AwaitChild, AwaitTimer, AwaitExternal,
+AwaitApproval}` (4 of 6 sealed-record variants with zero constructor
+sites), `Task.A2aState` 5 values + `Task.TaskKind` 4 values (zero
+write-paths), `HookPoint.ON_YIELD` (declared but omitted from
+`phase_2_mandatory_hooks_fired_by_orchestrator`),
+`PlaceholderPreservationPolicy.{WARN, REWRITE}` (only PRESERVE
+referenced).
+
+**Surfaces.**
+- `agent-*/src/main/java/**/*Status.java`
+- `agent-*/src/main/java/**/*State.java`
+- `agent-*/src/main/java/**/*HookPoint.java`
+- `agent-*/src/main/java/**/*Reason.java`
+- `agent-*/src/main/java/**/*Policy.java`
+- `docs/contracts/engine-hooks.v1.yaml#phase_*_fired*`
+
+**Prevention.**
+- Candidate gate-rule W5+: for every `enum` declaration under
+  `*/spi/*`, `service/platform/*`, `service/runtime/*`, run codegraph
+  for `<EnumName>.<MEMBER>` write-sites; FAIL if any member has 0
+  writers AND no `(W2-deferred — ADR-NNNN)` Javadoc marker.
+
+**Open residual.** AUD-IDEM-1, AUD-EVT-4, SBL-HBSM-1, SBL-HBSM-2,
+SBL-HBSM-3, SBL-HBSM-4 — `pending`. Closure requires either
+annotating unreached members with `(W2-deferred — ADR-NNNN)` Javadoc
+OR materializing producer paths.
+
+---
+
+### F-discriminator-naming-drift-doc-vs-code — Doc-Cited Enum / Method / Type Name Drifts From Java Source of Truth
+
+**Pattern.** Active doc surfaces (L1 view files, ADRs, review
+responses, contract catalogs, module ARCHITECTURE.md files) cite
+enum variants / method signatures / type names that disagree with
+the Java source — wrong case, truncated, wrong arity, wrong parameter
+type, or older-naming-wave names. The doc lies to readers; gate-time
+path-truth rules (G-2.c) catch path drift but not name-form drift
+inside otherwise-resolvable references. 2026-05-27 audit found 4
+sub-shapes: (a) `SuspendReason` 3-name table at
+`2026-05-22-...response.en.md:141` claims `AwaitChildRun /
+AwaitToolResult / RequiresApproval` while Java permits `AwaitChild /
+AwaitExternal / AwaitApproval`; (b) `SuspendReason.AwaitChildren`
+plural in `process.md:171` and `scenarios.md:83,85` vs Java singular
+`AwaitChild`; (c) `RunRepository.updateIfNotTerminal(tid, runId, λ)`
+3-arg signature in 6 process.md + 3 physical.md lines vs 2-arg Java;
+(d) `HookPoint.before_tool` lowercase + truncated in 5 doc sites vs
+`HookPoint.BEFORE_TOOL_INVOCATION` in Java.
+
+**Surfaces.**
+- `docs/L1/**/*.md`
+- `docs/logs/reviews/*.md`
+- `docs/adr/*.yaml`
+- `docs/contracts/contract-catalog.md`
+- `agent-*/ARCHITECTURE.md`
+
+**Prevention.**
+- Candidate gate-rule W5+: for every `HookPoint.\w+` /
+  `SuspendReason.\w+` / `RunStatus.\w+` / `RunRepository.\w+\(`
+  mention in active md/yaml, parse the Java type by codegraph_node
+  and FAIL if the literal name does not match a declared
+  member / method.
+
+**Open residual.** PR77-P1-2, PR76-IF-DRIFT-004, AUD-EVT-1, AUD-EVT-3,
+SBL-NAME-1, SBL-NAME-2 — `pending`. Closure requires the per-symbol
+name-form gate-rule candidate to materialize as Rule W5-1.
+
+---
+
+### F-dfa-without-validator — Documented State-Machine DFA Ships Without an Enforcement Validator
+
+**Pattern.** A state-typed field (e.g. `Task.A2aState`,
+`Session.Status`) has a documented DFA — Mermaid stateDiagram, ADR
+transition table, contract yaml `transitions:` block — that names
+specific illegal transitions. The Java side ships the enum + the
+entity but no `<Type>StateMachine.validate(from, to)` class wired
+into the persistence write path. The analogous `RunStateMachine`
+exists and proves the pattern is achievable; the sibling DFA is
+unguarded — illegal transitions silently succeed because no code
+rejects them. Adjacent to F-half-built-state-machine but distinct:
+here ALL members are reachable, the EDGES between them are not
+gated.
+
+**Surfaces.**
+- `agent-*/src/main/java/com/huawei/ascend/service/*/spi/*.java`
+- `agent-*/src/main/java/com/huawei/ascend/service/*/<entity>.java`
+- `docs/L1/**/*.md`
+- `docs/contracts/*.v1.yaml`
+
+**Prevention.**
+- Candidate gate-rule W5+: for every Mermaid `stateDiagram-v2` block
+  in `docs/L1/**/*.md` referencing a Java enum, codegraph_search for
+  `validate(<EnumName>...)` in the same module; FAIL if zero results.
+
+**Open residual.** AUD-EVT-5 (Task.A2aState 5-state DFA),
+SBL-DFAW-2 (Task.TaskKind borderline) — `pending`. Closure requires
+either adding the validator class OR marking the entity Javadoc as
+`(design_only — W3+ state validation deferred)`.
+
+---
+
+### F-create-path-not-enrolled-in-dedup-tx — Resource-Create Path Bypasses the Idempotency-Claim Transaction
+
+**Pattern.** An HTTP endpoint or orchestrator creates a top-level or
+child resource with `new T(UUID.randomUUID(), ...);
+repository.save(t);` while the surrounding request bears an
+`Idempotency-Key` header (or the suspend/resume signal carries a
+`parentNodeKey`). The dedup-claim row is written by a filter /
+pre-step in a different transaction; the create happens
+unconditionally if the claim returns "fresh". A TTL re-claim or
+suspend-resume re-entry produces a duplicate resource under a fresh
+UUID — the contract guarantee "successful claim ⇒ at-most-one
+resource" is violated silently. Identified at top-level `POST
+/v1/runs` AND child-run spawn inside `SyncOrchestrator.executeLoop`.
+
+**Surfaces.**
+- `agent-service/src/main/java/com/huawei/ascend/service/platform/web/**/*Controller.java`
+- `agent-service/src/main/java/com/huawei/ascend/service/runtime/orchestration/inmemory/SyncOrchestrator.java`
+- `agent-service/src/main/java/com/huawei/ascend/service/platform/idempotency/IdempotencyHeaderFilter.java`
+
+**Prevention.**
+- Candidate gate-rule W5+: codegraph_callers on
+  `IdempotencyHeaderFilter.claimOrFind`; for each calling endpoint,
+  walk callees for `.save(` invocations on `RunRepository` /
+  `TaskStateStore` / `SessionRepository` and FAIL if the save is not
+  transactionally enclosed (no `@Transactional` propagation, no
+  deterministic-uuid derivation).
+
+**Open residual.** AUD-IDEM-4 (top-level Run create), AUD-IDEM-5
+(child Run spawn) — `pending`. Closure requires deterministic-UUID
+derivation OR `@Transactional` enrollment.
+
+---
+
+### F-vocabulary-identity-collision — Two Same-Named Java Types Live in Different Packages of One Module
+
+**Pattern.** Two `record` / `class` / `interface` declarations share
+the same simple name in different sub-packages of one Maven module;
+one is the live carrier, the other is dead-code / pre-rename
+leftover. Both javadocs cite the same ADR authority. Catalog / SPI
+Appendix points reviewers at the wrong file. IDE-completion picks the
+wrong import. Distinct from F-deleted-module-name-leakage (cross-
+module) and from F-authority-surface-path-drift (correct module,
+wrong path) — here the module is right but the basename is doubly
+resolved. Surfaced 2026-05-27 by two `IdempotencyRecord` types in
+agent-service.
+
+**Surfaces.**
+- `agent-*/src/main/java/com/huawei/ascend/**/*.java`
+- `docs/L1/**/spi-appendix.md`
+- `docs/contracts/contract-catalog.md`
+
+**Prevention.**
+- Candidate gate-rule W5+: for each Maven module, glob
+  `src/main/java/**/*.java` → extract basenames → FAIL on any
+  duplicate basename. Allowlist file for legitimate cases (e.g.
+  `package-info.java`).
+
+**Open residual.** AUD-IDEM-8 — `pending`. Closure requires deleting
+the dead duplicate.
+
+---
+
+### F-cross-authority-tenant-scope-claim-without-field — Authority Surface Claims a Tenant-Scope Field That Does Not Exist on the Carrier Java Type
+
+**Pattern.** `docs/contracts/contract-catalog.md` (or
+`agent-*/ARCHITECTURE.md` §SPI Appendix) declares a structural
+carrier as `tenant-scoped` via "tenant resolved by
+`<Carrier>.tenantId` field (Rule R-C.c)" — but the named field does
+NOT exist on the carrier record. The honest Java javadoc admits
+tenant resolution is out-of-band (e.g. via a `Transport` registry
+binding at the wrapping Run boundary), creating a direct lie between
+the catalog row and the type. Rule G-8.e enforces structural-carrier
+package-and-class existence but not field-level claims. Sibling of
+F-design-artifact-omits-tenant-spine (diagrams ELIDING tenantId);
+here the diagram / catalog ASSERTS a tenantId that isn't there.
+Surfaced 2026-05-27 by `contract-catalog.md:90` claiming
+`S2cCallbackEnvelope.tenantId` field while the Java record has 8
+components and NONE is `tenantId`.
+
+**Surfaces.**
+- `docs/contracts/contract-catalog.md`
+- `agent-*/ARCHITECTURE.md`
+- `docs/L1/**/spi-appendix.md`
+
+**Prevention.**
+- Candidate gate-rule W5+: parse catalog rows matching
+  `tenant.scoped.*<Carrier>\.tenantId` → resolve `<Carrier>` via
+  codegraph_node → FAIL if the type has no `tenantId` record
+  component / field.
+
+**Open residual.** AUD-EVT-6 — `pending`. Closure requires either
+adding `tenantId` to the Java record (per Rule R-C.c, preferred) OR
+rewriting the catalog row to "tenant resolved out-of-band via
+`S2cCallbackTransport` registry binding".
+
+---
+
 ## §3 — META-Lessons Codified Into Rules
 
 The recurring-family pattern itself is a defect class. The following

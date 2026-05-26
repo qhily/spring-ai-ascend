@@ -42,7 +42,7 @@ sequenceDiagram
     TF->>Idem: forward
     Idem->>Idem: claimOrFind(tid, key, hash) — ADR-0057
     alt Idempotency hit
-        Idem-->>Client: 200 cached response<br/>(or 409 idempotency_conflict / 409 idempotency_body_drift)
+        Idem-->>Client: 409 idempotency_conflict OR 409 idempotency_body_drift<br/><i>(200 cached response branch is W2-design per ADR-0057 §2 — L1 stops at CLAIMED; AUD-IDEM-3)</i>
     else fresh request
         Idem->>Run: pass through
         Run->>RR: save(Run with status=PENDING, tenantId=tid)<br/><i>create-only path per rc39 source-guard</i>
@@ -52,7 +52,7 @@ sequenceDiagram
         Orch->>DTR: judge(envelope, predicate)
         alt Fast-Path eligible (S1)
             DTR-->>Orch: FastPath
-            Orch->>RR: updateIfNotTerminal(tid, runId, λ→RUNNING) — ATOMIC CAS per ADR-0142
+            Orch->>RR: updateIfNotTerminal(runId, λ→RUNNING) — ATOMIC CAS per ADR-0142
             RR->>RR: RunStateMachine.validate(PENDING, RUNNING) — atomic inside CAS
             RR-->>Queue: <i>(when L3 lands)</i> publish RunStateTransitionEvent(PENDING→RUNNING) on data channel
             RR-->>Orch: ok
@@ -63,22 +63,22 @@ sequenceDiagram
             Mid->>Mid: dispatch chain
             Mid-->>Exec: HookOutcome.Proceed
             Exec-->>Orch: Result (no SuspendSignal)
-            Orch->>RR: updateIfNotTerminal(tid, runId, λ→SUCCEEDED) — ATOMIC CAS
-            RR-->>Queue: publish RunStateTransitionEvent(RUNNING→SUCCEEDED) + TerminalTransitionEvent(SUCCEEDED)
+            Orch->>RR: updateIfNotTerminal(runId, λ→SUCCEEDED) — ATOMIC CAS
+            RR-->>Queue: <i>(when L3 lands)</i> publish RunStateTransitionEvent(RUNNING→SUCCEEDED) + TerminalTransitionEvent(SUCCEEDED)
             Run-->>Client: 200 RunResponse
         else Slow-Path required (S2)
             DTR-->>Orch: SlowPath
             Run-->>Client: 202 TaskCursor (Rule R-F)
-            Orch->>RR: updateIfNotTerminal(tid, runId, λ→RUNNING) — ATOMIC CAS
+            Orch->>RR: updateIfNotTerminal(runId, λ→RUNNING) — ATOMIC CAS
             Orch->>Reg: resolve(envelope)
             Reg-->>Orch: ExecutorAdapter
             Orch->>Exec: execute(runContext)
             Exec->>Mid: emits HookPoint.before_tool
             Mid-->>Exec: HookOutcome.Proceed
             Exec--xOrch: throws SuspendSignal(parentNodeKey, ...)
-            Orch->>RR: updateIfNotTerminal(tid, runId, λ→SUSPENDED) — ATOMIC CAS
-            RR-->>Queue: publish SuspendRequestedEvent + RunStateTransitionEvent(RUNNING→SUSPENDED) on control + data
-            Note over Orch,RR: Run is now suspended;<br/>Checkpointer persists snapshot.<br/>Client polls /v1/runs/{runId} or uses SSE (W2-shipped).
+            Orch->>RR: updateIfNotTerminal(runId, λ→SUSPENDED) — ATOMIC CAS
+            RR-->>Queue: <i>(when L3 lands)</i> publish SuspendRequestedEvent + RunStateTransitionEvent(RUNNING→SUSPENDED) on control + data
+            Note over Orch,RR: Run is now suspended;<br/>Checkpointer persists snapshot.<br/>Client polls /v1/runs/{runId} (W1-shipped); SSE / Flux<RunEvent> / webhook callback are W2 scope per openapi-v1.yaml:289,295 (AUD-2026-05-27 PR77-P2-2).
         end
     end
 ```
@@ -132,16 +132,16 @@ sequenceDiagram
         RR->>SM: validate(RUNNING, CANCELLED)
         SM-->>RR: ok (legal transition)
         alt CAS succeeded (winner — this writer)
-            RR-->>Queue: publish CancelRequestedEvent(actor=jwt_sub) + RunStateTransitionEvent(RUNNING→CANCELLED) + TerminalTransitionEvent(CANCELLED)
+            RR-->>Queue: <i>(when L3 lands)</i> publish CancelRequestedEvent(actor=jwt_sub) + RunStateTransitionEvent(RUNNING→CANCELLED) + TerminalTransitionEvent(CANCELLED)
             RR-->>Run: cancelled
             Run-->>Client: 200 (CANCELLED)
         else CAS no-op (Run already in same-status terminal)
             RR-->>Run: post-CAS Run = CANCELLED
-            RR-->>Queue: publish CancelRequestedEvent(actor=jwt_sub) [audit signal only; no state change]
+            RR-->>Queue: <i>(when L3 lands)</i> publish CancelRequestedEvent(actor=jwt_sub) [audit signal only; no state change]
             Run-->>Client: 200 (idempotent — already CANCELLED)
         else CAS rejected (Run in different terminal)
             RR-->>Run: post-CAS Run = SUCCEEDED / FAILED / EXPIRED
-            RR-->>Queue: publish CancelRequestedEvent(actor=jwt_sub) [rejection audit signal]
+            RR-->>Queue: <i>(when L3 lands)</i> publish CancelRequestedEvent(actor=jwt_sub) [rejection audit signal]
             Run-->>Client: 409 illegal_state_transition
         end
     end
@@ -168,7 +168,7 @@ sequenceDiagram
     RunA->>OrchA: dispatch
     OrchA->>RRA: updateIfNotTerminal(λ→RUNNING)
     OrchA->>ExecA: execute
-    ExecA--xOrchA: throws SuspendSignal(child-run variant)<br/>(SuspendReason.AwaitChildren)
+    ExecA--xOrchA: throws SuspendSignal(child-run variant)<br/>(SuspendReason.AwaitChildRun — per ADR-0146 canonical naming; AUD-2026-05-27 SBL-NAME-1)
     OrchA->>RRA: updateIfNotTerminal(λ→SUSPENDED)
     Note over RRA: publish ChildRunSpawnedEvent + SuspendRequestedEvent + RunStateTransitionEvent(RUNNING→SUSPENDED)
     OrchA->>IngressA: spawnChildOnPeer(parentRunId, childMode, childDef, tenantId)
@@ -259,14 +259,14 @@ sequenceDiagram
         RR-->>Run: run (status=RUNNING, tenantId=tid)
     and
         Note over Orch: Run completes successfully<br/>RIGHT BEFORE the cancel CAS attempt
-        Orch->>RR: updateIfNotTerminal(tid, runId, λ→SUCCEEDED) — ATOMIC CAS
+        Orch->>RR: updateIfNotTerminal(runId, λ→SUCCEEDED) — ATOMIC CAS
         Note over RR: CAS WINS (status transitions RUNNING → SUCCEEDED)<br/>publish RunStateTransitionEvent + TerminalTransitionEvent
         RR-->>Orch: ok
     end
 
     Note over RR: Cancel side's perspective: Run was RUNNING at findById,<br/>but the orchestrator's terminal CAS commits BEFORE the cancel's CAS.
 
-    Run->>RR: updateIfNotTerminal(tid, runId, λ→CANCELLED) — ATOMIC CAS
+    Run->>RR: updateIfNotTerminal(runId, λ→CANCELLED) — ATOMIC CAS
     Note over RR: CAS WHERE status NOT IN (CANCELLED, SUCCEEDED, FAILED, EXPIRED)<br/>**LOSES** because status is now SUCCEEDED.
     RR->>RR: post-CAS re-read: status = SUCCEEDED  (not the requested CANCELLED)
     RR-->>Run: outcome=CASMissedTerminal, post-CAS-status=SUCCEEDED

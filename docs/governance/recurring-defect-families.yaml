@@ -38,7 +38,7 @@
 # freshness + E158 yaml/md family-id parity).
 
 schema_version: 1
-last_updated: 2026-05-26  # rc55 PR-77 consistency review wave-1 follow-up (merge-train Wave 0.2 corrective per docs/L1/agent-service/ post-rc55 audit plan): external reviewer (yougq) audited the post-rc55 4+1 views in `docs/L1/agent-service/` and surfaced 7 P1/P2 inconsistencies (P1-1 ERD Task||--||RUN 1:1 vs prose 1:N; P1-2 RunRepository.updateIfNotTerminal signature drift across logical/process/physical; P1-3 Task/Session PK type drift between logical-ER and physical-schema captions; P2-1 scenarios.md cancel-test anchor pointing at non-existent `tenantMismatchReturns403`; P2-2 process.md SSE marked W2-shipped vs OpenAPI W2-scope; P2-3 README.md frontmatter `covers_views: [scenarios]` underclaim vs the 5-view body; P2-4 module-root agent-service/ARCHITECTURE.md retains legacy `TaskRepository`/`tenantMismatchReturns403` terminology). Preliminary classification (finalised in post-merge Wave 1A of the audit plan): P1-1, P1-2, P1-3 map to a CANDIDATE NEW family `F-l1-view-set-internal-signature-drift` (signature/type drift WITHIN a single 4+1 view set — distinct from `F-cross-authority-agreement` which fires only across canonical-authority surfaces); P2-1 + P2-4 widen `F-shadow-corpus-prose-staleness`; P2-2 widens `F-design-only-mechanism-shown-as-shipped`; P2-3 widens `F-frontmatter-claim-body-mismatch`. Surface roster of `F-l1-architecture-grounding-gap` extended to include the new consistency-review file. Fingerprint-sweep + corrective fixes deferred to Wave 1B + Wave 2 of the merge-train + audit plan (`D:\.claude\plans\review-pr-79-kind-avalanche.md`). Prior rc55 capability-feature scenario follow-up: human review found the rewritten Agent Service capability-feature list still under-decomposed enterprise scenarios (SSE/non-SSE/direct ingress, reconnect context recovery, context compaction, long-task continuation/switch/rollback-retry, same third-party Agent recovery, client-hosted skills, sub-agent delegation, and model/third-party/client configuration ownership); classified as another F-l1-architecture-grounding-gap recurrence and closed by expanding the bilingual review into AS-SC01..AS-SC24, AS-L1-F01..AS-L1-F47, and module-owned configuration/recovery matrices. Prior rc55 capability-feature review follow-up: user review found the first Agent Service capability-feature list carried L2-facing advice, artificial status taxonomy, priority-first grouping, and insufficient scenario/data/control-flow grounding; classified as another F-l1-architecture-grounding-gap recurrence for derived L1 review artefacts and closed by rewriting the bilingual review around full module ownership, S1-S5 business scenarios, data/control-flow closure, orthogonality checks, and OSS-average capability baseline. Prior rc55 OSS comparison review follow-up: user review found the generated OSS comparison review preserved the conclusion but compressed away source-level project-by-project evidence; classified as an F-l1-architecture-grounding-gap recurrence for derived L1 review artefacts and closed by adding the source review record plus expanded project evidence matrices. Prior rc55 W6 closure corrective: re-validate freshness after W6 commit 40e020b2 (review-file demotion notes + rc55 release note) touched signal surfaces (ARCHITECTURE.md, CLAUDE.md transitively via rebuild). Per Rule G-9.b first-parent semantics + memory feedback_merge_train_g9b_freshness, every signal-touching commit on the branch needs a families.yaml content-diff. This W6-corrective commit re-bumps last_updated to satisfy the gate without re-classifying findings (the canonical classification + sweep from W0 commit 4ac5983 remains the substantive record). rc55 W0 narrative (prior bump retained): classified the rc55 audit's 11 MODIFY + 8 REJECT findings into 4 existing-family extensions (F-cross-authority-agreement +1 narrative; F-terminal-verb-overclaim REOPENED from closed to monitoring +1; F-design-doc-orphan-from-authority mapped to F-cross-authority-agreement; F-design-doc-language-bypasses-invariant unchanged at rc53 occurrence) and 7 NEW families: F-l1-canonical-source-in-interaction-log (R6 — pointing live L1 architecture artefact at freeze-marked review log), F-layer-decomposition-low-cohesion (R1+R3 — kitchen-sink layer or double-homed responsibility), F-frontmatter-claim-body-mismatch (M5+R5 — covers_views frontmatter promises body never authored), F-logical-vs-structural-decomposition-conflation (M8+M9+R7 — two un-mapped N-element decompositions of same scope), F-design-only-mechanism-shown-as-shipped (M7+R2 — diagrams depict design_only mechanism without caption marker), F-discriminator-without-discriminated-type (R8 — typed enum discriminator without its polymorphic type), F-spi-package-bloat-with-carriers (M10 — .spi package contains more carriers than interfaces). Family count: 20 → 27. ADR slate ADR-0140..0145 (rc55 W1) carries the design ratifications. Prior rc54 / rc53 notes retained below.
+last_updated: 2026-05-27  # 2026-05-27 agent-service L1 architecture audit (Wave 1+2) registers 6 NEW families: F-half-built-state-machine (multi-state enum declares lifecycle members the code never writes; surfaced by RunStatus.EXPIRED, SuspendReason.AwaitChild/Timer/External/Approval, Task.A2aState+TaskKind, IdempotencyStore.Status.COMPLETED/FAILED, PlaceholderPreservationPolicy.WARN/REWRITE, HookPoint.ON_YIELD); F-discriminator-naming-drift-doc-vs-code (doc-cited enum/method/type name drifts from Java source; surfaced by SuspendReason 3-name drift in 2026-05-22 doc, SuspendReason.AwaitChildren plural in process.md/scenarios.md, HookPoint.before_tool case+truncation, RunRepository.updateIfNotTerminal 3-arg-in-docs vs 2-arg-in-Java); F-dfa-without-validator (documented state-machine DFA ships without enforcement validator; surfaced by Task.A2aState 5-state DFA with no companion StateMachine class); F-create-path-not-enrolled-in-dedup-tx (resource-create path bypasses idempotency-claim transaction; surfaced by top-level Run create + child Run spawn using UUID.randomUUID then repository.save without same-tx dedup); F-vocabulary-identity-collision (two same-named Java types in different packages of one module each claiming same ADR authority; surfaced by two IdempotencyRecord types in service.platform.idempotency vs service.runtime.idempotency); F-cross-authority-tenant-scope-claim-without-field (authority surface claims a tenant-scope field that does not exist on the carrier Java type; surfaced by contract-catalog.md:90 claiming S2cCallbackEnvelope.tenantId field that does not exist). Family count: 27 → 33. Wave 1 lens-sweep findings + Wave 2 sibling sweep folded 39 cited findings into 12 existing + 6 new families. Prior rc55 PR-77 consistency review wave-1 follow-up (merge-train Wave 0.2 corrective, now landed on main as commit 81db46a): external reviewer (yougq) audited the post-rc55 4+1 views in `docs/L1/agent-service/` and surfaced 7 P1/P2 inconsistencies (P1-1 ERD Task||--||RUN 1:1 vs prose 1:N; P1-2 RunRepository.updateIfNotTerminal signature drift across logical/process/physical; P1-3 Task/Session PK type drift; P2-1 scenarios.md cancel-test anchor pointing at non-existent `tenantMismatchReturns403`; P2-2 process.md SSE marked W2-shipped vs OpenAPI W2-scope; P2-3 README.md frontmatter `covers_views: [scenarios]` underclaim; P2-4 module-root agent-service/ARCHITECTURE.md retains legacy `TaskRepository`/`tenantMismatchReturns403` terminology) — all 7 now closed by this audit's Wave 4 4+1 corrective patches; the candidate F-l1-view-set-internal-signature-drift family is subsumed by the new F-discriminator-naming-drift-doc-vs-code which generalises the same pattern beyond a single view set. Prior rc55 W6 closure corrective: re-validate freshness after W6 commit 40e020b2 (review-file demotion notes + rc55 release note) touched signal surfaces (ARCHITECTURE.md, CLAUDE.md transitively via rebuild). Per Rule G-9.b first-parent semantics + memory feedback_merge_train_g9b_freshness, every signal-touching commit on the branch needs a families.yaml content-diff. This W6-corrective commit re-bumps last_updated to satisfy the gate without re-classifying findings (the canonical classification + sweep from W0 commit 4ac5983 remains the substantive record). rc55 W0 narrative (prior bump retained): classified the rc55 audit's 11 MODIFY + 8 REJECT findings into 4 existing-family extensions (F-cross-authority-agreement +1 narrative; F-terminal-verb-overclaim REOPENED from closed to monitoring +1; F-design-doc-orphan-from-authority mapped to F-cross-authority-agreement; F-design-doc-language-bypasses-invariant unchanged at rc53 occurrence) and 7 NEW families: F-l1-canonical-source-in-interaction-log (R6 — pointing live L1 architecture artefact at freeze-marked review log), F-layer-decomposition-low-cohesion (R1+R3 — kitchen-sink layer or double-homed responsibility), F-frontmatter-claim-body-mismatch (M5+R5 — covers_views frontmatter promises body never authored), F-logical-vs-structural-decomposition-conflation (M8+M9+R7 — two un-mapped N-element decompositions of same scope), F-design-only-mechanism-shown-as-shipped (M7+R2 — diagrams depict design_only mechanism without caption marker), F-discriminator-without-discriminated-type (R8 — typed enum discriminator without its polymorphic type), F-spi-package-bloat-with-carriers (M10 — .spi package contains more carriers than interfaces). Family count: 20 → 27. ADR slate ADR-0140..0145 (rc55 W1) carries the design ratifications. Prior rc54 / rc53 notes retained below.
 # rc54 corrective publication refresh: rc53 findings were classified before repair and mapped to existing F-agentic-contract-composition-gap + F-placeholder-leaks-into-active-corpus. No new problem type was registered; family count remained 20. rc54 closed the cited composition gaps with AgentDefinition.advisorBindings, same-package typed advisor carriers, shared advisor-model-hook-order/v1, constructor-owned planner/skill invariants, Rule 129 composition truth, and Rule 127 current-placeholder guard. Prior rc53 notes retained below.
 # rc35-second-pass wave (same PR follow-up commits, after rc35-correctness-batch): a second round of 4 parallel adversarial reviewers (correctness + adversarial + gate-script-consistency + doc-coherence) ran against the rc35-correctness-batch tip and found that several of the rc35 first-pass closures were incomplete in scope. (a) The cancel-vs-complete race guard in SyncOrchestrator (rc35 first pass) was applied ONLY at the three terminal SUCCEEDED/FAILED save sites; five sibling non-terminal save sites (PENDING→RUNNING at run() entry; RUNNING→SUSPENDED at S2C suspend + child suspend; SUSPENDED→RUNNING at S2C resume + child resume) remained blind puts that silently overwrote a parallel CANCELLED with RUNNING/SUSPENDED — same family pattern, sibling surfaces. (b) ADR-0108's "common base shared with Rule R-J .b" wording claimed cross-authority parity that didn't hold — Rule R-J .b's pre-existing cancel-state-transition MDC `{ runId, fromStatus, toStatus, actor, occurredAt }` shares only `occurredAt` with the new tenant-mismatch base `{ surface, reason, occurredAt }`. (c) S2C envelope deadline was honoured unconditionally in resolveCallTimeoutMillis with no clamp against the orchestrator's configured s2cCallTimeout ceiling — a client-supplied 1h deadline defeated the 30s default. (d) check_parallel.sh + extract_rules.sh + check_architecture_sync.sh + 8 sibling rule files used the regex `^# Rule [0-9]+[a-z]? (—|--) ` which silently skipped dotted sub-clause headers `# Rule 24.c` / `# Rule 29.c`; both rule bodies were absorbed into Rule 11's chunk and attributed there in NDJSON timing + Rule 72 regression detection — and the "132 == 132" serial/parallel parity check at Rule G-5.a was vacuously true because BOTH sides used the same broken regex. Headers were always there since rc1; only attribution moved. (e) check_architecture_sync.sh used 10 bare `python3 - <<PYEOF` invocations (Rules 23/25/28j/28k/37/63/68/78/80/94) that silently fell through to vacuous PASS with `python3: not found` on Windows hosts where only `python` exists; CI on Ubuntu was green because python3 exists there. Same fail-open pattern, different surface. (f) check_recurring_families.sh inverted the corpus-wide python preference (python before python3) so on Python-2-as-`python` systems the rc19 validator would crash with SyntaxError. (g) R-038 + R-042 both rewrote docs/governance/architecture-graph.yaml under xargs -P concurrently with R-040/041/097/106 readers — read-during-write race; closed by atomic temp-file + os.replace in build_architecture_graph.py. (h) emit_contract_tables.sh wrote 6 hardcoded /tmp/contract-tables-<phase>.md paths with no PID + check_architecture_sync.sh + rule-099.sh used /tmp/_r99_hits.$$ — concurrent gate runs would clobber. All eight closed across Commits A/B/C of this same PR. Pattern reinforcement (BOTH passes): rc35's first-pass discipline ("found 8 bugs in parallel, fixed all") still leaves the cited bugs's SIBLINGS unfound; the second-pass adversarial review systematically constructed sibling scenarios and found 8 more. Lesson: a wave is not complete when the cited bugs are fixed — it's complete when the sibling-scenario sweep returns empty.
 
@@ -1488,3 +1488,241 @@ families:
       rcNN+1)` marker. Repo-wide sibling sweep audits every
       `*.spi.*` package under agent-* for the same
       carrier-over-interface ratio.
+
+  - id: F-half-built-state-machine
+    title: Multi-State Enum Declares Lifecycle Members the Code Never Writes
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      An enum / sealed marker / hook-point taxonomy is declared with
+      N members representing an intended lifecycle (CLAIMED →
+      COMPLETED / FAILED; phase_2_fired hooks; suspend-reason placeholder
+      records). The shipped code writes ≤K (K<N) of those members; the
+      remaining members are aspirational / future-wave. Javadoc honestly
+      admits the gap, but reviewers reading the type assume the full
+      lifecycle is live. Sibling of F-discriminator-without-discriminated-type
+      at the VALUE level rather than the TYPE level: there the discriminator
+      ships without the polymorphic type; here the polymorphic type ships
+      with values that have no producer. Surfaces at the 2026-05-27 audit
+      include IdempotencyStore.Status.COMPLETED and .FAILED (only CLAIMED
+      is ever written), RunStatus.EXPIRED (declared terminal but zero
+      production write-paths), SuspendReason.{AwaitChild, AwaitTimer,
+      AwaitExternal, AwaitApproval} (4 of 6 sealed-record variants with
+      zero constructor call sites), Task.A2aState 5 values + Task.TaskKind
+      4 values (entity record exists; no production write-path of any
+      value), HookPoint.ON_YIELD (ships in yaml hooks list + Java enum
+      but omitted from phase_2_mandatory_hooks_fired_by_orchestrator),
+      and PlaceholderPreservationPolicy.WARN / .REWRITE (only PRESERVE
+      has a single reference).
+    surfaces:
+      - agent-*/src/main/java/**/*Status.java
+      - agent-*/src/main/java/**/*State.java
+      - agent-*/src/main/java/**/*HookPoint.java
+      - agent-*/src/main/java/**/*Reason.java
+      - agent-*/src/main/java/**/*Policy.java
+      - docs/contracts/engine-hooks.v1.yaml#phase_*_fired*
+    prevention_rules:
+      - "candidate gate-rule W5+ — for every enum declaration under */spi/*, service/platform/*, service/runtime/*, run codegraph for <EnumName>.<MEMBER> write-sites; FAIL if any member has 0 writers AND no (W2-deferred — ADR-NNNN) Javadoc marker"
+    cleanup_status: incomplete
+    open_residual: |
+      AUD-IDEM-1 (IdempotencyStore.Status.COMPLETED + FAILED),
+      AUD-EVT-4 (HookPoint.ON_YIELD declared in yaml but absent from
+      phase_2_mandatory_hooks_fired_by_orchestrator), SBL-HBSM-1
+      (RunStatus.EXPIRED), SBL-HBSM-2 (4 SuspendReason variants),
+      SBL-HBSM-3 (Task.A2aState + TaskKind), SBL-HBSM-4
+      (PlaceholderPreservationPolicy.WARN + REWRITE). Closure requires
+      either annotating each unreached member with (W2-deferred —
+      ADR-NNNN) Javadoc markers OR materializing the producer paths in
+      an impl-mode wave. Sweep against all *Status.java / *State.java /
+      *HookPoint.java / *Reason.java / *Policy.java under agent-*
+      remains a Wave-5+ gate candidate.
+
+  - id: F-discriminator-naming-drift-doc-vs-code
+    title: Doc-Cited Enum / Method / Type Name Drifts From Java Source of Truth
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      Active doc surfaces (L1 view files, ADRs, review responses, contract
+      catalogs, module ARCHITECTURE.md files) cite enum variants / method
+      signatures / type names that disagree with the Java source — wrong
+      case, truncated, wrong arity, wrong parameter type, or a name from
+      an older naming wave. The doc lies to readers; gate-time path-truth
+      rules (G-2.c) catch path drift but not name-form drift inside
+      otherwise-resolvable references. The 2026-05-27 audit found 4
+      distinct sub-shapes: (a) SuspendReason 3-name table at
+      2026-05-22-...response.en.md:141 claims AwaitChildRun /
+      AwaitToolResult / RequiresApproval while Java permits AwaitChild /
+      AwaitExternal / AwaitApproval (per user precedence the DOC wins →
+      Java rename); (b) SuspendReason.AwaitChildren plural in
+      docs/L1/agent-service/process.md:171 and scenarios.md:83,85 vs Java
+      singular AwaitChild; (c) RunRepository.updateIfNotTerminal(tid,
+      runId, lambda) 3-arg signature cited in 6 lines of process.md and 3
+      lines of physical.md vs actual 2-arg Java signature (PR77-P1-2);
+      (d) HookPoint.before_tool lowercase + truncated cited in 5 doc
+      sites vs Java HookPoint.BEFORE_TOOL_INVOCATION
+      SCREAMING_SNAKE_CASE + full suffix. None of these drifts trip Rule
+      G-2 path-truth because the type/method itself resolves — only the
+      literal name is wrong.
+    surfaces:
+      - docs/L1/**/*.md
+      - docs/logs/reviews/*.md
+      - docs/adr/*.yaml
+      - docs/contracts/contract-catalog.md
+      - agent-*/ARCHITECTURE.md
+    prevention_rules:
+      - "candidate gate-rule W5+ — for every HookPoint.<value> or SuspendReason.<value> or RunStatus.<value> or RunRepository.<method>( mention in active md/yaml, parse the Java type by codegraph_node and FAIL if the literal name does not match a declared member / method"
+    cleanup_status: incomplete
+    open_residual: |
+      PR77-P1-2 (updateIfNotTerminal 3-arg-in-docs vs 2-arg-in-Java),
+      PR76-IF-DRIFT-004, AUD-EVT-1 (SuspendReason 3-name drift), AUD-EVT-3
+      (HookPoint.before_tool case + truncation), SBL-NAME-1
+      (SuspendReason.AwaitChildren plural), SBL-NAME-2 (3 doc-only
+      SuspendReason names that don't exist as Java types). Closure
+      requires the per-symbol name-form gate-rule candidate above to
+      materialize as Rule W5-1 (or equivalent) so that any
+      <JavaType>.<member> mention in active md/yaml is parsed and
+      verified against the codegraph at gate time.
+
+  - id: F-dfa-without-validator
+    title: Documented State-Machine DFA Ships Without an Enforcement Validator
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      A state-typed field (e.g. Task.A2aState, Session.Status) has a
+      documented DFA — Mermaid stateDiagram, ADR transition table,
+      contract yaml transitions: block — that names specific illegal
+      transitions (e.g. SUBMITTED → COMPLETED is illegal). The Java side
+      ships the enum + the entity but no <Type>StateMachine.validate(from,
+      to) class wired into the persistence write path. The analogous
+      RunStateMachine exists and proves the pattern is achievable; the
+      sibling DFA is unguarded — illegal transitions silently succeed
+      because no code rejects them. Adjacent to F-half-built-state-machine
+      (which is about UNREACHED enum members) but distinct: here ALL
+      members are reachable but the EDGES between them are not gated.
+    surfaces:
+      - agent-*/src/main/java/com/huawei/ascend/service/*/spi/*.java
+      - agent-service/src/main/java/com/huawei/ascend/service/runtime/runs/Run.java
+      - docs/L1/**/*.md
+      - docs/contracts/*.v1.yaml
+    prevention_rules:
+      - "candidate gate-rule W5+ — for every Mermaid stateDiagram-v2 block in docs/L1/**/*.md referencing a Java enum, codegraph_search for validate(<EnumName>...) in the same module; FAIL if zero results"
+    cleanup_status: incomplete
+    open_residual: |
+      AUD-EVT-5 (Task.A2aState 5-state DFA has no Task.A2aStateMachine or
+      equivalent validator class wired into TaskStateStore.save),
+      SBL-DFAW-2 (Task.TaskKind structural discriminator with no routing
+      validator — borderline). Closure requires either adding the
+      validator OR explicitly marking the entity Javadoc as (design_only
+      — W3+ state validation deferred).
+
+  - id: F-create-path-not-enrolled-in-dedup-tx
+    title: Resource-Create Path Bypasses the Idempotency-Claim Transaction
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      An HTTP endpoint (or orchestrator) creates a top-level or child
+      resource with new T(UUID.randomUUID(), ...); repository.save(t);
+      while the surrounding request bears an Idempotency-Key header (or
+      the suspend/resume signal carries a parentNodeKey). The dedup-claim
+      row is written by a filter / pre-step in a different transaction;
+      the create happens unconditionally if the claim returns fresh. A
+      TTL re-claim or suspend-resume re-entry produces a duplicate
+      resource under a fresh UUID — the contract guarantee successful
+      claim implies at-most-one resource is violated silently. Identified
+      at top-level POST /v1/runs (RunController.java:101) AND child-run
+      spawn inside SyncOrchestrator.executeLoop (line 204: UUID.randomUUID()
+      immediately followed by runs.save(new Run(...)) with no idempotency
+      derivation from parentRunId + parentNodeKey).
+    surfaces:
+      - agent-service/src/main/java/com/huawei/ascend/service/platform/web/**/*Controller.java
+      - agent-service/src/main/java/com/huawei/ascend/service/runtime/orchestration/inmemory/SyncOrchestrator.java
+      - agent-service/src/main/java/com/huawei/ascend/service/platform/idempotency/IdempotencyHeaderFilter.java
+    prevention_rules:
+      - "candidate gate-rule W5+ — codegraph_callers on IdempotencyHeaderFilter.claimOrFind; for each calling endpoint, walk callees for .save( invocations on RunRepository / TaskStateStore / SessionRepository and FAIL if the save is not transactionally enclosed (no @Transactional propagation, no deterministic-uuid derivation)"
+    cleanup_status: incomplete
+    open_residual: |
+      AUD-IDEM-4 (top-level Run create non-atomic with idempotency claim),
+      AUD-IDEM-5 (child Run spawn uses fresh randomUUID — parent retry
+      duplicates children). Closure requires either deterministic-UUID
+      derivation (uuidV5(tenantId, idempotencyKey) for top-level,
+      uuidV5(parentRunId, parentNodeKey) for child) OR enrolling the
+      create into the same @Transactional boundary as the
+      IdempotencyStore.claimOrFind call.
+
+  - id: F-vocabulary-identity-collision
+    title: Two Same-Named Java Types Live in Different Packages of One Module
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      Two record (or class / interface) declarations share the same
+      simple name in different sub-packages of one Maven module; one is
+      the live carrier, the other is dead-code / pre-rename leftover.
+      Both javadocs cite the same ADR authority. The catalog / SPI
+      Appendix points reviewers at the wrong file; a future contributor
+      importing by IDE-completion picks the wrong one. Distinct from
+      F-deleted-module-name-leakage (cross-module) and from
+      F-authority-surface-path-drift (correct module, wrong path) — here
+      the module is right but the basename is doubly resolved within the
+      module. Surfaced 2026-05-27 by two IdempotencyRecord types in
+      agent-service: service.platform.idempotency.IdempotencyStore.IdempotencyRecord
+      (live; 8 fields including status / responseStatus / responseBodyRef
+      / expiresAt) and service.runtime.idempotency.IdempotencyRecord
+      (dead; 2 fields runId / claimedAt; zero importers). spi-appendix.md
+      :59 cites the second as contract-spine per ADR-0057, but ADR-0057
+      §2 only declares the platform-package record.
+    surfaces:
+      - agent-*/src/main/java/com/huawei/ascend/**/*.java
+      - docs/L1/**/spi-appendix.md
+      - docs/contracts/contract-catalog.md
+    prevention_rules:
+      - "candidate gate-rule W5+ — for each Maven module, glob src/main/java/**/*.java → extract basenames → FAIL on any duplicate basename; allowlist file for legitimate cases (e.g. package-info.java)"
+    cleanup_status: incomplete
+    open_residual: |
+      AUD-IDEM-8 (two IdempotencyRecord types in agent-service). Closure
+      requires deleting the dead service/runtime/idempotency/IdempotencyRecord.java
+      OR moving the live platform record into runtime/idempotency/ per
+      whichever package the audit decides is canonical (ADR-0057 §2 names
+      the platform package; this audit leaves the location as-is and
+      deletes the dead duplicate).
+
+  - id: F-cross-authority-tenant-scope-claim-without-field
+    title: Authority Surface Claims a Tenant-Scope Field That Does Not Exist on the Carrier Java Type
+    first_observed_rc: audit-2026-05-27
+    last_observed_rc: audit-2026-05-27
+    occurrences: [audit-2026-05-27]
+    root_cause: |
+      docs/contracts/contract-catalog.md (or agent-*/ARCHITECTURE.md §SPI
+      Appendix) declares a structural carrier as tenant-scoped via tenant
+      resolved by <Carrier>.tenantId field (Rule R-C.c) — but the named
+      field does NOT exist on the carrier record. The honest Java javadoc
+      admits tenant resolution is out-of-band (e.g. via a Transport
+      registry binding at the wrapping Run boundary), creating a direct
+      lie between the catalog row and the type. Rule G-8.e enforces
+      structural-carrier package-and-class existence but not field-level
+      claims. Sibling of F-design-artifact-omits-tenant-spine (which is
+      about diagrams ELIDING tenantId); here the diagram / catalog
+      ASSERTS a tenantId that isn't there. Surfaced 2026-05-27 by
+      contract-catalog.md:90 claiming S2cCallbackEnvelope.tenantId field
+      while the Java record at
+      agent-bus/src/main/java/com/huawei/ascend/bus/spi/s2c/S2cCallbackEnvelope.java:26-35
+      has 8 components and NONE is tenantId.
+    surfaces:
+      - docs/contracts/contract-catalog.md
+      - agent-*/ARCHITECTURE.md
+      - docs/L1/**/spi-appendix.md
+    prevention_rules:
+      - "candidate gate-rule W5+ — parse contract-catalog.md rows matching tenant-scoped.*<Carrier>.tenantId → resolve <Carrier> via codegraph_node → FAIL if the type has no tenantId record component / field"
+    cleanup_status: incomplete
+    open_residual: |
+      AUD-EVT-6 (contract-catalog.md:90 claims S2cCallbackEnvelope.tenantId
+      field that does not exist; preferred fix is to ADD the field to the
+      Java record per Rule R-C.c, alternative is to rewrite the catalog
+      row to tenant resolved out-of-band via S2cCallbackTransport registry
+      binding at wrapping Run boundary, per ADR-0074 §Consequences).
+      Closure also requires re-sweep of every other tenant-scoped row in
+      contract-catalog.md to verify field existence.

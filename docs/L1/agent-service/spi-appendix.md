@@ -50,13 +50,14 @@ separately for clarity.
 | `ResiliencePolicy` | `service.runtime.resilience.spi` | Per-operation policy carrier returned by `ResilienceContract.resolve(...)` |
 | `SkillResolution` | `service.runtime.resilience.spi` | Sealed accept/reject decision envelope |
 | `SuspendReason` | `service.runtime.resilience.spi` | Sealed reason taxonomy for suspension + rate-limit decisions (W2 will extend with additional variants per ADR-0019) |
-| `AgentInvokeRequest` | `service.engine.spi` | Immutable service-to-engine invocation carrier *(design_only per `docs/contracts/agent-invoke-request.v1.yaml` — runtime path deferred to ADR-0100)* |
+| `AgentInvokeRequest` | `service.engine.spi` | Immutable service-to-engine invocation carrier *(schema_shipped per `docs/contracts/agent-invoke-request.v1.yaml` — Java carrier records exist and are test-verified; orchestrator runtime wiring is W2-deferred per ADR-0100; aligned with catalog row 162 per AUD-2026-05-27 AUD-PARITY-7)* |
 | `StateDelta` | `service.engine.spi` | Immutable engine result carrier with typed run-transition hint |
 | `AgentDefinition`, `AgentInvocation`, `AgentResponse`, `AdvisorBinding`, `OutputContentPolicy`, `SafetyPolicy` | `service.agent.spi` | rc43-introduced Agent-SPI carrier records (per ADR-0128) — `design_only` until W3 SDK GA |
 | `Session` aggregate | `service.session` (parent, NOT under `.spi`) | Session record used by the reference projector |
 | `Task` aggregate | `service.task` (parent, NOT under `.spi`) | Task record used by the reference task-state store |
 | `Run` aggregate (Run + RunStatus + RunStateMachine + RunMode) | `service.runtime.runs` (parent, NOT under `.spi`) | Run aggregate per ADR-0142 single-owner pinning to Layer 2 |
-| `IdempotencyRecord` | `service.runtime.idempotency` (parent, NOT under `.spi`) | Idempotency contract-spine entity per ADR-0057 |
+| `IdempotencyRecord` | `service.platform.idempotency` (parent, NOT under `.spi`; canonical per ADR-0057 §2) | Idempotency contract-spine entity per ADR-0057. NB: a dead duplicate exists at `service.runtime.idempotency.IdempotencyRecord` (zero importers, no production wiring) — slated for deletion in the audit-2026-05-27 impl-mode follow-up wave per AUD-2026-05-27 AUD-IDEM-8 (family `F-vocabulary-identity-collision`). |
+| `IdempotencyStore` (interface) | `service.platform.idempotency` (parent, NOT under `.spi`) | HTTP-edge contract for idempotent run-create dedup, with 2 production impls (`InMemoryIdempotencyStore` dev, `JdbcIdempotencyStore` real postures). Intentionally NOT under `.spi.` per Rule R-D.d carve-out — governed by ADR-0057 directly rather than by SPI 4-way parity. Therefore not counted in the §1 9-interface set; reviewers seeking the agent-service extension surface for idempotency dedup should treat ADR-0057 as the authority. Per AUD-2026-05-27 AUD-PARITY-4 family `F-spi-package-bloat-with-carriers`. |
 | `EvolutionExport` enum | `service.runtime.evolution` (parent, NOT under `.spi`) | rc55 ADR-0145 — discriminator enum for the future sealed `RunEvent` hierarchy *(Rule R-M.e gate is currently design-armed but vacuously true until the Java sealed type lands in a follow-up impl-mode wave)* |
 
 ## 3. F-spi-package-bloat-with-carriers — systemic gap deferred (M10 correction)
