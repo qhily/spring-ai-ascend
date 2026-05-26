@@ -104,11 +104,11 @@ workspace "Spring AI Ascend" "Architecture authority workspace (W1 advisory)" {
             }
         }
 
-        // Wave 2 will land:
-        //   !include features/capabilities.dsl
-        //   !include features/function-points.dsl
-        //   !include features/verification.dsl
-        //
+        // Authored zone — W2 mount of capabilities/features/function-points.
+        !include features/capabilities.dsl
+        !include features/function-points.dsl
+        !include features/verification.dsl
+
         // Wave 3 will land:
         //   !include generated/modules.dsl
         //   !include generated/spi-catalog.dsl

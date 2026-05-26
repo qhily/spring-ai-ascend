@@ -1,0 +1,313 @@
+// architecture/features/function-points.dsl
+//
+// Authority: ADR-0147 (Structurizr Workspace Authority).
+// AUTHORED ZONE. Engineers edit this file directly.
+//
+// W2 lands a curated seed set of L1 function points (the visible API verbs +
+// orchestration steps documented in agent-service/ARCHITECTURE.md and the
+// run lifecycle scenario diagrams). Subsequent additions come from ADRs.
+//
+// Each profile-tagged element MUST satisfy required-properties.yaml:
+//   saa.id, saa.kind, saa.level, saa.view, saa.status, saa.owner, saa.sourceAdr.
+//
+// Relationship semantics:
+//   capability -> functionPoint : "contains" (capability owns the FP)
+//   module     -> functionPoint : "implements"
+//   test/enforcer -> functionPoint : "verifies"
+//
+// Relationship declarations live in verification.dsl to keep this file
+// focused on the function-point inventory itself.
+
+fpCreateRun = element "Create Run" "FunctionPoint" "POST /v1/runs — admit a new Run with tenant + idempotency + posture guard" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-CREATE-RUN"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0020"
+    }
+}
+
+fpCancelRun = element "Cancel Run" "FunctionPoint" "POST /v1/runs/(runId)/cancel — re-validate tenant + DFA transition to CANCEL_REQUESTED" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-CANCEL-RUN"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0108"
+    }
+}
+
+fpGetRunStatus = element "Get Run Status" "FunctionPoint" "GET /v1/runs/(runId) — tenant-scoped polling endpoint for Run state + last error" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-GET-RUN-STATUS"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0020"
+    }
+}
+
+fpListRuns = element "List Runs" "FunctionPoint" "GET /v1/runs — tenant-scoped pagination over Runs (filter by status, owner, time window)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-LIST-RUNS"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0020"
+    }
+}
+
+fpIngressEnvelope = element "Ingress Envelope Routing" "FunctionPoint" "Route IngressEnvelope from edge-plane to compute_control via IngressGateway (Rule R-I.1)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-INGRESS-ENVELOPE"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-bus"
+        "saa.sourceAdr" "ADR-0089"
+    }
+}
+
+fpS2cCallback = element "S2C Callback" "FunctionPoint" "Server-to-client callback envelope via S2cCallbackTransport — Run suspends, client receives capability invocation, response resumes" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-S2C-CALLBACK"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-bus"
+        "saa.sourceAdr" "ADR-0088"
+    }
+}
+
+fpRunStateTransition = element "Run State Transition" "FunctionPoint" "RunRepository.updateIfNotTerminal CAS-based atomic Run status transition (Rule R-C.2.b)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-RUN-STATE-TRANSITION"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0118"
+    }
+}
+
+fpSuspendResume = element "Suspend Resume" "FunctionPoint" "SuspendSignal throw, Run -> SUSPENDED, ResumeDispatcher -> RUNNING transition (sealed SuspendReason variants)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-SUSPEND-RESUME"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0137"
+    }
+}
+
+fpChildRunSpawn = element "Child Run Spawn" "FunctionPoint" "SuspendSignal child-Run variant — parent suspends, child Run executes, parent resumes on child terminal" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-CHILD-RUN-SPAWN"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0145"
+    }
+}
+
+fpIdempotencyClaim = element "Idempotency Claim" "FunctionPoint" "IdempotencyHeaderFilter -> IdempotencyStore PG-backed claim + replay (W0 schema; Rule 56 + ADR-0027)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-IDEMPOTENCY-CLAIM"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0027"
+    }
+}
+
+fpTenantCrossCheck = element "Tenant Cross Check" "FunctionPoint" "JWT.tenant claim cross-check vs IngressEnvelope.tenantId at every tenant-scoped surface (Rule R-J)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-TENANT-CROSS-CHECK"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0056"
+    }
+}
+
+fpPostureBootGuard = element "Posture Boot Guard" "FunctionPoint" "PostureBootGuard validates @RequiredConfig at startup; research/prod fail-closed on missing config" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-POSTURE-BOOT-GUARD"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-service"
+        "saa.sourceAdr" "ADR-0058"
+    }
+}
+
+fpGraphMemoryStore = element "Graph Memory Store" "FunctionPoint" "GraphMemoryRepository tenant-scoped CRUD + semantic facts (auto-wired by starter)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-GRAPH-MEMORY-STORE"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "spring-ai-ascend-graphmemory-starter"
+        "saa.sourceAdr" "ADR-0081"
+    }
+}
+
+fpEngineDispatch = element "Engine Dispatch" "FunctionPoint" "EngineRegistry.resolve(envelope) -> typed ExecutorAdapter dispatch via engine-envelope.v1.yaml (Rule R-M.a)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-ENGINE-DISPATCH"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-execution-engine"
+        "saa.sourceAdr" "ADR-0140"
+    }
+}
+
+fpHookDispatch = element "Hook Dispatch" "FunctionPoint" "RuntimeMiddleware listens on canonical HookPoint events (engine-hooks.v1.yaml; Rule R-M.c)" "SAA FunctionPoint" {
+    properties {
+        "saa.id" "FP-HOOK-DISPATCH"
+        "saa.kind" "function_point"
+        "saa.level" "L1"
+        "saa.view" "scenarios"
+        "saa.status" "shipped"
+        "saa.owner" "agent-middleware"
+        "saa.sourceAdr" "ADR-0073"
+    }
+}
+
+// Function-point ownership + verification relationships:
+//   capability -> function_point  (contains)
+//   module     -> function_point  (implements)
+//   test       -> function_point  (verifies)
+//
+// Wave 2 wires the implements relationships here. Verification edges live
+// in verification.dsl as they touch the test inventory.
+
+agentService -> fpCreateRun "implements POST /v1/runs handler" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpCancelRun "implements POST /v1/runs/(runId)/cancel handler" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpGetRunStatus "implements GET /v1/runs/(runId) handler" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpListRuns "implements GET /v1/runs handler" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentBus -> fpIngressEnvelope "implements IngressGateway routing" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentBus -> fpS2cCallback "implements S2cCallbackTransport SPI binding" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpRunStateTransition "implements RunRepository.updateIfNotTerminal" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpSuspendResume "implements SuspendSignal + ResumeDispatcher" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpChildRunSpawn "implements child-Run spawn path" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpIdempotencyClaim "implements IdempotencyHeaderFilter + IdempotencyStore" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpTenantCrossCheck "implements tenant cross-check filter" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentService -> fpPostureBootGuard "implements PostureBootGuard" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+graphMemoryStarter -> fpGraphMemoryStore "auto-wires GraphMemoryRepository implementations" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentExecutionEngine -> fpEngineDispatch "implements EngineRegistry.resolve" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
+agentMiddleware -> fpHookDispatch "implements RuntimeMiddleware hook dispatch" "SAA Relationship" {
+    properties {
+
+        "saa.rel" "implements"
+
+    }
+}
