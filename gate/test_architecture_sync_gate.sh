@@ -9979,6 +9979,104 @@ DSL
 }
 
 # ---------------------------------------------------------------------------
+# Rule 150 / kernel Rule G-33 (enforcer E200) — adr_id_uniqueness.
+# A minimal valid ADR corpus staged under $sroot:
+#   docs/adr/0200-aaa.yaml        (id: ADR-0200)
+#   docs/adr/0201-real.md         (# 0201. ... heading)
+#   architecture/facts/generated/adrs.json  (apex fact, empty facts list)
+# Mirrors the standalone unit harness gate/test_adr_id_uniqueness.py; here we lock
+# the gate-script's three landing self-tests (greenfield / clean / one duplicate
+# negative) per Rule 89 / E122 sub-check (c). The helper modes are advisory /
+# blocking (no full-blocking rung — an ADR-number collision lands blocking from the
+# start per the ADR-0160 ledger-totality model).
+# ---------------------------------------------------------------------------
+_g33_adr_id_scratch() {
+  local sroot="$1"
+  mkdir -p "$sroot/gate/lib" "$sroot/docs/adr/locked" "$sroot/architecture/facts/generated"
+  cp "$PWD/gate/lib/check_adr_id_uniqueness.py" "$sroot/gate/lib/check_adr_id_uniqueness.py"
+  printf '{"facts": []}\n' > "$sroot/architecture/facts/generated/adrs.json"
+  printf 'id: ADR-0200\ntitle: A\n' > "$sroot/docs/adr/0200-aaa.yaml"
+  printf '# 0201. Real MD ADR\n\nbody\n' > "$sroot/docs/adr/0201-real.md"
+}
+
+test_rule_150_adr_id_uniqueness_greenfield_pos() {
+  # POSITIVE: no docs/adr/ at all -> vacuously clean (greenfield) in every mode.
+  local helper="$PWD/gate/lib/check_adr_id_uniqueness.py"
+  if [[ ! -f "$helper" ]]; then
+    fail "rule_150_adr_id_uniqueness_greenfield_pos" "Rule G-33 / Rule 150: $helper missing"
+    return
+  fi
+  local py; py=$(_g28_python_bin)
+  if [[ -z "$py" ]]; then
+    ok "rule_150_adr_id_uniqueness_greenfield_pos" "Rule G-33 / Rule 150: no python on host — skipped (WSL is canonical per Rule G-7)"
+    return
+  fi
+  local sroot="$scratch/r150_greenfield"
+  mkdir -p "$sroot/gate/lib"
+  cp "$helper" "$sroot/gate/lib/check_adr_id_uniqueness.py"
+  local out rc
+  out=$("$py" "$sroot/gate/lib/check_adr_id_uniqueness.py" --repo "$sroot" --mode blocking 2>&1); rc=$?
+  if [[ $rc -eq 0 ]] && echo "$out" | grep -q "greenfield"; then
+    ok "rule_150_adr_id_uniqueness_greenfield_pos" "Rule G-33 / Rule 150: an absent docs/adr/ is vacuously clean (greenfield)"
+  else
+    fail "rule_150_adr_id_uniqueness_greenfield_pos" "Rule G-33 / Rule 150 greenfield case unexpected: rc=$rc out=$(echo "$out" | head -1)"
+  fi
+}
+
+test_rule_150_adr_id_uniqueness_clean_pos() {
+  # POSITIVE: a corpus of distinct ADR numbers (one .yaml id: + one .md heading)
+  # passes blocking with 0 findings.
+  local helper="$PWD/gate/lib/check_adr_id_uniqueness.py"
+  if [[ ! -f "$helper" ]]; then
+    fail "rule_150_adr_id_uniqueness_clean_pos" "Rule G-33 / Rule 150: $helper missing"
+    return
+  fi
+  local py; py=$(_g28_python_bin)
+  if [[ -z "$py" ]]; then
+    ok "rule_150_adr_id_uniqueness_clean_pos" "Rule G-33 / Rule 150: no python on host — skipped (WSL is canonical per Rule G-7)"
+    return
+  fi
+  local sroot="$scratch/r150_clean"
+  _g33_adr_id_scratch "$sroot"
+  local out rc
+  out=$("$py" "$sroot/gate/lib/check_adr_id_uniqueness.py" --repo "$sroot" --mode blocking 2>&1); rc=$?
+  if [[ $rc -eq 0 ]] && echo "$out" | grep -q "0 finding(s)"; then
+    ok "rule_150_adr_id_uniqueness_clean_pos" "Rule G-33 / Rule 150: a corpus of distinct ADR numbers passes blocking (0 findings)"
+  else
+    fail "rule_150_adr_id_uniqueness_clean_pos" "Rule G-33 / Rule 150 clean case unexpected: rc=$rc out=$(echo "$out" | head -2)"
+  fi
+}
+
+test_rule_150_adr_id_uniqueness_duplicate_neg() {
+  # NEGATIVE: a second .yaml claiming the same id: -> the helper reports
+  # DUPLICATE-ID and blocking exits 1 on it. Advisory tolerance + the
+  # unparseable / non-vacuity / vanished-apex / prose-companion cases are proved
+  # by the unit-level gate/test_adr_id_uniqueness.py; here we lock the blocking
+  # terminal verdict that a multiply-claimed ADR number is a real finding.
+  local helper="$PWD/gate/lib/check_adr_id_uniqueness.py"
+  if [[ ! -f "$helper" ]]; then
+    fail "rule_150_adr_id_uniqueness_duplicate_neg" "Rule G-33 / Rule 150: $helper missing"
+    return
+  fi
+  local py; py=$(_g28_python_bin)
+  if [[ -z "$py" ]]; then
+    ok "rule_150_adr_id_uniqueness_duplicate_neg" "Rule G-33 / Rule 150: no python on host — skipped (WSL is canonical per Rule G-7)"
+    return
+  fi
+  local sroot="$scratch/r150_duplicate"
+  _g33_adr_id_scratch "$sroot"
+  # A second .yaml claiming the SAME id: ADR-0200 -> DUPLICATE-ID.
+  printf 'id: ADR-0200\ntitle: B\n' > "$sroot/docs/adr/0200-bbb.yaml"
+  local out rc
+  out=$("$py" "$sroot/gate/lib/check_adr_id_uniqueness.py" --repo "$sroot" --mode blocking 2>&1); rc=$?
+  if [[ $rc -eq 1 ]] && echo "$out" | grep -q "DUPLICATE-ID"; then
+    ok "rule_150_adr_id_uniqueness_duplicate_neg" "Rule G-33 / Rule 150: two YAML ADRs sharing one id: fail blocking (DUPLICATE-ID)"
+  else
+    fail "rule_150_adr_id_uniqueness_duplicate_neg" "Rule G-33 / Rule 150 duplicate case did not fail as expected: rc=$rc out=$(echo "$out" | head -2)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # PR-E4: Parallel orchestrator.
 #
 # Each test_rule*() function is independent (uses its own $scratch/r<N>_*

@@ -156,6 +156,7 @@
 #  148. ai_reading_path                                 -- ADVISORY helper gate/lib/check_ai_reading_path.py: the product-first eight-node entry path declared in docs/governance/ai-reading-path.yaml (and its human-readable companion docs/onboarding/ai-understanding-path.md) is materializable and the entry docs route onto it. Three checks: SURFACE EXISTENCE (every orientation_learning_path surface marked presence: present resolves on disk, planned surfaces may be absent, the companion mirror + every factual_claim_switch.read_before_prose fact file exist -> MISSING-SURFACE/MISSING-COMPANION/MISSING-FACT-FILE), ENTRY-DOC ROUTING (each step-1 repository_entry doc + docs/governance/SESSION-START-CONTEXT.md references the data file or its companion -> MISSING-MARKER), and YAML<->COMPANION LOCKSTEP (companion back-references the YAML + carries a heading per declared step -> LOCKSTEP-BROKEN/LOCKSTEP-STEP). Reports findings to the gate log; always exits 0 at this advisory rung (ADR-0159 §13.3 landing -> changed-files-blocking -> full-blocking once the entry-doc corpus is migrated). Greenfield-vacuous until the data file is authored; the instant it exists it MUST parse and its companion + fact files MUST be readable or the helper fails closed (exit 2) in every mode (Rule G-31, enforcer E198).
 #  --- 2026-05-30 progressive-learning-curve-remediation W24 — AI understanding-map derivation-integrity gate (Rule 149 / kernel Rule G-32; enforcer E199) ---
 #  149. ai_understanding_map                            -- ADVISORY helper gate/lib/check_ai_understanding_map.py: the explicit dual-track understanding map under architecture/mappings/ (the readable projection joining VALUE ProductClaim->Requirement->Feature->FunctionPoint / STRUCTURE Module->EngineeringFrame->FunctionPoint / EVIDENCE FunctionPoint->Contract->GeneratedFact->Gate, plus the derived Feature--traverses-->EngineeringFrame reconciliation) keeps its two value/structure axes DERIVED, never OWNED, over the merged authoring DSL architecture/features/{features,function-points,engineering-frames}.dsl. Three checks: DERIVED TRAVERSE (every Feature--traverses-->Frame edge is derivable from a shared FunctionPoint the Frame anchors; a Frame anchoring nothing yet is vacuous; NON-DERIVED-TRAVERSE blocks only for a shipped source Feature, advisory otherwise), NO OWNERSHIP OF A FRAME (a Feature source of a contains/anchors/owns edge into a Frame -> FEATURE-OWNS-FRAME; a non-genModule_* contains source -> NON-MODULE-CONTAINS-FRAME; a Frame carrying saa.productClaim/saa.requirement -> FRAME-OWNS-VALUE), and WELL-TYPED AXES (anchors goes Frame->FunctionPoint, requires goes Feature->FunctionPoint -> MALFORMED-EDGE). ADR-backed exceptions live in gate/ai-understanding-map-allowlist.txt (ships empty). Reports findings to the gate log; always exits 0 at this advisory rung (ADR-0157 dual-track landing -> changed-files-blocking -> full-blocking once the map is clean). Greenfield-vacuous until one of the three map DSL files exists; the instant any exists it MUST be readable or the helper fails closed (exit 2) in every mode (Rule G-32, enforcer E199).
+#  150. adr_id_uniqueness                                -- BLOCKING helper gate/lib/check_adr_id_uniqueness.py: an ADR number is the single authoritative IDENTIFIER for one architecture decision and MUST be claimed by exactly one raw ADR source file. The helper globs the numbered raw sources (docs/adr/NNNN-*.yaml whose number is the id: field + docs/adr/NNNN-*.md and docs/adr/locked/NNNN-*.md whose number is the leading # NNNN. / # ADR-NNNN heading), groups files by number, and reports a number claimed by two or more files (DUPLICATE-ID) or a scanned ADR file with no extractable number (UNPARSEABLE-ID); a Markdown prose companion that delegates to its sibling .yaml (the engineering-prose-companion shape) is excluded from identity competition. A duplicate is a structural lie the ID-keyed projections silently collapse: AdrFactExtractor + AdrGraphFragmentEmitter key ADRs by number and the emitter's TreeMap<String,...> last-writer-wins, dropping the other N-1 ADRs from adr-graph.dsl / adrs.json / the workspace closure. Cross-checks architecture/facts/generated/adrs.json as the apex factual authority (a number the fact layer resolves to a different raw path is the same collision from the fact side). NON-VACUITY GUARD: fails closed (exit 2) when the glob matches ZERO ADR sources while docs/adr/ exists; materially vacuous only when docs/adr/ itself is absent (greenfield). Runs BLOCKING from the start (no advisory soak; no grandfather list; no changed-files scoping -- the identifier space is global) per the ADR-0160 ledger-totality model. Invents no ADR id and no relationship and never outranks a generated fact (cascade: generated facts > DSL > Card/prose). A missing helper fails closed; a missing python interpreter is a vacuous pass (Rule G-7 lists WSL as canonical) (Rule G-33, enforcer E200).
 
 set -uo pipefail
 export LC_ALL=C
@@ -7959,6 +7960,66 @@ else
   fi
 fi
 [[ $_r149_fail -eq 0 ]] && pass_rule "ai_understanding_map"
+
+# ---------------------------------------------------------------------------
+# Rule 150 — adr_id_uniqueness (enforcer E200, kernel Rule G-33)
+#
+# Authority: ADR-0160 (ADR Governance Model — one remediation-ledger entry per
+# raw ADR, one normalized view per accepted ADR, both keyed by the ADR number).
+# One BLOCKING helper that asserts every ADR number is claimed by exactly one raw
+# ADR source file. An ADR number is the single authoritative IDENTIFIER for one
+# architecture decision; a duplicate is a structural lie the ID-keyed projections
+# silently collapse (AdrFactExtractor + AdrGraphFragmentEmitter key ADRs by number
+# and the emitter's TreeMap<String,...> is last-writer-wins, dropping the other
+# N-1 ADRs from adr-graph.dsl / adrs.json / the workspace closure). The check
+# invents no ADR id and no relationship and never outranks a generated fact
+# (cascade: generated facts > DSL > Card/prose):
+#   * gate/lib/check_adr_id_uniqueness.py (E200, slug adr_id_uniqueness) — globs
+#     the numbered raw sources (docs/adr/NNNN-*.yaml whose number is the id: field
+#     + docs/adr/NNNN-*.md and docs/adr/locked/NNNN-*.md whose number is the
+#     leading # NNNN. / # ADR-NNNN heading), groups files by number, and reports a
+#     number claimed by two or more files (DUPLICATE-ID) or a scanned ADR file with
+#     no extractable number (UNPARSEABLE-ID). A Markdown prose companion that
+#     delegates to its sibling .yaml (the engineering-prose-companion shape) is
+#     excluded from identity competition. Cross-checks
+#     architecture/facts/generated/adrs.json as the apex factual authority — a
+#     number the fact layer resolves to a different raw path than the file that
+#     declared it is the same collision surfaced from the fact side.
+# Runs BLOCKING here (`--mode blocking`): a duplicate or unparseable ADR number is
+# a hard fail. Unlike the lane-purity / readiness / reading-path ratchets there is
+# NO advisory soak, NO grandfather list, and NO changed-files scoping — the
+# identifier space is global, so a collision is a collision regardless of which
+# file a PR touched. NON-VACUITY GUARD: the helper fails closed (exit 2) when its
+# glob matches ZERO ADR sources while docs/adr/ exists — a format/path drift that
+# silently empties the scan set is never a pass; the check is materially vacuous
+# only when docs/adr/ itself is absent (greenfield). A vanished apex adrs.json also
+# fails closed (exit 2). A missing helper fails closed; a missing python
+# interpreter is a vacuous pass (Rule G-7 lists WSL as canonical).
+#
+# scope_surfaces: docs/adr, docs/adr/locked, architecture/facts/generated/adrs.json, gate/lib/check_adr_id_uniqueness.py
+# ---------------------------------------------------------------------------
+_r150_fail=0
+_r150_helper="gate/lib/check_adr_id_uniqueness.py"
+if [[ ! -f "$_r150_helper" ]]; then
+  fail_rule "adr_id_uniqueness" "$_r150_helper missing -- Rule G-33 / E200"
+  _r150_fail=1
+elif [[ -z "$GATE_PYTHON_BIN" ]]; then
+  : # vacuous pass on hosts without python (Rule G-7 lists WSL as canonical env)
+else
+  _r150_out=$("$GATE_PYTHON_BIN" "$_r150_helper" --mode blocking 2>&1)
+  _r150_rc=$?
+  if [[ $_r150_rc -ne 0 ]]; then
+    # rc 1 = a DUPLICATE-ID / UNPARSEABLE-ID finding; rc 2 = a config error
+    # (non-vacuity guard tripped or the apex adrs.json vanished). Both block.
+    _r150_msg=$(printf '%s' "$_r150_out" | grep -E 'DUPLICATE-ID|UNPARSEABLE-ID|config error' | head -1)
+    fail_rule "adr_id_uniqueness" "${_r150_msg:-adr-id-uniqueness helper exited $_r150_rc} -- Rule G-33 / E200"
+    _r150_fail=1
+  else
+    _r150_sum=$(printf '%s' "$_r150_out" | grep -E 'finding\(s\)' | tail -1)
+    [[ -n "$_r150_sum" ]] && echo "OK (Rule G-33 / E200 blocking): $_r150_sum"
+  fi
+fi
+[[ $_r150_fail -eq 0 ]] && pass_rule "adr_id_uniqueness"
 
 # === END OF RULES ===
 # ---------------------------------------------------------------------------
