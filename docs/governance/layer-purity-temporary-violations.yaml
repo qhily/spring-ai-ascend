@@ -62,6 +62,30 @@
 #       scan_ref    - the scan section the row was copied from.
 #       defensible_part - OPTIONAL note on the identity portion of a mixed
 #                     block that MAY stay after the leaked detail is extracted.
+#
+# Change log (this file is an exempt surface for wave/log metadata):
+#   2026-05-30 — agent-service L1 cleanup. The L2/code detail named by the
+#     agent-service rows below was drained out of the L1 prose into the active
+#     L2 sinks (architecture/docs/L2/run-http-contract/{logical,process,
+#     development}.md) + the generated facts; the L1 4+1 views now carry only
+#     structural layer/aggregate/SPI-boundary identity + obligation-level
+#     delegation. Six rows whose file+category the advisory layer-purity gate
+#     (gate/lib/check_layer_purity.py, E194) now scans LEAK-FREE were removed:
+#     LPV-l1-as-test-inventory, LPV-l1-as-spi-signatures (the inlined
+#     `Execute(TaskMetadata, InjectedContext) -> StateDelta` SPI signature was
+#     replaced with a code-symbol/contract delegation), LPV-l1-as-process-
+#     idempotency-status, LPV-l1-as-process-cas-chain,
+#     LPV-l1-as-process-cancel-cas-sql, LPV-l1-as-scenarios-status. The
+#     remaining agent-service rows are retained: the gate still detects a
+#     same-category trigger token in each of those files, but the residual is a
+#     DEFENSIBLE construct the regex cannot tell from a leak — a process-view
+#     section heading / cross-link that NAMES a flow (e.g. "cancel-race loser
+#     P6"), a Boundary-Contract delegation pointer that NAMES the migrated
+#     detail to say it is delegated (e.g. "the RLS policy bodies ... is
+#     delegated to development.md §5.3", "traceparent behaviour per ADR-0061"),
+#     or an obligation-level statement ("RLS policy required") inside a Rule
+#     G-1.1.c delegation frame. The dated allow-list is the sanctioned
+#     tolerance for exactly such regex-indistinguishable residue.
 
 schema_version: 1
 authority: ADR-0159
@@ -195,26 +219,6 @@ violations:
     sunset_date: 2026-07-31
     scan_ref: "§2.1"
 
-  - id: LPV-l1-as-test-inventory
-    layer: L1
-    file: architecture/docs/L1/agent-service/ARCHITECTURE.md
-    locus: "§7 Tests : 509-549"
-    category: L8-test-class-inventory
-    trigger: "HealthEndpointIT ... RunHttpContractIT ... RunStateMachineTest ... RunCancelDuringResumeRaceIT ... (named test-class inventory with asserted runtime behaviour)"
-    migrate_to: "architecture/facts/generated/tests.json (+ FunctionPoint test_refs[])"
-    sunset_date: 2026-07-31
-    scan_ref: "§2.1 (~40-row test-class catalogue)"
-
-  - id: LPV-l1-as-spi-signatures
-    layer: L1
-    file: architecture/docs/L1/agent-service/ARCHITECTURE.md
-    locus: "§11.2 SPI : 698-701"
-    category: L7-method-signature
-    trigger: "Execute(TaskMetadata, InjectedContext) -> StateDelta ... Projects a SessionContext view ..."
-    migrate_to: "docs/contracts/*.v1.yaml (SPI) + architecture/facts/generated/code-symbols.json"
-    sunset_date: 2026-07-31
-    scan_ref: "§2.1"
-
   - id: LPV-l1-as-l2-linkage-rls
     layer: L1
     file: architecture/docs/L1/agent-service/ARCHITECTURE.md
@@ -286,36 +290,6 @@ violations:
     sunset_date: 2026-07-31
     scan_ref: "§2.3 (canonical runtime-sequence leak)"
 
-  - id: LPV-l1-as-process-idempotency-status
-    layer: L1
-    file: architecture/docs/L1/agent-service/process.md
-    locus: "45"
-    category: L4-http-status-route-verb
-    trigger: "409 idempotency_conflict OR 409 idempotency_body_drift ... (200 cached response branch is W2-design ...)"
-    migrate_to: "docs/contracts/*.v1.yaml (HTTP status)"
-    sunset_date: 2026-07-31
-    scan_ref: "§2.3"
-
-  - id: LPV-l1-as-process-cas-chain
-    layer: L1
-    file: architecture/docs/L1/agent-service/process.md
-    locus: "55-79"
-    categories: [L1-method-call-chain, L3-sql-rls-persistence]
-    trigger: "updateIfNotTerminal(runId, lambda->RUNNING) - ATOMIC CAS ... RunStateMachine.validate(PENDING, RUNNING) - atomic inside CAS ... lambda->SUSPENDED ... lambda->SUCCEEDED"
-    migrate_to: "architecture/docs/L2/<run-state-frame>/ (CAS dispatch)"
-    sunset_date: 2026-07-31
-    scan_ref: "§2.3"
-
-  - id: LPV-l1-as-process-cancel-cas-sql
-    layer: L1
-    file: architecture/docs/L1/agent-service/process.md
-    locus: "128-145"
-    categories: [L4-http-status-route-verb, L3-sql-rls-persistence, L1-method-call-chain]
-    trigger: "404 not_found ... 403 tenant_mismatch ... updateIfNotTerminal(tid_request, runId, lambda ... withStatus(CANCELLED)) - ATOMIC CAS ... CAS WHERE status NOT IN (CANCELLED, SUCCEEDED, FAILED, EXPIRED) ... 409 illegal_state_transition"
-    migrate_to: "architecture/docs/L2/<run-state-frame>/ + docs/contracts/*.v1.yaml"
-    sunset_date: 2026-07-31
-    scan_ref: "§2.3"
-
   - id: LPV-l1-as-process-cancel-race
     layer: L1
     file: architecture/docs/L1/agent-service/process.md
@@ -363,16 +337,6 @@ violations:
     sunset_date: 2026-08-31
     scan_ref: "§2.5"
     defensible_part: "Physical-view deployment topology stays (defensible); the RLS-policy + per-table detail migrates."
-
-  - id: LPV-l1-as-scenarios-status
-    layer: L1
-    file: architecture/docs/L1/agent-service/scenarios.md
-    locus: "matched status codes (row-level pass deferred)"
-    category: L4-http-status-route-verb
-    trigger: "scenario narratives that quote HTTP status codes inherit the L4 leak"
-    migrate_to: "docs/contracts/*.v1.yaml (HTTP status)"
-    sunset_date: 2026-08-31
-    scan_ref: "§2.5"
 
   - id: LPV-l1-as-spi-appendix-shapes
     layer: L1

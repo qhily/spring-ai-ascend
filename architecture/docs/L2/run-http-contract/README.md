@@ -4,23 +4,30 @@ view: logical
 feature: run-http-contract
 status: active
 relates_to:
+  - "architecture/docs/L1/agent-service/ARCHITECTURE.md"
   - "architecture/docs/L1/agent-service/logical.md"
   - "architecture/docs/L1/agent-service/process.md"
   - "architecture/docs/L1/agent-service/features/access-layer.md"
   - "docs/contracts/openapi-v1.yaml"
-authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0040 (W1 HTTP contract reconciliation) + ADR-0057 (durable idempotency claim/replay) + ADR-0070 (Cursor Flow)"
+authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0040 (W1 HTTP contract reconciliation) + ADR-0056 (JWT validation + tenant claim cross-check) + ADR-0057 (durable idempotency claim/replay) + ADR-0070 (Cursor Flow) + ADR-0118 (atomic CAS) + ADR-0142 (Run aggregate single owner)"
 ---
 
 # L2 — `run-http-contract` (Run lifecycle HTTP wire contract)
 
 This L2 feature sink is the **detail home** for the `POST /v1/runs` (and
-sibling run-lifecycle verb) **wire-level** behaviour. It exists to receive the
-L2-altitude implementation detail that the layer-purity verdict ruled does NOT
-belong in L0 / L1 prose:
+sibling run-lifecycle verb) **wire-level + edge-composition + CAS-realization**
+behaviour. It exists to receive the L2-altitude implementation detail that the
+layer-purity verdict ruled does NOT belong in L0 / L1 prose:
 
 - HTTP status-code + route-verb + header runtime behaviour;
 - on-wire request / response envelope field shapes;
-- the idempotency body-lifetime sequence (claim hash, body-drift, replay).
+- the idempotency body-lifetime sequence (claim hash, body-drift, replay);
+- the access-edge servlet **filter-chain registration order** (the numeric
+  `FilterRegistrationBean` ordering of the trace / JWT-cross-check / tenant /
+  idempotency filters);
+- the cancel-verb **method-level CAS realization** (`updateIfNotTerminal`
+  compare-and-set + `RunStateMachine.validate` inside the CAS) and the
+  cancel-vs-complete **race winner/loser sequence**.
 
 > **Migrated detail home (active).** The L0 §4 #37 constraint
 > ([`../../L0/ARCHITECTURE.md`](../../L0/ARCHITECTURE.md)) now owns only the
@@ -65,11 +72,16 @@ from the authoritative surfaces, in cascade order:
 
 | File | View | Carries |
 |---|---|---|
-| [`logical.md`](logical.md) | logical | `POST /v1/runs` request / response wire shapes + the run-lifecycle HTTP status-code matrix (the wire detail migrated out of L0 §4 #37). |
-| [`process.md`](process.md) | process | Idempotency body-lifetime sequence — claim hash, `idempotency_conflict` vs `idempotency_body_drift`, W2 replay branch. |
+| [`logical.md`](logical.md) | logical | `POST /v1/runs` request / response wire shapes + the run-lifecycle HTTP status-code matrix (the wire detail migrated out of L0 §4 #37 and the L1 agent-service `ARCHITECTURE.md` runs-API enumeration). |
+| [`development.md`](development.md) | development | Access-edge servlet **filter-chain registration order** — the numeric `FilterRegistrationBean` ordering of `TraceExtractFilter` / `JwtTenantClaimCrossCheck` / `TenantContextFilter` / `IdempotencyHeaderFilter` (the L5 filter-ordering detail migrated out of the L1 agent-service `ARCHITECTURE.md` §2.A + §9.2). |
+| [`process.md`](process.md) | process | Idempotency body-lifetime sequence (claim hash, `idempotency_conflict` vs `idempotency_body_drift`, W2 replay) **and** the cancel-verb CAS realization + cancel-race winner/loser sequence (`updateIfNotTerminal` compare-and-set, the `WHERE status NOT IN (...)` predicate, the 200-vs-409 outcome matrix) migrated out of the L1 agent-service `logical.md` §3 + `process.md` P3/P6. |
 
-A view is added only when its detail actually migrates here; this sink homes the
-two views the L2 corpus index's trigger row named for `run-http-contract`.
+A view is added only when its detail actually migrates here; the trace-filter
+*wire* behaviour (W3C `traceparent` grammar, MDC slice lifetime) stays in the
+sibling [`../telemetry-vertical/`](../telemetry-vertical/) sink — this sink's
+development view cites the trace filter only for its chain *position*. The
+tenant-isolation persistence half (RLS policy, `SET LOCAL app.tenant_id` GUC)
+lives in its own L2 detail home, not here.
 
 ## What stays upstream (NOT migrated here)
 
@@ -79,7 +91,12 @@ Per the verdict keep-list, the following remain at L0 / L1 and are only
 - the L0 §4 #37 *cross-document consistency invariant* (cross-check-not-replace
   tenant identity, DFA-initial run status, cancel-as-state-transition) — L0 owns
   the invariant; this sink owns the verbs, routes, status codes, and headers;
-- naming `RunController` / the Access Layer as a boundary identity;
+- naming `RunController` / the Access Layer as a boundary identity, and naming the
+  four edge filters as Access-Layer components (their *registration order* is this
+  sink's `development.md`);
+- naming the Run aggregate's single-owner `RunRepository` SPI as the
+  status-transition boundary (per ADR-0142) — the *atomic-CAS realization* and the
+  concurrent-writer resolution are this sink's `process.md` §4–§6;
 - the development-view package decomposition of the Access Layer;
 - citing the ArchUnit / gate enforcer that pins the boundary.
 

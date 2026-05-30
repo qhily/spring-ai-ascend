@@ -8,159 +8,158 @@ authority: "ADR-0143 (rc55 — canonical 4+1 source moved here) + ADR-0078 (cons
 
 # agent-service — Physical View
 
-> Authoring source: rc53 review file §17 (`docs/logs/reviews/2026-05-26-agent-service-l1-4plus1-rewrite-wave-1.en.md`), ported in rc55 W4. The canonical bindings to `bus-channels.yaml` (Rule R-E), `sandbox-policies.yaml` (Rule R-L), and Flyway migrations under `agent-service/src/main/resources/db/migration/` are made explicit.
+> **Altitude discipline (L1).** This view names the deployment planes
+> the module occupies, the deployment loci it supports, and the
+> governance manifests it binds to. Runtime-level detail — RLS policy
+> bodies, SQL CAS statements, GUC wiring, Flyway migration files,
+> column-level schema, envelope field lists, channel-routed variant
+> sets — is **L2 / contract** material and lives in the authority
+> surfaces cited per row, NOT in this file. Where a row needs a
+> concrete shape, it points at the contract or the L2 Boundary Contract
+> (published in [`development.md`](development.md) §5) that owns it.
 
 ## 1. Five-Plane Deployment Mapping (Rule R-I)
 
-| Plane | Modules deployed | agent-service responsibility | Posture defaults |
-|---|---|---|---|
-| **Edge Access** | (agent-client SDK, W3+ — not yet shipped) | Receives inbound HTTP/gRPC/A2A. Layer 1 Access Layer is the inbound boundary FOR THIS MODULE. No edge-only code lives in agent-service. | n/a (agent-service is not deployed on the edge plane) |
-| **Compute & Control** | `agent-service` (this module), `agent-execution-engine` (consumed cross-module) | Hosts Layer 1-5. Runs the Run aggregate, RunStateMachine CAS, all Orchestrator/ExecutorAdapter execution. `deployment_plane: compute_control` per `agent-service/module-metadata.yaml`. | Posture-gated startup per `PostureBootGuard` (ADR-0058): research/prod fail-closed if any required-config matrix entry is missing. |
-| **Bus & State Hub** | `agent-bus` (consumed cross-module) | Layer 3 Internal Event Queue `(design_only — ADR-0141)` is a BINDING layer over agent-bus's three physical channels. No bus-side code lives in agent-service yet. | n/a (agent-service binds to but does not host the bus plane) |
-| **Sandbox Execution** | `agent-middleware` (consumed cross-module — Sandbox SPI) | agent-service routes untrusted code execution requests to the Sandbox SPI in agent-middleware. Layer 4 RuntimeMiddleware chain enforces the route. | Posture-gated; research/prod reject any sandbox-bypass attempt at boot per `PostureBootGuard`. |
-| **Evolution** | `agent-evolve` (consumed cross-module — SlowTrackJudge SPI rc26) | agent-service emits RunEvent variants (per ADR-0145) with `EvolutionExport` discriminator; the Evolution plane consumes IN_SCOPE / OPT_IN events for the SlowTrackJudge feedback loop. OUT_OF_SCOPE events MUST NOT be persisted by the evolution plane (Rule R-M.e). | n/a (agent-service produces; agent-evolve consumes) |
+Each plane row states **which plane this module occupies** and **what
+boundary responsibility it carries there**. Per-plane wire shapes and
+durability tiers are governance-manifest material (see §3) — not
+restated here.
+
+| Plane | agent-service presence | Boundary responsibility on this plane |
+|---|---|---|
+| **Edge Access** | Not deployed here | Layer 1 (Access Layer) is the inbound boundary FOR THIS MODULE; no edge-only code lives in agent-service. The agent-client SDK (W3+) owns the edge plane. |
+| **Compute & Control** | **Primary host** | Hosts Layers 1–5. Owns the Run aggregate and its single-writer invariant (ADR-0142). `deployment_plane: compute_control` per `agent-service/module-metadata.yaml`. Posture-gated startup per `PostureBootGuard` (ADR-0058). |
+| **Bus & State Hub** | Binds (does not host) | Layer 3 Internal Event Queue `(design_only — ADR-0141)` is a BINDING layer over the bus's physical channels. No bus-side code lives in agent-service. |
+| **Sandbox Execution** | Routes to (does not host) | Routes untrusted-code execution to the Sandbox SPI in `agent-middleware` via the Layer 4 RuntimeMiddleware chain. No sandbox execution code lives here. |
+| **Evolution** | Produces to (does not host) | Emits `RunEvent` variants carrying the `EvolutionExport` discriminator; the Evolution plane (`agent-evolve`) consumes them. Export-scope semantics per Rule R-M.e + [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml). |
 
 **Dual-Locus Deployment** (per ADR-0101):
 
-- **Mode A (Platform-Centric)**: `agent-service` deploys on platform
-  infrastructure (Kubernetes / VM / serverless per W4+). The
-  Compute & Control plane is hosted by the platform team. This is the
-  default deployment mode.
-- **Mode B (Business-Centric)**: `agent-service` deploys on the
-  business department's servers / client devices alongside
-  `agent-execution-engine` for zero-latency local execution loops.
-  The Compute & Control plane is hosted by the business unit. Used
-  for latency-critical or data-sovereignty-sensitive scenarios.
+- **Mode A (Platform-Centric, default)** — `agent-service` deploys on
+  platform infrastructure; the Compute & Control plane is hosted by
+  the platform team.
+- **Mode B (Business-Centric)** — `agent-service` deploys on the
+  business unit's servers / client devices alongside
+  `agent-execution-engine` for zero-latency local execution loops, for
+  latency-critical or data-sovereignty-sensitive scenarios.
 
-In both modes the Run aggregate ownership pinning (ADR-0142) holds:
-Layer 2 is the SINGLE writer; Layer 4 invokes via
-`RunRepository.updateIfNotTerminal(...)`. The Layer 2 backend (Postgres
-in Mode A; SQLite or embedded in Mode B) MUST implement the
-`updateIfNotTerminal` abstract method as an atomic primitive
-(`ON CONFLICT` / `UPDATE … WHERE` / `ConcurrentHashMap.computeIfPresent`
-respectively).
+In both modes the Run aggregate single-owner invariant (ADR-0142)
+holds: Layer 2 is the sole writer; Layer 4 mutates Run state only
+through the `RunRepository` SPI
+([`code-symbol/com-huawei-ascend-service-runtime-runs-spi-runrepository`](../../../../architecture/facts/generated/code-symbols.json)).
+The atomic-primitive obligation that backend implementations must
+satisfy is an L2 concern, specified in the
+[`development.md`](development.md) §5.3 Postgres RLS Boundary Contract;
+the Mode A (Postgres) vs Mode B (embedded) backend choice does not
+change the boundary.
 
 ### 1.x Deployment vs Code Ownership (ADR-0155 §4 — orthogonal dimensions)
 
-| Agent form | Code home | Deployment | M6 interception range | Bridge mechanism |
-|---|---|---|---|---|
-| Native | This repo (`agent-service/...`) | In-process JVM | All 5 resource kinds (model / tool / memory / RAG / client-hosted skill) | DI-injected platform beans |
-| Third-party (AgentScope-java, LangGraph4j, ...) | External library | In-process JVM | All 5 resource kinds | Startup bridge replacement of framework Model/Toolkit/Memory abstractions |
-| Remote | Anywhere (external service) | Out-of-process / remote network | None locally — A2A protocol boundary audit only (TTI-08) | A2A SDK client |
+Code home and deployment locus are **orthogonal** axes. The Translation
+& Tool-Intercept interception range per agent form, and the bridge
+mechanism that wires platform beans into each form, are L2 design
+detail; this table records only the orthogonality and the three
+sanctioned combinations.
 
-Code home and deployment are **orthogonal** — a self-developed Agent CAN be deployed remotely (use EDE-04). Combinations beyond these three rows are deferred per ADR-0155 §6 (Managed Remote / Resource Gateway pattern is v2 scope).
+| Agent form | Code home | Deployment | Notes |
+|---|---|---|---|
+| Native | This repo (`agent-service/...`) | In-process JVM | Platform beans injected via DI. |
+| Third-party (AgentScope-java, LangGraph4j, …) | External library | In-process JVM | Framework abstractions bridged at startup. |
+| Remote | External service | Out-of-process / remote | A2A protocol boundary; audit-only locally. |
 
-## 2. Database Schema + RLS Policy (Rule R-J.a)
+A self-developed Agent CAN be deployed remotely. Combinations beyond
+these three rows (Managed Remote / Resource Gateway) are deferred per
+ADR-0155 §6 (v2 scope).
 
-| Table | Primary key | tenant_id column | RLS policy | Flyway migration | Status |
-|---|---|---|---|---|---|
-| `idempotency_dedup` | `(tenant_id, idempotency_key)` | NOT NULL | grandfathered in `gate/rls-baseline-grandfathered.txt` pending W2 retrofit (Rule R-J.a.b deferred) | `agent-service/src/main/resources/db/migration/V2__idempotency_dedup.sql` | **shipped W1** |
-| `runs` | `run_id (UUID)` | NOT NULL | RLS policy required at table-creation time per Rule R-J.a | `V?__runs.sql` (W2 — when durable RunRepository lands) | **W2-deferred** |
-| `tasks` | `task_id (String; UUID-shaped at HTTP boundary, stored TEXT)` | NOT NULL | RLS policy required | `V?__tasks.sql` (W2 — when Task persistence lands) | **W2-deferred** |
-| `sessions` | `session_id (String; UUID-shaped at HTTP boundary, stored TEXT)` | NOT NULL | RLS policy required | `V?__sessions.sql` (W2 — when Session persistence lands) | **W2-deferred** |
-<!-- Task.taskId and Session.sessionId are declared `String` in Java (`Task.java:39,41`, `Session.java:36`); persisted as TEXT in Postgres. The schema row above was previously typed `UUID` which contradicted Java reality; reconciled per AUD-2026-05-27 PR77-P1-3. -->
+## 2. Persistence-Plane Tenancy Posture (Rule R-J.a)
 
-| `lifecycle_state_audit` | `(run_id, occurred_at)` or `(task_id, occurred_at)` | NOT NULL (derived from FK) | RLS policy required; emission shape per `RunStateTransitionEvent` (ADR-0145) | `V?__lifecycle_state_audit.sql` (W2+) | **W2-deferred** |
+This module's persistence posture is: **every tenant-scoped aggregate
+is RLS-bound at the table-creation boundary**, and **every Run state
+transition is a single atomic primitive** owned by Layer 2 (ADR-0142).
+Both are aggregate-ownership invariants stated here; their concrete
+realisation — the RLS policy bodies, the CAS SQL, the `SET LOCAL`
+GUC, the per-table column schema, and the Flyway migration sequence —
+is delegated to the **Postgres RLS L2 Boundary Contract**
+([`development.md`](development.md) §5.3) and produced by a future L2
+design + migration wave.
 
-**Session-level tenant binding** (W2-deferred): `SET LOCAL app.tenant_id`
-GUC via R2DBC at the start of every transaction; RLS policies use
-`current_setting('app.tenant_id')` to scope rows. Cross-tenant access
-returns empty rowset (NOT an error) — the access fails at the
-authorization layer (Rule R-J.b) BEFORE the row would be visible
-anyway, so cross-tenant SELECTs are defense-in-depth.
+| Aggregate | tenant-scoped | RLS obligation | Persistence status |
+|---|---|---|---|
+| `IdempotencyRecord` (contract-spine entity) | yes | RLS retrofit deferred; legacy table grandfathered in `gate/rls-baseline-grandfathered.txt` (Rule R-J.a.b deferred) | **shipped W1** |
+| Run aggregate (`Run` + `RunStatus` + `RunStateMachine`, owned by Layer 2) | yes | RLS policy required at table-creation time | **W2-deferred** (durable `RunRepository` lands W2) |
+| Task aggregate (`Task`, `TaskStateStore` SPI) | yes | RLS policy required | **W2-deferred** |
+| Session aggregate (`Session`, `ContextProjector` SPI) | yes | RLS policy required | **W2-deferred** |
+| Lifecycle-state audit trail (emission shape per ADR-0145 `RunStateTransitionEvent`) | yes (derived from FK) | RLS policy required | **W2-deferred** |
 
-**Atomic CAS contract** (Rule R-C.2.b + ADR-0142 + ADR-0118): the
-durable `RunRepository.updateIfNotTerminal` MUST implement the CAS
-as a single SQL `UPDATE … WHERE tenant_id = ? AND run_id = ? AND status
-NOT IN (CANCELLED, SUCCEEDED, FAILED, EXPIRED)` statement. The
-in-memory `InMemoryRunRegistry` (W0 reference impl) uses
-`ConcurrentHashMap.computeIfPresent` for the equivalent atomic
-primitive.
+Cross-tenant isolation is enforced at the **authorization boundary**
+(Rule R-J.b) before a row would be visible; persistence-layer RLS is
+defence-in-depth. The exact failure-response posture (which status code
+a cross-tenant access collapses to, at which wave) is a Layer 1
+contract concern owned by [`openapi-v1.yaml`](../../../../docs/contracts)
+and the cancel/get route definitions — not restated here.
 
 ## 3. Three-Track Bus Bindings (Rule R-E + bus-channels.yaml)
 
 The Layer 3 Internal Event Queue `(design_only — ADR-0141; no code
-home at rc55)` binds to the canonical three physical channels declared
-in [`docs/governance/bus-channels.yaml`](../../../../docs/governance/bus-channels.yaml).
+home at rc55)` binds to the canonical physical channels declared in
+[`docs/governance/bus-channels.yaml`](../../../../docs/governance/bus-channels.yaml).
 Per Rule R-E + Principle P-E, **physical isolation** (channel choice)
 and **durability tier** (per-channel backend choice) are ORTHOGONAL
-axes; PR #71's single-tier-queue-with-3-storage-modes design was
-rejected at the L1 design layer (ADR-0138 §3 red-line c).
+axes; the single-tier-queue-with-3-storage-modes design was rejected
+at the L1 design layer (ADR-0138 §3 red-line c).
 
-| Channel | `physical_channel` id | Intent | Durability tier (W0/W1) | Durability tier (W2+) | RunEvent variants routed here (per ADR-0145) |
-|---|---|---|---|---|---|
-| `control` | (per bus-channels.yaml) | Highest priority; out-of-band. Cancel, resume, suspend, S2C callback requests. | In-memory stub | Durable (e.g. Kafka topic w/ priority) | `SuspendRequestedEvent`, `ResumeRequestedEvent`, `CancelRequestedEvent`, `S2cCallbackRequestedEvent` |
-| `data` | (per bus-channels.yaml) | In-band; heavy-load. Payload-bearing events: state transitions, S2C responses, child-run completion. | In-memory stub | Durable (e.g. Kafka topic w/ partitioning) | `RunCreatedEvent`, `RunStateTransitionEvent`, `S2cCallbackCompletedEvent`, `ChildRunSpawnedEvent`, `ChildRunCompletedEvent`, `TerminalTransitionEvent` |
-| `rhythm` | (per bus-channels.yaml) | Heartbeat / liveness ticks; Tick Engine for long-horizon Run timers (per Rule R-H Chronos Hydration). | In-memory tick scheduler | Durable timer service (e.g. Temporal) | None — rhythm channel carries Tick Engine pulses, not aggregate-level RunEvents |
+| Channel | Intent | Orthogonal durability axis |
+|---|---|---|
+| `control` | Highest priority, out-of-band: cancel / resume / suspend / S2C-callback signalling. | Per-channel backend chosen independently at deployment time. |
+| `data` | In-band, payload-bearing: state-transition and response events; child-run completion. | Per-channel backend chosen independently. |
+| `rhythm` | Heartbeat / liveness ticks; long-horizon Run timers (Rule R-H Chronos Hydration). | Per-channel backend chosen independently. |
 
-**Inline payload cap** (Rule R-E §4 #13): the `data` channel inherits
-the 16 KiB inline-payload cap. Larger payloads (e.g. large S2C
-response payloads) MUST be stored out-of-band (object store) with the
-channel carrying only the reference URI.
-
-**Routing discipline** (per `docs/contracts/run-event.v1.yaml`
-`channel_routing` block): every RunEvent variant declares its channel
-routing at the contract layer; the future Layer 3 code home enforces
-the routing via the channel-specific Producer SPI.
+The **mapping of each RunEvent variant onto a channel**, the inline
+payload cap, and the producer-side routing enforcement are contract
+material, declared in the `channel_routing` block of
+[`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml) and
+[`bus-channels.yaml`](../../../../docs/governance/bus-channels.yaml).
+The Layer 3 binding obligation (inputs, outputs, DFX) is published as
+an L2 Boundary Contract in [`development.md`](development.md) §5.5.
 
 ## 4. Sandbox Isolation Boundary (Rule R-L)
 
-agent-service does NOT host any sandbox execution code; it routes
-untrusted-code execution requests to the Sandbox SPI in
-`agent-middleware`. The boundary is enforced at the L4 RuntimeMiddleware
-chain via `HookPoint.before_tool` events.
+agent-service hosts **no** sandbox execution code; it routes
+untrusted-code execution to the Sandbox SPI in `agent-middleware`. The
+route is established through the Layer 4 RuntimeMiddleware chain (the
+HookPoint-mediated boundary per Rule R-M.c — see
+[`logical.md`](logical.md) §1).
 
-**Sandbox policy subsumption** (per
-[`docs/governance/sandbox-policies.yaml`](../../../../docs/governance/sandbox-policies.yaml)):
-the per-skill policy MUST NOT widen the default policy beyond what
-the physical sandbox can enforce. Rule R-L declares the 6 required
-keys (`outbound_network`, `filesystem_read`, `filesystem_write`,
-`cpu_cap_millicores`, `memory_cap_megabytes`, `wall_clock_cap_seconds`).
-
-**Runtime refusal of over-wide grants** (Rule R-L.b):
-*(W2-deferred — runtime SandboxExecutor refusal not yet
-implemented; the design-time enforcement is the YAML subsumption
-check at boot)*. At W0/W1, the design discipline is review-time
-only; W2 ships the runtime `SandboxExecutor.refuseOverWideGrant(...)`
-check.
+The per-skill sandbox policy MUST NOT widen the default beyond what the
+physical sandbox can enforce; the required policy keys and the
+subsumption rule are declared in
+[`docs/governance/sandbox-policies.yaml`](../../../../docs/governance/sandbox-policies.yaml)
+(Rule R-L). Runtime refusal of over-wide grants is W2-deferred (Rule
+R-L.b); at W0/W1 the subsumption check is the design-time boot-side
+enforcement.
 
 ## 5. Cross-Plane Tenant Propagation (Rule R-J.a + R-C.2.a)
 
-```mermaid
-flowchart LR
-    edge["Edge Access<br/>(W3+ agent-client SDK)"]
-    cc["Compute & Control<br/>(agent-service + agent-execution-engine)"]
-    bus["Bus & State Hub<br/>(agent-bus 3-track channels)"]
-    sandbox["Sandbox Execution<br/>(agent-middleware)"]
-    evolution["Evolution<br/>(agent-evolve)"]
+The cross-plane red lines this module upholds — stated as
+architectural invariants, not as field-level envelope shapes:
 
-    edge -- "X-Tenant-Id header + JWT tenant_id claim<br/>(cross-check per ADR-0040)" --> cc
-    cc -- "tenant_id propagated via RunContext.tenantId()<br/>(NEVER TenantContextHolder per Rule R-C.e)" --> cc
-    cc -- "RunEvent.tenantId field (Rule R-C.2.a)<br/>+ IngressEnvelope.tenant_id<br/>+ S2cCallbackEnvelope.tenant_id" --> bus
-    cc -- "ToolInvocationRequest.tenantId<br/>(future SPI; W2+)" --> sandbox
-    cc -- "RunEvent.tenantId + EvolutionExport=IN_SCOPE/OPT_IN<br/>(Rule R-M.e)" --> evolution
-    bus -- "tenant_id in every envelope" --> cc
-    sandbox -- "ToolResult with original tenantId echo" --> cc
-    evolution -- "SlowTrackJudge feedback bound to tenantId" --> cc
-```
-
-**Tenant propagation invariants** (cross-plane red lines):
-
-1. **No anonymous events**: every cross-plane envelope carries
-   `tenant_id`. Validated at producer side by `Objects.requireNonNull`
-   (Rule R-C.2.a discipline applied to envelope construction).
-2. **No TenantContextHolder leakage**: the `service.runtime.**`
-   sub-package MUST NOT import `TenantContextHolder` (Rule R-C.e;
-   enforced by `TenantPropagationPurityTest` ArchUnit +
-   `ServiceRuntimeMustNotDependOnServicePlatformTest`). Tenant
-   propagation in async / cross-plane paths sources from
-   `RunContext.tenantId()` (sourced from persisted Run, not ThreadLocal).
-3. **No tenant inference**: cross-plane consumers MUST NOT infer
-   tenant from any other field; the `tenant_id` field is the
-   authoritative source.
-4. **Cross-tenant blocked at boundary**: cross-tenant access collapses
-   to 404 not_found at W0 per Rule R-J.b (the W1 widening to 403
-   `tenant_mismatch` + WARN audit is deferred per ADR-0108).
+1. **No anonymous events.** Every cross-plane envelope carries a tenant
+   identity. The per-envelope field that carries it is contract
+   material (see [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml)
+   common-fields and the ingress / S2C envelope contracts).
+2. **No platform-ThreadLocal leakage across the boundary.** The
+   `service.runtime.**` sub-package MUST NOT import the platform-side
+   tenant ThreadLocal; cross-plane / async tenant propagation sources
+   from the persisted Run, not a thread-bound holder. Enforced by
+   ArchUnit (Rule R-C.e; enforcers **E2** + the
+   `TenantPropagationPurityTest` mechanism — see
+   [`development.md`](development.md) §3.2).
+3. **No tenant inference.** Cross-plane consumers MUST NOT infer tenant
+   from any other field; the tenant identity field is authoritative.
+4. **Cross-tenant blocked at the boundary.** Cross-tenant access is
+   refused at the authorization boundary (Rule R-J.b); the precise
+   response-code posture per wave is a Layer 1 contract concern
+   (`openapi-v1.yaml`), not a physical-view detail.
 
 ## 6. Cross-references
 
@@ -168,12 +167,17 @@ flowchart LR
   interactions and red-line invariants.
 - Logical: [`logical.md`](logical.md) §1 — 5-layer model + 5a/5b split
   per ADR-0140; the Compute & Control plane hosts all 5 layers.
-- Process: [`process.md`](process.md) — sequence diagrams P1-P6 show
-  cross-plane interaction at the message level.
+- Process: [`process.md`](process.md) — message-level cross-plane
+  interaction sequences (P1-P6).
 - Development: [`development.md`](development.md) — package tree +
-  layer↔package matrix.
-- Module-root grounding: [`ARCHITECTURE.md`](ARCHITECTURE.md)
-  §4 OSS dependencies + §6 Posture-aware defaults.
+  Layer↔Package matrix + §5 L2 Boundary Contracts (the home for RLS /
+  CAS / channel-routing realisation detail).
+- Contracts (realisation home for the detail this view delegates):
+  [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml),
+  [`s2c-callback.v1.yaml`](../../../../docs/contracts/s2c-callback.v1.yaml),
+  [`engine-envelope.v1.yaml`](../../../../docs/contracts/engine-envelope.v1.yaml).
 - Governance manifests: [`bus-channels.yaml`](../../../../docs/governance/bus-channels.yaml),
   [`sandbox-policies.yaml`](../../../../docs/governance/sandbox-policies.yaml),
   [`skill-capacity.yaml`](../../../../docs/governance/skill-capacity.yaml).
+- Module-root grounding: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+  §4 OSS dependencies + §6 Posture-aware defaults.

@@ -8,66 +8,79 @@ authority: "ADR-0143 (rc55 — canonical 4+1 source moved here) + ADR-0138 (rc53
 
 # agent-service — Scenarios View
 
-> Authoring source: rc53 review file §14 (`docs/logs/reviews/2026-05-26-agent-service-l1-4plus1-rewrite-wave-1.en.md`), ported in rc55 W3 with the following corrections from the rc55 audit (W0 sibling sweep + W1 ADR slate):
->
-> - **R2** (`F-design-only-mechanism-shown-as-shipped`): every reference to "Internal Event Queue", `service.queue/`, `DualTrackRouter`, `SlowTrackJudge`, `agent-invoke-request.v1.yaml`, `a2a-envelope.v1.yaml` carries an explicit `(design_only — ADR-NNNN)` annotation in the same paragraph or table cell.
-> - **M7** (same family): DualTrackRouter is explicitly marked `(design_only — W2, ADR-0112)` on every path-discriminator mention.
-> - **O3** (cancel-race resolution): S5 now names both winner AND loser path; the LOSER sequence diagram lives in `process.md` §P6.
-> - **R8** + **ADR-0145**: each scenario annotates which `RunEvent` sealed-hierarchy variants are emitted at which step. `RunEvent` is `status: design_only` per `docs/contracts/run-event.v1.yaml`; the Java sealed type lands in a follow-up impl-mode wave.
+> **Altitude discipline (L1).** Each scenario below is a **value-axis
+> journey**: the actor, the layers traversed, the path discriminator,
+> the contracts touched, and the failure modes named at the boundary
+> level. Wire-level realisation — HTTP status codes, route verbs, SQL
+> CAS clauses, method descriptors, per-variant RunEvent field sets, and
+> test-class inventories — is **L2 / contract / verification** material.
+> Each scenario points at the route contract (`openapi-v1.yaml`), the
+> engine / S2C / RunEvent contracts, and the process-flow + L2 zones that
+> own those details. The per-variant RunEvent emission shapes are the
+> single source of truth in
+> [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml);
+> the per-scenario sequence detail lives in [`process.md`](process.md).
 
 ## 0. Scenario taxonomy
 
-The five scenarios below cover the full agent-service execution surface
-end-to-end. Every shipped HTTP route, every documented suspension path,
-every RunEvent emission point traces to one or more of S1-S5. The matrix
-below is the L1↔code grounding requirement per Rule G-1.1.a applied at
-the scenarios layer.
+The five scenarios cover the full agent-service execution surface
+end-to-end. Every shipped route, every documented suspension path, and
+every RunEvent emission point traces to one or more of S1-S5 — this is
+the L1↔code grounding requirement per Rule G-1.1.a applied at the
+scenarios layer.
 
-| ID | Title | Layer-traversal | Path discriminator | Cited route(s) |
+| ID | Title | Layer-traversal | Path discriminator | Conceptual route |
 |---|---|---|---|---|
-| S1 | Standard Synchronous Intake | 1→2→3→4→5a | Fast-Path eligible | `POST /v1/runs` (Fast-Path branch) |
-| S2 | Long-Horizon ReAct With Tool Calls | 1→2→3→4↔5a (loop) | Slow-Path required | `POST /v1/runs` (Slow-Path branch) |
-| S3 | A2A Peer Collaboration | 1→2→4→5a + outbound A2A | parent suspends; child Run on peer | `POST /v1/runs` parent + IngressEnvelope peer-side |
-| S4 | S2C Client Callback | 5a→4→3→client→3→4→5a | Server suspends, client resolves | `POST /v1/runs/{id}/resume` (W2-shipped) |
-| S5 | Cancel During Execution | 1→2→4 | Re-auth + atomic CAS | `POST /v1/runs/{id}/cancel` |
+| S1 | Standard Synchronous Intake | 1→2→3→4→5a | Fast-Path eligible | run-creation route (Fast-Path branch) |
+| S2 | Long-Horizon ReAct With Tool Calls | 1→2→3→4↔5a (loop) | Slow-Path required | run-creation route (Slow-Path branch) |
+| S3 | A2A Peer Collaboration | 1→2→4→5a + outbound A2A | parent suspends; child Run on peer | run-creation route (parent) + peer ingress |
+| S4 | S2C Client Callback | 5a→4→3→client→3→4→5a | server suspends, client resolves | run-resume route (W2-shipped) |
+| S5 | Cancel During Execution | 1→2→4 | re-auth + single-writer transition | run-cancel route |
 
-Layer numbering follows ADR-0138 / ADR-0140 / ADR-0141 / ADR-0144:
-1 Access · 2 Session & Task Manager · 3 Internal Event Queue (design_only
-per ADR-0141) · 4 Task-Centric Control · 5a Engine Dispatch & Execution
-(per ADR-0140) · 5b Translation & Tool-Intercept (per ADR-0140).
+The concrete route verbs, paths, and status codes are owned by
+[`openapi-v1.yaml`](../../../../docs/contracts). Layer numbering follows
+ADR-0138 / 0140 / 0141 / 0144: 1 Access · 2 Session & Task Manager · 3
+Internal Event Queue (design_only per ADR-0141) · 4 Task-Centric Control
+· 5a Engine Dispatch & Execution · 5b Translation & Tool-Intercept.
 
 ---
 
 ## 0.1 Expanded scenario inventory (AS-SC01..AS-SC24) — anchored to S1-S5
 
-> The 24 clusters below anchor to canonical S1-S5 (above) and do NOT add new canonical authority. They are an enterprise-scenario decomposition for downstream design grounding — absorbed from PR #79 / `docs/logs/reviews/2026-05-26-agent-service-module-capability-feature-list.{cn,en}.md` §3 per the post-merge audit Wave 3 plan. Each row's **Canonical anchor** column ties back to one of S1..S5; the **Covered clusters** column in [`features/*.md`](features/) feature rows references these AS-SC IDs.
+> The 24 clusters below anchor to canonical S1-S5 and do NOT add new
+> canonical authority. They are an enterprise-scenario decomposition for
+> downstream design grounding — absorbed from PR #79 per the post-merge
+> audit Wave 3 plan. Each row's **Canonical anchor** ties back to one of
+> S1..S5; the **Covered clusters** column in [`features/*.md`](features/)
+> references these AS-SC IDs. The closures are stated at business /
+> journey altitude; concrete error shapes are contract material.
 
 | Scenario cluster ID | Canonical anchor | Business scenario | Normal closure | Exception closure |
 | --- | --- | --- | --- | --- |
-| AS-SC01 | S1 | Short synchronous request | Client calls `POST /v1/runs`; Access Layer binds tenant / idempotency / trace; Run completes quickly and returns a result. | Schema invalid, idempotency conflict, engine mismatch, cross-tenant collapse. |
-| AS-SC02 | S1 / S2 | Non-SSE long-task polling | Access Layer returns a Task Cursor; client polls query endpoints for Run / Task status. | Client polling disconnect does not cancel the Run; query re-auth is required; terminal status remains idempotently retrievable. |
-| AS-SC03 | S1 / S2 | SSE / streaming access | Client requests streaming state or token / step events; Access Layer owns only the stream boundary, while Run state remains in Session & Task Manager. | After SSE disconnect, client recovers through cursor / event offset / runId; disconnect must not cancel the Run. |
-| AS-SC04 | S1 / S2 / physical | Direct-access boundary | Client may connect directly to Agent Service Access Layer; it must not connect directly to engine adapters, RunRepository, middleware, or agent-bus. Mode B business-side deployment keeps the same service boundary. | Direct-to-engine, direct-to-queue, or missing tenant binding is rejected or unreachable. |
-| AS-SC05 | S1 / S2 | Multi-protocol ingress convergence | HTTP, future gRPC, future A2A, and future MQ ingress converge into the same Run / Task / Session create and control semantics. | Protocol field differences must not create different state machines; unsupported protocol returns a boundary error. |
-| AS-SC06 | S1-S5 | Ingress idempotency and duplicate submit | Same tenant + idempotency key + request hash returns the same create result or an explainable conflict. | Body drift, duplicate submit, and late retry must not create duplicate Runs. |
-| AS-SC07 | S1 / S2 | Context recovery after session disconnect | Client re-enters with sessionId / runId / taskId; Session & Task Manager restores Session projection plus visible Run / Task state. | Missing session, tenant mismatch, projection lag, and stale cursor have deterministic responses. |
-| AS-SC08 | S2 | Context compaction after overflow | Translation & Tool-Intercept creates a controlled context window from Session projection; Session & Task Manager preserves the boundary between original context state and compacted projection. | Compression loss, prompt overflow, memory mutation race, and cross-tenant memory read are blocked or explicitly failed. |
-| AS-SC09 | S2 | Long-task continuation | Task Cursor returns first; Run continues under control / data / rhythm events and ticks; client can query or subscribe to progress. | Timeout, heartbeat loss, queue lag, and executor crash enter SuspendSignal / RunEvent / retry / dead-letter closure. |
-| AS-SC10 | S2 | Mid-task execution-locus switch | Run upgrades from Fast-Path to Slow-Path or moves across Mode A / Mode B, instance, or worker; checkpoint / parentNodeKey / RunEvent provide recovery anchors. | Deployment locus changes, incompatible snapshots, and lost resume payloads cannot bypass Layer 2 CAS. |
-| AS-SC11 | S2 | Rollback to prior state and retry after failure | Run uses attemptId, parentNodeKey, checkpoint reference, and RunEvent history to express retry boundaries; retry is a controlled attempt of the same Run or an explicit child Run. | Non-idempotent tool side effect, terminal Run, missing checkpoint, and exhausted retry budget become deterministic failure or human-intervention states. |
-| AS-SC12 | S2 / S5 | Cancel and completion race | When cancel, complete, fail, and expire race, only `RunRepository.updateIfNotTerminal(...)` decides the winner. | The loser re-reads post-CAS state; same-terminal is idempotent success; different-terminal returns illegal transition. |
-| AS-SC13 | S4 | Client-hosted skill invocation | When engine needs local files, UI confirmation, browser capability, or private tools, it throws `SuspendSignal.forClientCallback(...)`; S2C envelope asks the client to execute and then resume. | Client timeout, callbackId mismatch, invalid response schema, and resume re-auth failure prevent the engine from continuing privately. |
-| AS-SC14 | S4 | Client skill authorization and capability declaration | Access Layer receives / publishes client capability; Task-Centric Control Layer applies policy / quota / sandbox / audit before invocation; Translation & Tool-Intercept only shapes the tool call. | Claimed but unavailable client capability, over-permission, and unverifiable results become suspend failure or controlled retry. |
-| AS-SC15 | S3 / S4 | Third-party Agent invocation | Task-Centric Control Layer spawns a child Run or outbound invocation; Access Layer / IngressGateway handles peer / third-party protocol; Engine Dispatch & Execution executes only through adapters. | Peer unreachable, remote auth failure, remote error envelope, and child terminal failure preserve parentRunId / traceId / tenantId. |
-| AS-SC16 | S3 / S4 | Same third-party Agent recovery after interruption | Third-party Agent dispatch records remoteAgentId, remoteThreadId / remoteTaskId / callbackId, adapter profile, and parentRunId; next entry attempts to resume the original remote invocation first. | Missing remote handle, remote terminal state, adapter version drift, and lost remote state must explicitly become retry, failure, or human handling; silently creating a new Agent is not allowed. |
-| AS-SC17 | S3 | Agent delegates sub-agent | Parent Run creates child Run; child inherits tenant / trace / policy envelope and returns results to the parent when terminal. | Child timeout, child cancel, child failed, and parent cancelled must decide cascade / detach / fail / resume. |
-| AS-SC18 | S3 | Multi-Agent / peer collaboration aggregation | Multiple child Runs or peer Runs return in parallel or sequence; Task-Centric Control Layer performs join / aggregation / conflict classification. | Partial failure, late result, duplicate child completion, and invalid aggregation schema remain auditable. |
-| AS-SC19 | S1-S4 | Model configuration ownership | Model provider, model id, temperature, streaming, structured output, and cost / quota profile are expressed as governable service-local profiles; execution uses a resolved snapshot. | Request body overriding governance config, unsupported option, model profile drift, and quota exceeded are controlled. |
-| AS-SC20 | S3 / S4 | Third-party Agent adapter configuration ownership | Third-party agent adapter, endpoint, auth mode, capability, resume-handle schema, and timeout / retry policy live at the adapter / agent registry boundary. | Missing adapter, capability mismatch, resume schema drift, and wrong credential scope block execution. |
-| AS-SC21 | S1 / S4 | Client information and capability configuration ownership | Client identity, client type, SSE support, callback transport, client-hosted skill list, and permission posture are determined by Access Layer plus Agent / Skill registry inputs. | Stale client capability, unavailable callback transport, and permission mismatch fail before invocation. |
-| AS-SC22 | S2 / S4 | Tool / sandbox / skill configuration ownership | Tool schema, skill capacity, sandbox policy, tool allowlist, and memory access policy take effect across RuntimeMiddleware and Translation & Tool-Intercept. | Tool escape, over-wide sandbox grant, capacity exhausted, and policy bypass produce audit plus controlled failure. |
-| AS-SC23 | S1-S5 | Observability and audit | Every ingress, state transition, suspend/resume, child Run, S2C callback, third-party invocation, and terminal transition produces traceable evidence. | Anonymous event, missing tenantId, lost terminal event, and payload over inline cap are caught by gate or runtime contracts. |
-| AS-SC24 | S1-S5 | Configuration snapshot and runtime drift | Run creation records necessary configuration snapshots or references; resume / retry uses the original snapshot unless explicit policy allows upgrade. | Hot config update changing behavior mid-Run, adapter profile drift, and model option drift are detectable. |
+| AS-SC01 | S1 | Short synchronous request | Client creates a Run; Access Layer binds tenant / idempotency / trace; Run completes quickly and returns a result. | Schema invalid, idempotency conflict, engine mismatch, cross-tenant collapse. |
+| AS-SC02 | S1 / S2 | Non-streaming long-task polling | Access Layer returns a Task Cursor; client polls Run / Task status. | Client polling disconnect does not cancel the Run; query re-auth required; terminal status idempotently retrievable. |
+| AS-SC03 | S1 / S2 | Streaming access | Client requests streaming state / step events; Access Layer owns only the stream boundary, while Run state stays in Session & Task Manager. | After stream disconnect, client recovers through cursor / offset / runId; disconnect must not cancel the Run. |
+| AS-SC04 | S1 / S2 / physical | Direct-access boundary | Client may connect directly to the Access Layer; it must not connect directly to engine adapters, RunRepository, middleware, or bus channels. Mode B keeps the same service boundary. | Direct-to-engine, direct-to-queue, or missing tenant binding is rejected or unreachable. |
+| AS-SC05 | S1 / S2 | Multi-protocol ingress convergence | HTTP, future gRPC, future A2A, and future MQ ingress converge into the same Run / Task / Session create + control semantics. | Protocol field differences must not create different state machines; unsupported protocol returns a boundary error. |
+| AS-SC06 | S1-S5 | Ingress idempotency + duplicate submit | Same tenant + idempotency identity + request hash returns the same create result or an explainable conflict. | Body drift, duplicate submit, and late retry must not create duplicate Runs. |
+| AS-SC07 | S1 / S2 | Context recovery after session disconnect | Client re-enters with sessionId / runId / taskId; Session & Task Manager restores Session projection + visible Run / Task state. | Missing session, tenant mismatch, projection lag, and stale cursor have deterministic responses. |
+| AS-SC08 | S2 | Context compaction after overflow | Translation & Tool-Intercept produces a controlled context window from Session projection; Session & Task Manager preserves the boundary between original context state and compacted projection. | Compression loss, prompt overflow, memory mutation race, and cross-tenant memory read are blocked or explicitly failed. |
+| AS-SC09 | S2 | Long-task continuation | Task Cursor returns first; Run continues under control / data / rhythm events + ticks; client can query or subscribe to progress. | Timeout, heartbeat loss, queue lag, and executor crash enter SuspendSignal / RunEvent / retry / dead-letter closure. |
+| AS-SC10 | S2 | Mid-task execution-locus switch | Run upgrades Fast→Slow or moves across Mode A / Mode B, instance, or worker; checkpoint / parentNodeKey / RunEvent provide recovery anchors. | Locus changes, incompatible snapshots, and lost resume payloads cannot bypass Layer 2's single-writer transition. |
+| AS-SC11 | S2 | Rollback to prior state + retry after failure | Run uses attempt / parentNodeKey / checkpoint reference / RunEvent history to express retry boundaries; retry is a controlled attempt of the same Run or an explicit child Run. | Non-idempotent tool side effect, terminal Run, missing checkpoint, and exhausted retry budget become deterministic failure or human-intervention states. |
+| AS-SC12 | S2 / S5 | Cancel + completion race | When cancel / complete / fail / expire race, only Layer 2's single-writer transition decides the winner. | The loser re-reads post-transition state; same-terminal is idempotent success; different-terminal is an illegal transition. |
+| AS-SC13 | S4 | Client-hosted skill invocation | When the engine needs local files, UI confirmation, browser capability, or private tools, it suspends via the S2C variant; the envelope asks the client to execute and then resume. | Client timeout, callback-id mismatch, invalid response schema, and resume re-auth failure prevent the engine from continuing privately. |
+| AS-SC14 | S4 | Client skill authorization + capability declaration | Access Layer receives / publishes client capability; Task-Centric Control applies policy / quota / sandbox / audit before invocation; Translation & Tool-Intercept only shapes the tool call. | Claimed-but-unavailable client capability, over-permission, and unverifiable results become suspend failure or controlled retry. |
+| AS-SC15 | S3 / S4 | Third-party Agent invocation | Task-Centric Control spawns a child Run or outbound invocation; Access Layer / IngressGateway handles peer / third-party protocol; Engine Dispatch & Execution executes only through adapters. | Peer unreachable, remote auth failure, remote error envelope, and child terminal failure preserve parentRunId / traceId / tenantId. |
+| AS-SC16 | S3 / S4 | Same third-party Agent recovery after interruption | Third-party dispatch records the remote handle (remoteAgentId / remoteThreadId / callbackId), adapter profile, and parentRunId; next entry attempts to resume the original remote invocation first. | Missing remote handle, remote terminal state, adapter version drift, and lost remote state must explicitly become retry / failure / human handling; silently creating a new Agent is not allowed. |
+| AS-SC17 | S3 | Agent delegates sub-agent | Parent Run creates a child Run; child inherits tenant / trace / policy envelope and returns results to the parent when terminal. | Child timeout, child cancel, child failed, and parent cancelled must decide cascade / detach / fail / resume. |
+| AS-SC18 | S3 | Multi-Agent / peer aggregation | Multiple child or peer Runs return in parallel or sequence; Task-Centric Control performs join / aggregation / conflict classification. | Partial failure, late result, duplicate child completion, and invalid aggregation schema remain auditable. |
+| AS-SC19 | S1-S4 | Model configuration ownership | Model provider / id / options / streaming / structured-output / cost-quota profile are governable service-local profiles; execution uses a resolved snapshot. | Request body overriding governance config, unsupported option, profile drift, and quota exceeded are controlled. |
+| AS-SC20 | S3 / S4 | Third-party Agent adapter configuration ownership | Adapter / endpoint / auth mode / capability / resume-handle schema / timeout-retry policy live at the adapter / agent registry boundary. | Missing adapter, capability mismatch, resume-schema drift, and wrong credential scope block execution. |
+| AS-SC21 | S1 / S4 | Client information + capability configuration ownership | Client identity / type / streaming support / callback transport / client-hosted skill list / permission posture are determined by Access Layer + Agent / Skill registry inputs. | Stale client capability, unavailable callback transport, and permission mismatch fail before invocation. |
+| AS-SC22 | S2 / S4 | Tool / sandbox / skill configuration ownership | Tool schema / skill capacity / sandbox policy / tool allowlist / memory access policy take effect across RuntimeMiddleware + Translation & Tool-Intercept. | Tool escape, over-wide sandbox grant, capacity exhausted, and policy bypass produce audit + controlled failure. |
+| AS-SC23 | S1-S5 | Observability + audit | Every ingress / state transition / suspend-resume / child Run / S2C callback / third-party invocation / terminal transition produces traceable evidence. | Anonymous event, missing tenant identity, lost terminal event, and over-cap payload are caught by gate or runtime contracts. |
+| AS-SC24 | S1-S5 | Configuration snapshot + runtime drift | Run creation records necessary configuration snapshots / references; resume / retry uses the original snapshot unless explicit policy allows upgrade. | Hot config update changing behaviour mid-Run, adapter profile drift, and model option drift are detectable. |
 
 ---
 
@@ -75,16 +88,16 @@ per ADR-0141) · 4 Task-Centric Control · 5a Engine Dispatch & Execution
 
 | Field | Value |
 |---|---|
-| **Actor** | Web / App client → REST `POST /v1/runs` (or gRPC equivalent W2+) |
-| **Layers traversed** | Access Layer → Session & Task Manager → Task-Centric Control Layer → Engine Dispatch & Execution Layer (5a) |
-| **Run.mode** | `GRAPH` (deterministic short chain) OR `AGENT_LOOP` with low estimated step count |
-| **Path discriminator** | DualTrackRouter predicate `(design_only — W2, ADR-0112)` via `SlowTrackJudge` — Fast-Path eligible iff: (i) estimated wall-clock ≤ 5 s, (ii) no external input wait + no S2C callback + no A2A collaboration, (iii) no expected resume on a different deployment locus |
-| **Persistence shape** | Run + Task metadata records persisted under RLS at create + at terminal transition; **no intermediate compute checkpoint** (Fast-Path narrowed semantics per ADR-0139; "no mandatory checkpoint/snapshot" — metadata persistence remains mandatory under RLS). Idempotency dedup row persisted at Access Layer per ADR-0057. |
-| **Contracts touched** | `openapi-v1.yaml`, `engine-envelope.v1.yaml`, `ingress-envelope.v1.yaml` `(design_only — runtime binding W3+)` if async ingress used |
-| **RunEvent emissions** (per ADR-0145) | `RunCreatedEvent` at Layer 2 RunRepository.save → `RunStateTransitionEvent(PENDING→RUNNING)` after Layer 2 CAS → `RunStateTransitionEvent(RUNNING→SUCCEEDED)` at terminal → `TerminalTransitionEvent(SUCCEEDED)` |
-| **Boundary contract** | Wall-clock ≤ Fast-Path bound; if exceeded mid-execution, the Layer 5a executor throws `SuspendSignal` and Layer 4 transitions the Run to SUSPENDED via Layer 2's `RunRepository.updateIfNotTerminal(...)` CAS — at which point S1 has implicitly upgraded to S2. |
-| **Failure modes** | (a) **Cross-tenant request**: 404 not_found at W0 per Rule R-J.b (the W1 widening to 403 `tenant_mismatch` + WARN audit is deferred per ADR-0108). (b) **Idempotency-Key collision**: 409 `idempotency_conflict` (same hash) or 409 `idempotency_body_drift` (different hash) per ADR-0057. (c) **Engine envelope schema violation**: `EngineMatchingException` → Run FAILED with reason `engine_mismatch` per Rule R-M.b → `RunStateTransitionEvent(PENDING→FAILED)` + `TerminalTransitionEvent(FAILED, finalReason=engine_mismatch)`. |
-| **Test grounding** | `RunHttpContractIT.createReturnsPending`, `RunStatusTransitionIT` (PENDING→RUNNING→SUCCEEDED happy path) — confirms the persistence + state-transition shape. |
+| **Actor** | Web / App client creating a Run via the run-creation route. |
+| **Layers traversed** | Access → Session & Task Manager → Task-Centric Control → Engine Dispatch & Execution (5a). |
+| **Run.mode** | `GRAPH` (deterministic short chain) OR `AGENT_LOOP` with a low estimated step count. |
+| **Path discriminator** | DualTrackRouter predicate `(design_only — W2, ADR-0112)` — Fast-Path eligible iff: short estimated wall-clock, no external-input / S2C-callback / A2A-collaboration wait, and no expected resume on a different deployment locus. The threshold set is the §5.4 L2 Boundary Contract. |
+| **Persistence shape** | Run + Task metadata persisted under RLS at create + at terminal; **no intermediate compute checkpoint** (Fast-Path narrowed semantics per ADR-0139 — metadata persistence remains mandatory). Idempotency dedup persisted at the Access Layer per ADR-0057. |
+| **Contracts touched** | `openapi-v1.yaml`, `engine-envelope.v1.yaml`, `ingress-envelope.v1.yaml` `(design_only)`. |
+| **RunEvent emissions** | Creation → state-transition(s) → terminal, per the S1 row of [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml) (`RunCreatedEvent`, `RunStateTransitionEvent`, `TerminalTransitionEvent`); per-variant field shapes are owned by that contract. |
+| **Boundary contract** | If wall-clock exceeds the Fast-Path bound mid-execution, Layer 5a throws `SuspendSignal` and Layer 4 transitions the Run to SUSPENDED via Layer 2's `RunRepository` SPI — S1 has implicitly upgraded to S2. |
+| **Failure modes** | (a) cross-tenant request — refused at the authorization boundary (Rule R-J.b; response-code posture per `openapi-v1.yaml` + ADR-0108). (b) idempotency collision — conflict vs body-drift per ADR-0057. (c) engine-envelope schema violation — `EngineMatchingException` → Run FAILED with `engine_mismatch` per Rule R-M.b. |
+| **Grounding** | Process flow [`process.md`](process.md) §P1; route contract `openapi-v1.yaml`. Verification (the green tests asserting this shape) is owned by the verification layer + `architecture/facts/generated/tests.json`, not enumerated here. |
 
 ---
 
@@ -92,16 +105,16 @@ per ADR-0141) · 4 Task-Centric Control · 5a Engine Dispatch & Execution
 
 | Field | Value |
 |---|---|
-| **Actor** | Web / App client requesting a multi-tool agent run |
-| **Layers traversed** | Access → Session & Task Manager → Internal Event Queue `(design_only — ADR-0141)` → Task-Centric Control ↔ Engine Dispatch & Execution Layer (5a) (loop with `HookPoint.before_tool` / `after_tool` middleware events dispatched into Layer 4 per ADR-0140) ↔ Translation & Tool-Intercept Layer (5b) `(design_only for most consumers — ChatAdvisor + PromptTemplate + StructuredOutputConverter contract status per ADR-0125 / 0130-0132)` |
-| **Run.mode** | `AGENT_LOOP` |
-| **Path discriminator** | DualTrackRouter `(design_only — W2, ADR-0112)` chooses Slow-Path when multi-step OR tool calls are likely OR external input/callback is expected. |
-| **Persistence shape** | Run + Task records under RLS; **Checkpointer snapshots intermediate state** at each tool-call boundary (Checkpointer SPI per ADR-0021; in-memory ref impl `InMemoryCheckpointer` shipped W0; durable backend W2). Resume from any checkpoint by `RunStatus.SUSPENDED → RUNNING` via `RunRepository.updateIfNotTerminal(...)` CAS (per ADR-0142 — Layer 4 invokes Layer 2's typed primitive; Layer 4 NEVER writes Run state directly). |
-| **Contracts touched** | `engine-envelope.v1.yaml`, `engine-hooks.v1.yaml`, `model-invocation.v1.yaml` `(design_only — tool_call_loop section per ADR-0134)`, `memory-store.v1.yaml` `(design_only — ADR-0123 / 0133)` |
-| **RunEvent emissions** | `RunCreatedEvent` → `RunStateTransitionEvent(PENDING→RUNNING)` → `[SuspendRequestedEvent(parentNodeKey=N, suspendReason=AwaitTool) + RunStateTransitionEvent(RUNNING→SUSPENDED)]×K` (K = number of tool-call boundaries) → `[ResumeRequestedEvent(resumeCause=EXTERNAL_TRIGGER) + RunStateTransitionEvent(SUSPENDED→RUNNING)]×K` → `RunStateTransitionEvent(RUNNING→SUCCEEDED)` → `TerminalTransitionEvent(SUCCEEDED)`. All `IN_SCOPE` evolution export. |
-| **Boundary contract** | Each tool call is bracketed by `HookPoint.before_tool` + `HookPoint.after_tool` events dispatched through the Layer 4 RuntimeMiddleware chain (per Rule R-M.c — RuntimeMiddleware lives EXCLUSIVELY in Layer 4 per ADR-0140; Layer 5a does NOT directly invoke RuntimeMiddleware). Tool execution governance per Rule R-M.c. Skill capacity arbitration per Rule R-K and `skill-capacity.yaml`. Neither Fast-Path NOR Slow-Path may violate Rule R-G (reactive I/O) / Rule R-H (no Thread.sleep) / Rule R-J.a (RLS on tenant_id tables). |
-| **Failure modes** | (a) **Tool execution timeout**: Run remains in RUNNING until tool returns or the middleware throws SuspendSignal → `SuspendRequestedEvent(suspendReason=AwaitTool)`. (b) **Resume on different deployment locus** (Mode B → Mode A per ADR-0101): state recovered from Checkpointer; `tenantId` re-validated per Rule R-J.b (Resume re-auth widening deferred to W2 per Rule R-J.b.d). (c) **Tool middleware short-circuits** (Rule R-M.c `HookOutcome.ShortCircuit`): Run continues without invoking the tool; emission is `HookPoint.after_tool` only (no `before_tool`/`after_tool` pair). |
-| **Test grounding** | `NestedDualModeIT` (3-level graph→agent-loop→graph nesting via SuspendSignal — confirms the suspend/resume boundary). |
+| **Actor** | Web / App client requesting a multi-tool agent run. |
+| **Layers traversed** | Access → Session & Task Manager → Internal Event Queue `(design_only — ADR-0141)` → Task-Centric Control ↔ Engine Dispatch & Execution (5a) (loop with `HookPoint.before_tool` / `after_tool` middleware events dispatched into Layer 4 per ADR-0140) ↔ Translation & Tool-Intercept (5b) `(design_only for most consumers)`. |
+| **Run.mode** | `AGENT_LOOP`. |
+| **Path discriminator** | DualTrackRouter `(design_only — W2, ADR-0112)` chooses Slow-Path when multi-step / tool calls / external-input-or-callback are expected. |
+| **Persistence shape** | Run + Task records under RLS; **Checkpointer snapshots intermediate state** at each tool-call boundary (Checkpointer SPI per ADR-0021; in-memory ref impl shipped W0; durable backend W2). Resume is a SUSPENDED→RUNNING transition via Layer 2's `RunRepository` SPI (Layer 4 delegates; never writes Run state directly — ADR-0142). |
+| **Contracts touched** | `engine-envelope.v1.yaml`, `engine-hooks.v1.yaml`, `model-invocation.v1.yaml` `(design_only)`, `memory-store.v1.yaml` `(design_only)`. |
+| **RunEvent emissions** | Creation → state-transition → repeated suspend/resume around each tool-call boundary → terminal, per the S2 rows of [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml). |
+| **Boundary contract** | Each tool call is bracketed by `HookPoint.before_tool` / `after_tool` events dispatched through the Layer 4 RuntimeMiddleware chain (Rule R-M.c — RuntimeMiddleware lives EXCLUSIVELY in Layer 4 per ADR-0140; Layer 5a does NOT invoke it directly). Skill-capacity arbitration per Rule R-K + `skill-capacity.yaml`. Neither path may violate Rule R-G (reactive I/O) / Rule R-H (no `Thread.sleep`) / Rule R-J.a (RLS). |
+| **Failure modes** | (a) tool-execution timeout — Run stays RUNNING until the tool returns or the middleware throws SuspendSignal. (b) resume on a different deployment locus (Mode B→A) — state recovered from Checkpointer; tenant re-validated (Rule R-J.b; resume re-auth widening W2-deferred). (c) middleware short-circuit (Rule R-M.c) — Run continues without invoking the tool. |
+| **Grounding** | Process flow [`process.md`](process.md) §P1 (Slow-Path branch); SuspendSignal flow [`logical.md`](logical.md) §5. |
 
 ---
 
@@ -109,81 +122,83 @@ per ADR-0141) · 4 Task-Centric Control · 5a Engine Dispatch & Execution
 
 | Field | Value |
 |---|---|
-| **Actor** | Agent A (this instance) calls Agent B (peer instance) for sub-task delegation; Agent A's Run suspends until Agent B returns. |
-| **Layers traversed** | Access Layer (A2A Client outbound + A2A Server inbound on peer side; `(design_only — W3+ when SDK lands; a2a-envelope.v1.yaml status design_only per ADR-0100 §rejected-framing #1 — no `a2a-java` SDK runtime dep)`) → Task-Centric Control Layer suspends parent Run via Layer 2 CAS → Engine Dispatch & Execution Layer (5a) dispatches child Run to peer via `IngressEnvelope` over three-track `control` channel per Rule R-E. |
-| **Run.mode** | Parent: `GRAPH` or `AGENT_LOOP`; child Run on peer: independent (peer chooses). |
-| **Contracts touched** | `a2a-envelope.v1.yaml` `(design_only at W1; no `a2a-java` SDK runtime dep per ADR-0100 §rejected-framing #1)`, `ingress-envelope.v1.yaml` `(design_only — Rule R-I.b; runtime binding W3+)`, `engine-envelope.v1.yaml` (runtime_enforced). |
-| **RunEvent emissions** (parent side) | `RunCreatedEvent(parent)` → `RunStateTransitionEvent(PENDING→RUNNING)` → `ChildRunSpawnedEvent(childRunId=X, childRunMode=…, joinPolicy=…)` → `SuspendRequestedEvent(suspendReason=AwaitChildRun)` + `RunStateTransitionEvent(RUNNING→SUSPENDED)` → … (peer executes child) … → `ChildRunCompletedEvent(childRunId=X, childTerminalStatus=SUCCEEDED)` → `ResumeRequestedEvent(resumeCause=CHILD_COMPLETED)` + `RunStateTransitionEvent(SUSPENDED→RUNNING)` → `RunStateTransitionEvent(RUNNING→SUCCEEDED)` + `TerminalTransitionEvent(SUCCEEDED)`. Peer side emits its own independent RunEvent sequence (starts with its own `RunCreatedEvent(parentRunId=A's runId)`). |
-| **Boundary contract** | Parent Run's suspension uses `SuspendSignal.forClientCallback(...)` checked variant (rc3 wave per ADR-0074). Peer Run uses its own `RunRepository` instance. Correlation via `parentRunId` + `traceId` per Run record fields. The Layer 2 ↔ Layer 4 single-owner contract (ADR-0142) means Layer 4 NEVER writes Run state directly on either side — always via Layer 2's `updateIfNotTerminal(...)`. |
-| **Failure modes** | (a) **Peer unreachable**: `SuspendReason.AwaitChildRun` times out (or `AwaitClientCallback` for the S2C-shaped sub-variant); Run transitions FAILED with `peer_unreachable` reason → `RunStateTransitionEvent(SUSPENDED→FAILED)` + `TerminalTransitionEvent(FAILED, finalReason=peer_unreachable)`. (b) **Peer returns error envelope**: parent Run resumes and decides recovery (retry per ADR-0118 OR FAILED transition via `RunRepository.updateIfNotTerminal(...)` CAS). (c) **Cross-tenant peer call**: rejected at A2A Server side per Rule R-I.1 + IngressGateway authentication (W3+ when SDK lands). |
-| **Test grounding** | `NestedDualModeIT` (3-level nesting confirms parent-child correlation); A2A SDK integration tests are W3+ scope. |
+| **Actor** | Agent A (this instance) delegates a sub-task to Agent B (peer); A's Run suspends until B returns. |
+| **Layers traversed** | Access Layer (A2A Client outbound + A2A Server inbound on the peer side, `(design_only — W3+ when SDK lands)`) → Task-Centric Control suspends the parent Run via Layer 2 → Engine Dispatch & Execution (5a) dispatches the child Run to the peer via the ingress envelope over the three-track `control` channel per Rule R-E. |
+| **Run.mode** | Parent: `GRAPH` or `AGENT_LOOP`; child Run on the peer: independent. |
+| **Contracts touched** | `a2a-envelope.v1.yaml` `(design_only; no a2a-java SDK runtime dep per ADR-0100 §rejected-framing #1)`, `ingress-envelope.v1.yaml` `(design_only)`, `engine-envelope.v1.yaml` (runtime_enforced). |
+| **RunEvent emissions** | Parent side: creation → running → child-run spawn → suspend → (peer executes) → child-run completion → resume → terminal, per the S3 rows of [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml). The peer emits its own independent RunEvent sequence (correlated via `parentRunId`). |
+| **Boundary contract** | The parent suspends via the child-run `SuspendSignal` variant; the peer Run owns its own Run aggregate through its own `RunRepository` SPI. Correlation is by `parentRunId` + `traceId` (Run aggregate fields — see the Run fact in [`logical.md`](logical.md) §2). Both sides honour the Layer 2 single-owner contract (ADR-0142). |
+| **Failure modes** | (a) peer unreachable — the child-run suspend reason times out; Run transitions FAILED with `peer_unreachable`. (b) peer returns an error envelope — the parent resumes and decides recovery (retry per ADR-0118 OR FAILED via Layer 2). (c) cross-tenant peer call — refused at the peer's A2A Server per Rule R-I.1 (W3+). |
+| **Grounding** | Process flow [`process.md`](process.md) §P4; A2A SDK integration is W3+ scope. |
 
 ---
 
-## 4. S4 — S2C Client Callback (Server Suspends, Asks Client for Capability)
+## 4. S4 — S2C Client Callback (server suspends, asks client for capability)
 
 | Field | Value |
 |---|---|
-| **Actor** | Server-side Run needs a client-side capability (e.g., user confirmation, browser cookie, local-file access); Run suspends with `SuspendSignal.forClientCallback(...)` and the client resolves via `POST /v1/runs/{runId}/resume` (W2-shipped) carrying the resolved capability response. |
-| **Layers traversed** | Engine Dispatch & Execution Layer (5a — executor throws `SuspendSignal.forClientCallback`) → Task-Centric Control Layer (Layer 4 catches; calls Layer 2 `RunRepository.updateIfNotTerminal(... SUSPENDED)`; persists Checkpointer snapshot) → Internal Event Queue `(design_only — ADR-0141)` publishes `S2cCallbackEnvelope` on the three-track `control` channel → client → `data` channel carries the response payload (16 KiB inline cap per Rule R-E) → Resume (Layer 4 invokes Layer 2 `updateIfNotTerminal(... RUNNING)`). |
-| **Run.mode** | Inherits from parent execution. |
-| **Contracts touched** | `s2c-callback.v1.yaml` (runtime_enforced per Rule R-M.d), `engine-envelope.v1.yaml`, `engine-hooks.v1.yaml` (HookPoint.before_suspension + before_resume). |
-| **RunEvent emissions** | `RunCreatedEvent` → `RunStateTransitionEvent(PENDING→RUNNING)` → `[Layer 5a throws SuspendSignal.forClientCallback]` → `S2cCallbackRequestedEvent(callbackEnvelope=…, capability=…)` (evolutionExport=`OPT_IN` — client-bound, telemetry-export.v1.yaml gated) + `SuspendRequestedEvent(suspendReason=AwaitClientCallback)` + `RunStateTransitionEvent(RUNNING→SUSPENDED)` → … (client resolves) … → `S2cCallbackCompletedEvent(callbackId=…, outcome=SUCCESS)` (evolutionExport=`OPT_IN`) + `ResumeRequestedEvent(resumeCause=S2C_CALLBACK_RECEIVED)` + `RunStateTransitionEvent(SUSPENDED→RUNNING)` → terminal. |
-| **Boundary contract** | `RunStatus.RUNNING → SUSPENDED` transition is atomic CAS via `RunRepository.updateIfNotTerminal(...)` (per ADR-0142 Layer 2 ownership). `SuspendReason = AwaitClientCallback`. On resume, the `SuspendSignal.forClientCallback(...)` is unwound and the executor continues with the resolved capability response injected as `resumePayload`. Callbacks consume the `s2c.client.callback` skill capacity declared in `skill-capacity.yaml` (Rule R-M.d). |
-| **Failure modes** | (a) **Client times out**: `SuspendReason.AwaitClientCallback` expires; Run transitions FAILED via CAS → `S2cCallbackCompletedEvent(outcome=TIMEOUT)` + `TerminalTransitionEvent(FAILED, finalReason=s2c_callback_timeout)`. (b) **Skill capacity exhausted** (Rule R-K + `s2c.client.callback` row of `skill-capacity.yaml`): caller suspended with `SuspendReason.RateLimited` *(W2-deferred: scheduler admission per Rule R-K.c — the W0/W1 surface returns `SkillResolution.reject(SuspendReason.RateLimited)` envelope only)*. (c) **Response envelope schema-invalid**: validation against `s2c-callback.v1.yaml#response` fails → `S2cCallbackCompletedEvent(outcome=SCHEMA_INVALID)` + `RunStateTransitionEvent(SUSPENDED→FAILED)` with `s2c_response_invalid` reason. |
-| **Test grounding** | `SuspendSignalTest` (SuspendSignal construction + `childRunId` / `s2cCallbackEnvelope` accessor); S2C integration tests are W2-shipped. |
+| **Actor** | A server-side Run needs a client-side capability (user confirmation, browser cookie, local-file access); it suspends via the S2C `SuspendSignal` variant and the client resolves via the run-resume route (W2-shipped). |
+| **Layers traversed** | Engine Dispatch & Execution (5a — executor throws the S2C variant) → Task-Centric Control (catches; suspends the Run via Layer 2; persists a Checkpointer snapshot) → Internal Event Queue `(design_only — ADR-0141)` publishes the callback envelope on the `control` channel → client → `data` channel carries the response → Resume (Layer 4 transitions the Run RUNNING via Layer 2). |
+| **Run.mode** | Inherits from the parent execution. |
+| **Contracts touched** | `s2c-callback.v1.yaml` (runtime_enforced per Rule R-M.d), `engine-envelope.v1.yaml`, `engine-hooks.v1.yaml`. |
+| **RunEvent emissions** | Creation → running → S2C callback requested (`OPT_IN` export — client-bound) + suspend → (client resolves) → S2C callback completed (`OPT_IN`) + resume → terminal, per the S4 rows of [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml). |
+| **Boundary contract** | The RUNNING→SUSPENDED and resume transitions are delegated to Layer 2's `RunRepository` SPI (ADR-0142). On resume, the S2C `SuspendSignal` is unwound and the executor continues with the resolved response injected as the resume payload. Callbacks consume the `s2c.client.callback` skill capacity (Rule R-M.d + `skill-capacity.yaml`). The envelope + response field shapes + validation rule are the single source of truth in [`s2c-callback.v1.yaml`](../../../../docs/contracts/s2c-callback.v1.yaml). |
+| **Failure modes** | (a) client times out — suspend reason expires; Run transitions FAILED. (b) skill capacity exhausted (Rule R-K) — caller suspended with the rate-limited reason `(W2-deferred scheduler admission per Rule R-K.c)`. (c) response envelope schema-invalid — validation against the S2C contract fails → Run FAILED with `s2c_response_invalid`. |
+| **Grounding** | Process flow [`process.md`](process.md) §P5; S2C integration is W2-shipped. |
 
 ---
 
-## 5. S5 — Cancel During Execution (Cancel Re-auth + Cancel Race)
+## 5. S5 — Cancel During Execution (cancel re-auth + cancel race)
 
 | Field | Value |
 |---|---|
-| **Actor** | Client calls `POST /v1/runs/{runId}/cancel`; Run may be in RUNNING, SUSPENDED, PENDING, or already in a terminal state. |
-| **Layers traversed** | Access Layer (`RunController.cancel`) → Session & Task Manager (Layer 2 RunRepository load + tenant guard) → `RunStateMachine.validate` invoked atomically inside Layer 2's `updateIfNotTerminal(...)` per ADR-0142 (Layer 4 holds typed reference but does NOT write directly). |
-| **Persistence shape** | The cancel transition is **atomic CAS** via `RunRepository.updateIfNotTerminal(this.tenantId, this.runId, RunStatus.CANCELLED)` (abstract method per ADR-0118). The abstract method's implementation MUST be a single SQL update statement with a `WHERE status NOT IN (CANCELLED, SUCCEEDED, FAILED, EXPIRED)` clause (or equivalent atomic primitive — `ConcurrentHashMap.computeIfPresent` for `InMemoryRunRegistry`). |
-| **Authorization** | `RunController.cancel` re-validates `(request.tenantId == Run.tenantId)`; cross-tenant collapses to **404 not_found** at W0 per Rule R-J.b. The W1 widening to 403 `tenant_mismatch` + WARN audit MDC `(runId, fromStatus, toStatus, actor, occurredAt)` is deferred per ADR-0108. |
-| **Contracts touched** | `openapi-v1.yaml` (cancel route shape, error envelope `{error:{code,message,details}}` per Rule R-F + enforcer E8). |
-| **RunEvent emissions** (winner path) | `CancelRequestedEvent(actor=…)` → `RunStateTransitionEvent(<previous>→CANCELLED)` + `TerminalTransitionEvent(CANCELLED)`. Both `IN_SCOPE`. |
-| **Outcomes** | (a) **Active → terminal** (RUNNING/SUSPENDED/PENDING → CANCELLED): success, returns 200. (b) **Same-status terminal** (CANCELLED → cancel): idempotent, returns 200; no `RunStateTransitionEvent` emitted (CAS no-op) but `CancelRequestedEvent` IS emitted as an audit signal. (c) **Different-terminal** (SUCCEEDED/FAILED/EXPIRED → cancel): returns 409 `illegal_state_transition`; no state change; `CancelRequestedEvent` emitted as a rejection audit signal. (d) **Concurrent cancel-vs-complete race**: the CAS `WHERE` clause wins one writer; the loser sees the post-CAS Run row and returns the appropriate status code based on it — see `process.md` §P6 for the loser's sequence diagram (O3 audit finding from rc55). |
-| **Failure modes structurally closed** | The 4-recurrence cancel-vs-complete race (`F-nonatomic-run-status-write` rc35/rc36/rc38/rc39) is **structurally closed at this entry** by the abstract `updateIfNotTerminal` method. Any new write path on Run state introduces a 5th recurrence risk — gated by the `RunRepository.updateIfNotTerminal` abstract-method discipline + ADR-0142's single-owner pinning of the Run aggregate to Layer 2. |
-| **Test grounding** | `RunHttpContractIT.cancelTerminalReturns409` + `RunHttpContractIT.cancel_route_is_post_not_delete` + `RunHttpContractIT.getCrossTenantRunReturns404` (cross-tenant access collapses to 404 not_found at W0 per Rule R-J.b; the historical `tenantMismatchReturns403` name was retired per AUD-2026-05-27 PR77-P2-1) — confirm the canonical authorization + state-transition shape on the cancel route. |
+| **Actor** | Client cancels a Run via the run-cancel route; the Run may be RUNNING, SUSPENDED, PENDING, or already terminal. |
+| **Layers traversed** | Access Layer (cancel route) → Session & Task Manager (Layer 2 Run load + tenant guard) → state-machine validation invoked atomically inside Layer 2's transition per ADR-0142 (Layer 4 holds a typed reference but does NOT write directly). |
+| **Persistence shape** | The cancel is a **single-writer transition** delegated to Layer 2's `RunRepository` SPI. The atomic primitive backing it (the CAS realisation) is the §5.3-delegated Postgres RLS Boundary Contract in [`development.md`](development.md). |
+| **Authorization** | The cancel route re-validates that the requesting tenant matches the Run's tenant; cross-tenant access is refused at the authorization boundary (Rule R-J.b). The precise response-code posture per wave (and the WARN-audit MDC widening) is owned by `openapi-v1.yaml` + ADR-0108. |
+| **Contracts touched** | `openapi-v1.yaml` (cancel route shape + error-envelope shape per Rule R-F + enforcer E8). |
+| **RunEvent emissions** | Cancel requested → state-transition → terminal (winner path), per the S5 rows of [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml). |
+| **Outcomes** | (a) active → CANCELLED: success. (b) same-status terminal: idempotent (no transition; a cancel-requested audit signal is still emitted). (c) different terminal: illegal transition; no state change; a rejection-audit signal is emitted. (d) concurrent cancel-vs-complete race: Layer 2 admits one writer; the loser re-reads the post-transition state and the route contract decides its response — see [`process.md`](process.md) §P6 for the loser flow. |
+| **Failure modes structurally closed** | The cancel-vs-complete race (`F-nonatomic-run-status-write`, 5 prior recurrences) is **structurally closed** at the aggregate-ownership level: Layer 2 is the single writer (ADR-0142), and the `RunRepository` SPI is the only sanctioned transition path. Any new Run-state write path introduces a recurrence risk and is gated by that discipline. |
+| **Grounding** | Process flows [`process.md`](process.md) §P3 (winner) + §P6 (loser); route contract `openapi-v1.yaml`. |
 
 ---
 
 ### S6 (cross-reference) — Weather Clarification (PR 92 v1.2 baseline)
 
-A complete end-to-end HITL-plus-tool scenario walking through M1–M6 and demonstrating: MQ ingress → AccessIntent normalisation → Native ReAct Agent first round → INTERRUPT_REGISTERED control event → SUSPENDED → callback → RESUMING → tool call → second LLM round → COMPLETED. Source: [`../../../../docs/logs/reviews/2026-05-28-agent-service-m1-m6-design-draft.cn.md`](../../../../docs/logs/reviews/2026-05-28-agent-service-m1-m6-design-draft.cn.md) §Scenario. Authority: ADR-0155.
+A complete end-to-end HITL-plus-tool scenario walking through the M1-M6
+module decomposition and demonstrating: MQ ingress → access-intent
+normalisation → native ReAct first round → interrupt-registered control
+event → SUSPENDED → callback → RESUMING → tool call → second LLM round →
+COMPLETED. Source: the M1-M6 design draft review log; authority ADR-0155.
 
 ---
 
 ## 6. Cross-scenario invariants
 
-The following invariants hold across ALL S1-S5; they are the "red lines"
-the rc55 audit identified (rc55 sibling sweep `docs/logs/reviews/2026-05-26-agent-service-l1-sibling-sweep.en.md`),
-restated here as scenario-view obligations:
+The following invariants hold across ALL S1-S5 — the "red lines" the
+rc55 audit identified (rc55 sibling sweep), restated as scenario-view
+obligations:
 
-1. **No tenantId-less data flow.** Every RunEvent variant declares
-   `tenantId` per Rule R-C.2.a; every persistence write is RLS-bound
-   per Rule R-J.a; every cross-layer call propagates `tenantId` via
-   `RunContext.tenantId()` (NOT via `TenantContextHolder`, per Rule
-   R-C.e — runtime sub-package never imports the platform-side ThreadLocal).
-2. **No Run state write outside `RunRepository.updateIfNotTerminal(...)`
-   atomic CAS.** Layer 4 holds typed reference + invokes; Layer 2 owns
-   the CAS contract; Layer 5a NEVER writes Run state. Create-only
-   `RunRepository.save(new Run(…PENDING…))` is grandfathered per the
-   rc39 ADR-0118 source-guard discipline.
+1. **No tenant-identity-less data flow.** Every RunEvent variant
+   declares tenant identity (Rule R-C.2.a); every persistence write is
+   RLS-bound (Rule R-J.a); every cross-layer call propagates tenant
+   identity from the persisted Run (NOT a platform-side ThreadLocal —
+   Rule R-C.e).
+2. **No Run state write outside the `RunRepository` single-writer
+   transition.** Layer 4 holds a typed reference + delegates; Layer 2
+   owns the transition; Layer 5a NEVER writes Run state. The create-only
+   path is grandfathered per the ADR-0118 source-guard discipline.
 3. **No single-tier internal queue with mode-based durability.** Layer
    3's binding (when its code home lands per ADR-0141) MUST route by
    intent into the three physical channels (`control` / `data` /
-   `rhythm`) declared in `bus-channels.yaml`. Each channel chooses its
-   own durability tier independently.
+   `rhythm`) declared in `bus-channels.yaml`; each channel chooses its
+   durability tier independently.
 4. **Neither Fast-Path NOR Slow-Path may violate Rule R-G** (reactive
-   I/O — no RestTemplate / JdbcTemplate under `service.runtime.**`),
-   **Rule R-H** (no `Thread.sleep` under `service.{platform,runtime}.**`),
-   or **Rule R-J.a** (RLS on tenant_id tables). The Fast-Path narrowed
-   semantics per ADR-0139 say "no mandatory checkpoint/snapshot" — NOT
-   "no mandatory persistence"; metadata persistence remains mandatory.
+   I/O), **Rule R-H** (no `Thread.sleep`), or **Rule R-J.a** (RLS on
+   tenant-scoped tables). The Fast-Path narrowed semantics per ADR-0139
+   mean "no mandatory checkpoint/snapshot" — NOT "no mandatory
+   persistence"; metadata persistence remains mandatory.
 
 These four red lines are gate-closure criteria for every wave touching
 the scenarios surface; any draft that violates one is rejected.
@@ -192,21 +207,23 @@ the scenarios surface; any draft that violates one is rejected.
 
 ## 7. Cross-references
 
-- Process View: each Sk scenario has a sibling Pk sequence diagram in
-  [`process.md`](process.md) (with S5 splitting into P3 winner + P6
-  loser per the O3 rc55 finding).
-- Logical View: the 5-layer model + 5a/5b split per ADR-0140 + Run
-  aggregate single-owner per ADR-0142 + RunEvent hierarchy per
-  ADR-0145 lives in [`logical.md`](logical.md).
-- Physical View: 5-plane deployment + RLS + 3-track bus + sandbox
-  boundary lives in [`physical.md`](physical.md).
-- Development View: package tree + Layer↔Package matrix per ADR-0144
-  + 5 L2 Boundary Contracts lives in [`development.md`](development.md).
-- SPI Appendix: 9 active SPI interfaces with 4-way parity per Rule
-  G-1.1.b lives in [`spi-appendix.md`](spi-appendix.md).
-- Module-root grounding: [`ARCHITECTURE.md`](ARCHITECTURE.md)
-  carries shipped-state implementation details + dependencies + wave
-  plan + risks.
-- Historical: rc53 review file [`docs/logs/reviews/2026-05-26-agent-service-l1-4plus1-rewrite-wave-1.en.md`](../../../../docs/logs/reviews/2026-05-26-agent-service-l1-4plus1-rewrite-wave-1.en.md)
-  §14 is the original authoring of S1-S5; demoted to historical
-  authoring record per ADR-0143.
+- Process View: each Sk scenario has a sibling Pk flow in
+  [`process.md`](process.md) (S5 splits into P3 winner + P6 loser).
+- Logical View: the 5-layer model + 5a/5b split + Run aggregate
+  single-owner + the RunEvent hierarchy fact live in
+  [`logical.md`](logical.md).
+- Physical View: 5-plane deployment + persistence-plane tenancy posture
+  + 3-track bus + sandbox boundary live in [`physical.md`](physical.md).
+- Development View: package tree + Layer↔Package matrix + the 5 L2
+  Boundary Contracts (the home for the realisation detail this view
+  delegates) live in [`development.md`](development.md).
+- SPI Appendix: active SPI interfaces with 4-way parity (Rule G-1.1.b)
+  live in [`spi-appendix.md`](spi-appendix.md).
+- Contracts: [`openapi-v1.yaml`](../../../../docs/contracts) (route
+  shapes + status codes), [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml)
+  (RunEvent variants + fields), [`s2c-callback.v1.yaml`](../../../../docs/contracts/s2c-callback.v1.yaml),
+  [`engine-envelope.v1.yaml`](../../../../docs/contracts/engine-envelope.v1.yaml).
+- Module-root grounding: [`ARCHITECTURE.md`](ARCHITECTURE.md) carries
+  shipped-state implementation detail + dependencies + wave plan.
+- Historical: the rc53 review file §14 is the original authoring of
+  S1-S5; demoted to a historical authoring record per ADR-0143.
