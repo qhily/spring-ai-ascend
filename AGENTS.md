@@ -25,20 +25,18 @@ This file is intentionally a **thin operational wrapper** for Codex / autonomous
 
 ## For AI assistants — load this set
 
-> **The canonical, product-first orientation order is [`docs/onboarding/ai-understanding-path.md`](docs/onboarding/ai-understanding-path.md)** (machine-readable source: [`docs/governance/ai-reading-path.yaml`](docs/governance/ai-reading-path.yaml)). It is the eight-node systems-engineering reading curve read product-first (Product → Requirement → L0 → EngineeringFrame → FunctionPoint → Contract → generated facts → gate); an agent that reads code before product builds the wrong thing efficiently. Prefer it for a top-down picture; the structural list below remains a valid slice.
+> **The canonical, product-first orientation order is [`docs/onboarding/ai-understanding-path.md`](docs/onboarding/ai-understanding-path.md)** (machine-readable source of truth: [`docs/governance/ai-reading-path.yaml`](docs/governance/ai-reading-path.yaml); authority ADR-0159 + ADR-0160). It is the eight-node systems-engineering reading curve read **product-first** — Product Definition → Requirement Definition → L0 Architecture → EngineeringFrame → Feature/FunctionPoint → Contract Surface → Implementation Facts → Verification & Gate. **Skipping the product step to read code first is forbidden**: an agent that reads code before product builds the wrong thing efficiently.
 
-A coding agent or LLM session reaches an **unbiased** architecture picture by loading these surfaces in order. The order matches `README.md#Reading-path` step-for-step. Loading any one in isolation produces a partial view.
+A coding agent or LLM session reaches an **unbiased** picture by loading these surfaces in order. The six stops below name only the surfaces; `README.md#Reading-path` and the canonical YAML carry the per-step "what you should understand / what it does NOT carry" detail and are authoritative if the two ever disagree. Loading any one surface in isolation produces a partial view.
 
-**For any factual claim about code, contracts, tests, dependencies, runtime behaviour, or verification**, read `architecture/facts/generated/*.json` BEFORE prose (Rule G-15 / ADR-0154). Generated facts outrank prose; if prose disagrees with a fact, the fact wins. AI agents MUST NOT directly author or refresh files under `architecture/facts/generated/` — they are produced only by deterministic extractor binaries under `tools/architecture-workspace/` (Rule G-15.c).
+**For any factual claim about code, contracts, tests, dependencies, runtime behaviour, or verification**, read `architecture/facts/generated/*.json` BEFORE prose (Rule G-15 / ADR-0154). The authority cascade is one-way: **generated facts > DSL > Card/prose** — if prose disagrees with a fact, the fact wins. AI agents MUST NOT directly author or refresh files under `architecture/facts/generated/` — they are produced only by deterministic extractor binaries under `tools/architecture-workspace/` (Rule G-15.c).
 
-1. `architecture/facts/generated/` — machine-extracted factual ground truth: `code-symbols.json`, `contract-surfaces.json`, `tests.json`, `module-build.json`, `runtime-config.json`, `adrs.json`. READ FIRST for any factual claim.
-2. `architecture/workspace.dsl` + `architecture/README.md` — architecture authority root (Structurizr DSL workspace + closure navigation; ADR-0147 + ADR-0150).
-3. `architecture/docs/L0/ARCHITECTURE.md` — declarative L0 system boundary + 65 §4 architectural constraints.
-4. `CLAUDE.md` — enforceable Layer-0 principles + Layer-1 rules (each rule cites the §4 constraint it enforces).
-5. `architecture/docs/L1/README.md` + `architecture/docs/L1/<module>{.md,/}` (for the module you touch) — L1 module design.
-6. `docs/contracts/contract-catalog.md` — runtime promise surface (wire shapes, route behavior, SPI signatures).
-7. `docs/quickstart.md` — operational onboarding (boot, post `POST /v1/runs`, observe).
-8. `docs/overview.md` — narrative tour (after-the-fact prose).
+1. **Repository entry** (orientation) — `README.md` + `CLAUDE.md` + `AGENTS.md`.
+2. **Product definition** (Product → Requirement, ISO/IEC/IEEE 29148) — `product/PRODUCT.md` + `product/{claims,requirements,personas}.yaml` + `product/journey.md`.
+3. **Architecture anchor** (L0, ISO/IEC/IEEE 42010 + C4) — `architecture/workspace.dsl` + `architecture/README.md` + `architecture/docs/L0/ARCHITECTURE.md` + `docs/adr/normalized/index.yaml` + `docs/adr/review-index.md` (read the normalized index for current ADR authority, not raw historical prose — ADR-0160).
+4. **EngineeringFrame anchor** (C4 Component / arc42 L2 — a Java package-cluster anchor) — `architecture/features/engineering-frames.dsl` + `architecture/docs/L1/engineering-frames.md` + `architecture/docs/L1/frames/` + `architecture/docs/L1/` (per-module, indexed by `architecture/docs/L1/README.md`). A Feature *traverses* a frame; it never owns one (ADR-0157).
+5. **Demand-to-behavior mapping** (Feature + FunctionPoint join) — `architecture/features/features.dsl` + `architecture/features/function-points.dsl` + `architecture/docs/L2/`.
+6. **Contract and evidence** (Contract Surface → Implementation Facts → Verification & Gate) — `docs/contracts/contract-catalog.md` + `docs/contracts/` + `architecture/facts/generated/` + `gate/README.md` + `gate/check_architecture_sync.sh` + `docs/governance/architecture-status.yaml`. `docs/quickstart.md` + `docs/overview.md` are entered from here to run or narrate the system.
 
 ### AI consumption contract (Rule G-15 / ADR-0154)
 
@@ -51,19 +49,9 @@ AI agents using this repository's architecture surfaces MUST:
 5. Run feature-specific verification commands derived from generated facts (e.g., `code_entrypoint_refs[]` + `test_refs[]` on `SAA FunctionPoint` elements in `architecture/features/function-points.dsl`), not from model memory.
 6. Modify the **extractor binary** or the **source authority** (code, contract YAML, ADR) to change a fact — never the generated JSON directly.
 
-## Rhetorical stance of each top-level doc
+### Rhetorical stance of each surface
 
-| Surface | Slice | What it carries | What it does NOT carry |
-|---|---|---|---|
-| `architecture/workspace.dsl` | machine-readable architecture model | structure + features + relationships + views + !docs + !adrs | enforcement, runtime promises, operational onboarding |
-| `architecture/docs/L0/ARCHITECTURE.md` | declarative L0 constraints | 65 §4 numbered architectural constraints + system boundary | enforcement, runtime contracts, L1 module design |
-| `CLAUDE.md` | enforceable rules | rule kernels + Layer-0 principles + Constraint↔Rule mapping | architecture (workspace.dsl owns it), constraints (architecture/docs/L0/ARCHITECTURE.md owns them) |
-| `docs/contracts/contract-catalog.md` | runtime promise surface | HTTP API + SPI + envelopes + OpenAPI + each contract's authority ADR + enforcer | declarative constraints, enforcement rules |
-| `architecture/docs/L1/<module>{.md,/}` | L1 module design | how this module realises its slice of the constraints | constraints themselves, rules, runtime contracts |
-| `docs/quickstart.md` | operational onboarding | boot + first-run walkthrough | architecture, rules, contracts |
-| `docs/overview.md` | narrative tour | after-the-fact prose for non-architecture readers | authority, enforcement, runtime contracts |
-
-This separation prevents an AI session from conflating "the architecture" with any single surface. The 7 surfaces are distinct slices; loading them together produces the unbiased picture.
+Each surface above is a **distinct slice at a different altitude**; conflating "the architecture" with any single one produces a partial view. The per-surface "what it carries / what it does NOT carry" table lives once, in `README.md#Reading-path` and its machine-readable source `docs/governance/ai-reading-path.yaml` (human mirror: `docs/onboarding/ai-understanding-path.md`) — this wrapper does not duplicate it so the slice definitions cannot drift across files.
 
 ---
 

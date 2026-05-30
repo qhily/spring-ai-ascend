@@ -79,8 +79,10 @@ share infrastructure:
 | `spring-ai-ascend-dependencies` | (build-time) | Bill of Materials |
 | `spring-ai-ascend-graphmemory-starter` | Bus & State Hub | Graph-memory auto-config starter |
 
-Each module declares its identity in `module-metadata.yaml`, its L1 design in
-`architecture/docs/L0/ARCHITECTURE.md`, and its five DFX dimensions in `docs/dfx/<module>.yaml`.
+Each module declares its identity in `module-metadata.yaml` (whose
+`architecture_doc` field points at its L1 design under
+`architecture/docs/L1/<module>/`, indexed by `architecture/docs/L1/README.md`),
+and its five DFX dimensions in `docs/dfx/<module>.yaml`.
 Cross-service traffic on the Bus & State Hub plane is sliced into three
 physically isolated channels — `control` (PAUSE/KILL intents, never blocked),
 `data` (run payloads), `rhythm` (heartbeats). The full system boundary, the
@@ -107,24 +109,37 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 
 ## Reading path
 
-> **AI agents and new engineers: the canonical, product-first orientation order now lives in [`docs/onboarding/ai-understanding-path.md`](docs/onboarding/ai-understanding-path.md)** (machine-readable source: [`docs/governance/ai-reading-path.yaml`](docs/governance/ai-reading-path.yaml)). It walks the eight-node systems-engineering chain product-first — Product → Requirement → L0 Architecture → EngineeringFrame → FunctionPoint → Contract → generated facts → gate — so you reach code only after product, requirement, and architecture. The architecture-first list below remains a valid structural slice; prefer the product-first path for a top-down picture.
+> **AI agents and new engineers start here.** The canonical, product-first
+> orientation order is [`docs/onboarding/ai-understanding-path.md`](docs/onboarding/ai-understanding-path.md)
+> (machine-readable source of truth: [`docs/governance/ai-reading-path.yaml`](docs/governance/ai-reading-path.yaml);
+> authority ADR-0159 + ADR-0160). It walks the eight-node systems-engineering
+> deliverable chain **product-first** — Product Definition → Requirement
+> Definition → L0 Architecture → EngineeringFrame → Feature/FunctionPoint →
+> Contract Surface → Implementation Facts → Verification & Gate — so you reach
+> code only after product, requirement, and architecture. **Skipping the product
+> step to read code first is forbidden**: an agent that reads code before product
+> builds the wrong thing efficiently.
 
-Whether you are a new human contributor or an AI assistant, follow this order for an unbiased architecture picture. Each step names the surface's **rhetorical stance** so you don't conflate it with another slice.
+The six reading steps below mirror that canonical path; the YAML is authoritative
+if the two ever disagree. Each step names the surfaces to read and its authority
+lane, so you don't conflate one slice with another. The one-way authority cascade
+across every surface is **generated facts > DSL > Card/prose**: for any claim about
+code, contracts, tests, dependencies, runtime behavior, or verification, read
+`architecture/facts/generated/*.json` BEFORE prose and cite the fact id.
 
-1. **`architecture/workspace.dsl`** + **`architecture/README.md`** — the architecture authority (`唯一主入口` / sole main entry; ADR-0147 + ADR-0150). Structurizr DSL workspace carrying system/container/component structure, Feature/Capability/FunctionPoint instances, dependencies, contracts, decisions, and views.
-2. **`architecture/docs/L0/ARCHITECTURE.md`** (this repo root, L0 frozen) — **declarative** L0 system boundary + 65 numbered architectural constraints (§4 #1..#65). What the platform commits to structurally.
-3. **`CLAUDE.md`** — **enforceable** Layer-0 governing principles (P-A..P-M) + Layer-1 engineering rules (D-/R-/G-/M- namespace). Each rule cites the §4 constraint it enforces.
-4. **`architecture/docs/L1/README.md`** — L1 module design index. Pick the module you're working on; read its `.md` or 4+1 directory.
-5. **`docs/contracts/contract-catalog.md`** — **runtime promise** surface (HTTP API + SPI + envelopes + OpenAPI). What the system commits to at runtime.
-6. **`docs/quickstart.md`** — **operational** onboarding (boot, post `POST /v1/runs`, observe).
-7. **`docs/overview.md`** — narrative tour (after-the-fact prose for non-architecture readers).
+1. **Repository entry** (orientation) — `README.md` + `CLAUDE.md` + `AGENTS.md`. How this team (humans + AI) collaborates, which sources are authoritative, and when generated facts outrank prose.
+2. **Product definition** (Product → Requirement, ISO/IEC/IEEE 29148) — `product/PRODUCT.md` + `product/claims.yaml` + `product/requirements.yaml` + `product/personas.yaml` + `product/journey.md`. The product outcome, the active value claims, in-scope requirements vs explicit non-goals, and where the v1.0 financial-vertical line is drawn.
+3. **Architecture anchor** (L0, ISO/IEC/IEEE 42010 + C4) — `architecture/workspace.dsl` + `architecture/README.md` + `architecture/docs/L0/ARCHITECTURE.md` + `docs/adr/normalized/index.yaml` + `docs/adr/review-index.md`. The system boundary, architecture element identities from the DSL, the numbered constraint corpus (§4), and the current decision-authority state of the ADR corpus (ADR-0160 — use the normalized index for current authority, not raw historical prose).
+4. **EngineeringFrame anchor** (C4 Component / arc42 L2 — a Java package-cluster anchor) — `architecture/features/engineering-frames.dsl` + `architecture/docs/L1/engineering-frames.md` + `architecture/docs/L1/frames/` + `architecture/docs/L1/` (per-module L1 design, indexed by `architecture/docs/L1/README.md`). Which EngineeringFrames exist, which package-cluster each anchors, each frame's stable boundary + usable SPI surface, and which FunctionPoints it anchors. A Feature *traverses* a frame; it never owns one (ADR-0157).
+5. **Demand-to-behavior mapping** (Feature + FunctionPoint join) — `architecture/features/features.dsl` + `architecture/features/function-points.dsl` + `architecture/docs/L2/`. Which Features require which FunctionPoints (value axis), which EngineeringFrames anchor them (structure axis), and which L2 designs own the implementation detail.
+6. **Contract and evidence** (Contract Surface → Implementation Facts → Verification & Gate) — `docs/contracts/contract-catalog.md` + `docs/contracts/` + `architecture/facts/generated/` + `gate/README.md` + `gate/check_architecture_sync.sh` + `docs/governance/architecture-status.yaml`. The runtime promises, the generated facts that prove current implementation state (cite fact ids, not prose), and the gates plus current baselines.
 
-These 7 surfaces present **distinct slices**: workspace (structure) → constraints (declarative) → rules (enforceable) → L1 (module design) → contracts (runtime) → quickstart (boot) → overview (narrative). Loading all 7 in order produces a complete, unbiased architecture understanding. Loading any one in isolation produces a partial view.
+These six steps present **distinct slices** at descending altitude — orientation → product → L0 architecture → structural frame → behavioral join → contract/evidence. Loading them in order produces a complete, unbiased picture; loading any one in isolation produces a partial view. `docs/quickstart.md` (boot + first run) and `docs/overview.md` (narrative tour) are entered from step 6 once you need to run or narrate the system.
 
 ## Where to go next (cross-links beyond the Reading path)
 
 - [docs/contracts/](docs/contracts/) — full contract corpus (each contract has authority ADR + enforcer).
-- [docs/adr/README.md](docs/adr/README.md) — full Architecture Decision Records corpus (the canonical count lives in docs/governance/architecture-status.yaml#architecture_sync_gate.baseline_metrics; currently 138 active+locked YAMLs but only the baseline_metrics number is authoritative).
+- [docs/adr/README.md](docs/adr/README.md) — full Architecture Decision Records corpus (the canonical count lives in docs/governance/architecture-status.yaml#architecture_sync_gate.baseline_metrics.adr_count; that field is the sole authority — this entry intentionally carries no raw number so it cannot drift).
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — per-capability shipped/deferred ledger.
 - [docs/governance/SESSION-START-CONTEXT.md](docs/governance/SESSION-START-CONTEXT.md) — same Reading path, expressed as an always-load table for AI sessions.
 
