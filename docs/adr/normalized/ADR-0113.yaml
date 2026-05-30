@@ -35,9 +35,11 @@ clean_decision_summary: >
   is resolved by naming them separately: the chain scope (within one hook point)
   defaults to fail-fast; the invocation scope (the LLM/tool call boundary) defaults
   to failsafe, with a safety-critical override that short-circuits the invocation.
-  "Ordered" means registration order (BEFORE ascending, AFTER reverse). Same-order
-  ties resolve deterministically by class fully-qualified name (never by the unstable
-  bean-name fallback). The error-handling hook position is always best-effort and is
+  "Ordered" means the dispatch sequence is deterministic and registration-driven,
+  and same-order ties break on a deterministic, framework-independent discriminator
+  rather than the unstable bean-name fallback (the concrete ordering rule and
+  comparator are L2 / hook-contract detail, not L1 authority). The error-handling
+  hook position is always best-effort and is
   not subject to the safety-critical short-circuit. The failure-propagation semantics
   are mirrored across three surfaces (L0 kernel, L1 module prose, and the canonical
   hook contract) with cross-surface parity enforced.
@@ -47,12 +49,18 @@ active_guidance:
     Two-level failure semantics is the governing invariant: chain scope (within one
     hook point) is fail-fast by default; invocation scope (the model/tool call
     boundary) is failsafe by default with a safety-critical override that short-
-    circuits. "Ordered" = registration order; "failsafe" applies at the invocation
-    boundary, not the chain boundary. Both terms are used honestly and consistently.
+    circuits. "Ordered" means the dispatch sequence is deterministic and
+    registration-driven (not framework-discovery order); "failsafe" applies at the
+    invocation boundary, not the chain boundary. Both terms are used honestly and
+    consistently. The concrete ordering rule (per-position ascending/descending
+    sequence) is L2 detail, not L1 authority (see non_authoritative_legacy_content).
   - >
-    Same-@Order ties MUST resolve deterministically by class fully-qualified name
-    (lexicographic ascending), never by the framework's bean-name fallback, so
-    dispatch order is stable across JVMs and framework versions.
+    Same-@Order ties MUST resolve by a deterministic, framework-independent
+    discriminator rather than the framework's bean-name fallback, so dispatch order
+    is stable across JVMs and framework versions. The CONCRETE tie-break comparator
+    (which discriminator, the comparator expression, its lexicographic direction) is
+    L2 FunctionPoint detail and is NOT L1 authority; it is owned at L2 / the hook
+    contract, not this view (see non_authoritative_legacy_content).
   - >
     The error-handling hook position is best-effort: the entire chain fires for every
     error, outcomes aggregate "first non-proceed wins", and the safety-critical
@@ -65,9 +73,18 @@ active_guidance:
 
 non_authoritative_legacy_content:
   - >
-    The concrete tie-break implementation — the HookDispatcher.sort(...) signature
-    and the literal comparator expression — is L2 detail; the live code-symbol facts
-    and L2 design docs own the implementation, not this ADR.
+    The concrete tie-break ALGORITHM — that same-@Order ties break on
+    Class.getName() in lexicographic-ascending order, the HookDispatcher.sort(...)
+    signature, and the literal comparator expression — is L2 FunctionPoint detail
+    and is NOT L1 authority; the live code-symbol facts, the L2 hook-dispatch frame,
+    and the hook contract own the comparator, not this view. L1 retains only the
+    invariant that the tie-break is deterministic and framework-independent.
+  - >
+    The concrete registration-order rule — lower @Order fires earlier, BEFORE_*
+    ascending, AFTER_* reverse (LIFO unwind) — is L2 FunctionPoint detail and is NOT
+    L1 authority; the per-position dispatch sequence is owned at L2 / the hook
+    contract. L1 retains only the invariant that ordering is deterministic and
+    registration-driven rather than framework-discovery-driven.
   - >
     The named test classes (HookOrderTieBreakDeterminismTest,
     SafetyCriticalNotOnErrorHookTest) are a line-level test inventory; the live
@@ -97,11 +114,18 @@ gate_refs:
 
 review_notes: >
   Layer-purity: this ADR roots its decision in the L0 kernel as a system-wide
-  invariant on every hook chain (two-level failure semantics + deterministic
-  ordering), classified here as L0 governance_invariant. Its raw body leaks L2
-  detail — the HookDispatcher.sort comparator expression and two named test classes —
-  recorded as non_authoritative_legacy_content; the live code/test facts and the
-  canonical hook contract own that detail. AMBIGUITY FLAGGED FOR HUMAN REVIEW: the
+  invariant on every hook chain (two-level failure semantics + the REQUIREMENT of a
+  deterministic, registration-driven ordering with a framework-independent
+  tie-break), classified here as L0 governance_invariant. The concrete ordering
+  ALGORITHM — the registration-order direction (BEFORE_* ascending / AFTER_* reverse)
+  and the Class.getName() lexicographic tie-break — is L2 FunctionPoint detail and is
+  recorded as non_authoritative_legacy_content rather than active_guidance, the same
+  L5-filter-ordering mechanism the L0 allow-list grandfathers as
+  LPV-l0-hook-chain-ordering (migrate_to the L2 hook-dispatch frame + the hook
+  contract). active_guidance now states only the deterministic-tie-break INVARIANT;
+  the HookDispatcher.sort comparator expression and the two named test classes are
+  likewise non-authoritative, with the live code/test facts and the canonical hook
+  contract owning that detail. AMBIGUITY FLAGGED FOR HUMAN REVIEW: the
   decision is equally defensible as an L1 cross_frame_contract, since its canonical
   authority is a contract surface (engine-hooks.v1.yaml#failure_propagation) spanning
   the middleware frame and the invocation boundary. The view chose L0

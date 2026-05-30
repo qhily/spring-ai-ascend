@@ -169,8 +169,25 @@ LEAK_FAMILIES: list[tuple[str, str, list[re.Pattern[str]]]] = [
         "test_inventory",
         "Concrete test-class inventory used as L0/L1 evidence (belongs at L2 + test facts)",
         _compile(
-            # Three or more concrete test-class names listed inline.
-            r"(\b[A-Z][A-Za-z0-9]*(Test|IT)\b[^.\n]{0,8}[,;)][^.\n]{0,8}){2,}\b[A-Z][A-Za-z0-9]*(Test|IT)\b",
+            # Inline run: three or more concrete test-class names on ONE line
+            # (a comma/semicolon-separated catalogue inside a sentence).
+            r"(\b[A-Z][A-Za-z0-9]*(Test|IT|Spec)\b[^.\n]{0,8}[,;)][^.\n]{0,8}){2,}\b[A-Z][A-Za-z0-9]*(Test|IT|Spec)\b",
+            # Inventory STRUCTURE — one test class per line, the shape an
+            # enumerated catalogue takes when it is NOT a single-line comma run.
+            # These mirror the E194 (check_layer_purity) L8 probes one-for-one so
+            # the two helpers that encode the same verdict cover the same leak
+            # surface: a one-FQN-per-bullet Verification Matrix and a per-test
+            # markdown table are the SAME test-inventory leak as a comma run.
+            #
+            # Bullet-list entry whose leading content is a test class (FQN or
+            # simple name), e.g. `- com.x.y.RunHttpContractIT`.
+            r"^\s*[-*]\s+`?(?:[a-z][\w.]*\.)?[A-Z]\w+(?:IT|Test|Spec)`?\s*$",
+            # Markdown table row whose cells name a test class.
+            r"^\s*\|.*`[A-Z]\w+(?:IT|Test|Spec)`",
+            # A test class paired with an asserted-behaviour clause (em-dash /
+            # colon + a behaviour verb) — a catalogue entry carrying its test's
+            # runtime assertion into the prose.
+            r"\b[A-Z]\w+(?:IT|Test|Spec)\b[^.\n]{0,40}?(?:[-—:]\s*)(?:asserts?|verif(?:y|ies)|checks?|covers?|ensures?|exercises?|proves?)\b",
         ),
     ),
 ]
@@ -247,6 +264,81 @@ HOME_REF_RE = re.compile(
 WIRE_POINTER_RE = re.compile(
     r"(?:docs/contracts/|architecture/docs/L2/|architecture/facts/generated/|\.v1\.yaml|\bADR-\d{4}\b|enforcer[s]?\s+E\d+)"
 )
+
+# --------------------------------------------------------------------------
+# Test-inventory D3-enforcer-citation guard (test_inventory family ONLY).
+#
+# The layer-purity VERDICT KEEPS, at L0/L1, the DEFENSIBLE act of "citing an
+# ArchUnit / enforcer as the mechanism" (policy D3). The companion E194 helper
+# spares such a citation from its L8 probe via _is_d3_enforcer_citation; once
+# E195 grows the same bullet/table inventory probes (so the two helpers cover
+# the same leak surface), it MUST spare the SAME citation, or the convergence
+# would over-fire in the other direction — flagging a single `*ArchTest`
+# bullet that E194 (and the verdict) treat as a defensible enforcer identity.
+# These mirror the E194 carve-out one-for-one:
+#
+#   * an ArchUnit architecture-test name (suffix ArchTest / ArchUnitTest /
+#     PurityTest) IS an enforcer, never a behaviour catalogue;
+#   * a line carrying a mechanism clause ("enforced by ...", "ArchUnit `...`",
+#     "(enforcer E<n>)") that enumerates NO behaviour test is a pure
+#     enforcer-id citation; and
+#   * a constraint that cites its enforcing test(s) via an explicit
+#     enforcement / FQN-lock clause (Rule R-C.a), is NOT an inventory STRUCTURE
+#     (table row / test-leading bullet), and names at most
+#     _D3_CITATION_MAX_TESTS behaviour tests, is a mechanism citation.
+#
+# A genuine integration-test INVENTORY — a table of tests, a bullet list of
+# tests, or three-plus behaviour tests on one line — stays a leak even beside
+# an "enforced by" clause.
+_D3_ARCHUNIT_TOKEN_RE = re.compile(r"\b[A-Z]\w*(?:ArchTest|ArchUnitTest|PurityTest)\b")
+_D3_MECHANISM_CLAUSE_RE = re.compile(r"enforced by|ArchUnit|\(enforcer\s+E\d+\)", re.IGNORECASE)
+_D3_ENFORCEMENT_CLAUSE_RE = re.compile(
+    r"enforced by|verified by|asserted by|locked here per rule|per rule\s+r-c\.a|class fqn locked",
+    re.IGNORECASE,
+)
+_NON_ARCHUNIT_TEST_TOKEN_RE = re.compile(r"\b[A-Z]\w+(?:IT|Test|Spec)\b")
+_TEST_INVENTORY_STRUCTURE_RE = re.compile(
+    r"^\s*\|.*`?[A-Z]\w+(?:IT|Test|Spec)`?"          # table row naming a test
+    r"|^\s*[-*]\s+`?(?:[a-z][\w.]*\.)?[A-Z]\w+(?:IT|Test|Spec)`?\b",  # test-leading bullet
+)
+# A constraint may name its primary enforcing test plus one deferred companion;
+# a third enumerated test makes the line a catalogue, not a citation.
+_D3_CITATION_MAX_TESTS = 2
+
+
+def _is_d3_enforcer_citation(line: str) -> bool:
+    """True when a test_inventory match on ``line`` is a D3-defensible citation.
+
+    Kept byte-for-byte in step with the E194 helper's _is_d3_enforcer_citation so
+    the two layer-purity gates spare the SAME enforcer-mechanism citations. Three
+    D3 shapes are spared (see the module comment above):
+      1. every enumerated test token is an ArchUnit architecture-test;
+      2. the line carries a mechanism clause and enumerates NO behaviour test
+         (pure ArchUnit / enforcer-id citation); or
+      3. a prose constraint cites its enforcing test(s) via an explicit
+         enforcement / FQN-lock clause, the line is NOT an inventory STRUCTURE,
+         and it names at most ``_D3_CITATION_MAX_TESTS`` behaviour tests.
+    """
+    tokens = _NON_ARCHUNIT_TEST_TOKEN_RE.findall(line)
+    if not tokens:
+        # No behaviour-test token at all (e.g. only an ArchTest, handled below) —
+        # defer to the ArchUnit / mechanism signals.
+        return bool(_D3_ARCHUNIT_TOKEN_RE.search(line) or _D3_MECHANISM_CLAUSE_RE.search(line))
+    # Shape 1: every enumerated test token is an ArchUnit architecture-test -> D3.
+    archunit_tokens = set(_D3_ARCHUNIT_TOKEN_RE.findall(line))
+    if archunit_tokens and all(t in archunit_tokens for t in tokens):
+        return True
+    # Shape 3: a constraint's enforcing-test citation (Rule R-C.a). Spared only
+    # when it is NOT an inventory structure AND names few tests AND carries an
+    # explicit enforcement / FQN-lock clause.
+    if (
+        _D3_ENFORCEMENT_CLAUSE_RE.search(line)
+        and not _TEST_INVENTORY_STRUCTURE_RE.search(line)
+        and len(tokens) <= _D3_CITATION_MAX_TESTS
+    ):
+        return True
+    return False
+
 
 # Repo-relative location of the closed, dated grandfather list (shared with the
 # E194 layer_purity helper). E195 consumes the SAME tolerance surface so the two
@@ -442,9 +534,21 @@ def scan_file(root: Path, path: Path) -> list[Finding]:
             # defensible. We re-test the leak match after blanking the
             # keep-list tokens; if the leak no longer matches, it was a
             # citation/package false-positive.
-            blanked = PACKAGE_PATH_RE.sub(" ", ENFORCER_CITATION_RE.sub(" ", line))
-            if not any(p.search(blanked) for p in patterns):
-                continue
+            #
+            # EXEMPT the test_inventory family from this generic blanking: a
+            # leaked test class is a fully-qualified name (`com.huawei.ascend..
+            # FooIT`), so its package prefix is PART of the leak, not a bare
+            # development-view package-decomposition path. Blanking the package
+            # here would dissolve every one-FQN-per-bullet Verification-Matrix
+            # entry (the exact surface the E194 L8 probe catches), reopening the
+            # two-helpers-one-verdict gap this family closes. The defensibility
+            # of a test_inventory line is decided by its dedicated, E194-mirrored
+            # _is_d3_enforcer_citation guard below (a single `*ArchTest` bullet,
+            # an "enforced by `X`" clause), NOT by this package/enforcer blank.
+            if family != "test_inventory":
+                blanked = PACKAGE_PATH_RE.sub(" ", ENFORCER_CITATION_RE.sub(" ", line))
+                if not any(p.search(blanked) for p in patterns):
+                    continue
             # Wire-pointer guard (wire_format ONLY): the noun-prone wire family
             # fires whenever a boundary doc names a wire shape/envelope/header
             # while POINTING at its authoritative source. A same-line
@@ -453,6 +557,15 @@ def scan_file(root: Path, path: Path) -> list[Finding]:
             # (inlined wire leaks carry the encoding/grammar, never their own
             # contract pointer — see WIRE_POINTER_RE rationale).
             if family == "wire_format" and WIRE_POINTER_RE.search(line):
+                continue
+            # D3-enforcer-citation guard (test_inventory ONLY): a test-inventory
+            # match that is really an ArchUnit / enforcer MECHANISM citation
+            # (a single `*ArchTest` bullet, an "enforced by `X`" clause) is
+            # in-layer at L0/L1 per the verdict's keep-list — skip it. This keeps
+            # E195 in lockstep with the E194 L8 carve-out now that both helpers
+            # cover the bullet/table inventory shape, so neither over-fires on a
+            # defensible enforcer identity the other spares.
+            if family == "test_inventory" and _is_d3_enforcer_citation(line):
                 continue
             # Delegation-pointer guard (all families): a match inside a bullet
             # that NAMES the category only to delegate it to its home

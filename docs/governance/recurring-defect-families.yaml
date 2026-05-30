@@ -2642,8 +2642,8 @@ families:
   - id: F-layer-gate-flags-delegation-pointer
     title: A Layer-Purity / Altitude Probe Fires on the Delegation Pointer It Should Reward (Matches the Category Noun, Not the Leak Mechanism)
     first_observed_rc: progressive-learning-curve-remediation-W15-2026-05-30
-    last_observed_rc: progressive-learning-curve-remediation-W15-2026-05-30
-    occurrences: [progressive-learning-curve-remediation-W15-2026-05-30]
+    last_observed_rc: progressive-learning-curve-remediation-R1-2026-05-30
+    occurrences: [progressive-learning-curve-remediation-W15-2026-05-30, progressive-learning-curve-remediation-R1-2026-05-30]
     root_cause: |
       A layer-purity / altitude gate that classifies prose by topic-anchored
       regex cannot distinguish a LEAK (an L0/L1 doc inlining L2 mechanism — a
@@ -2676,33 +2676,76 @@ families:
       `*ArchTest`. Two distinct helpers, one root cause. NOT a content defect:
       the L0/L1 corpus was already clean (the cleanup waves did their job); the
       probes were too blunt to recognise delegation.
+
+      R1 (2026-05-30) surfaced the MIRROR IMAGE of the same root cause — two
+      helpers encoding one verdict, but now DIVERGING in COVERAGE rather than in
+      precision. E194 (check_layer_purity) already detected a test-class
+      INVENTORY in its bullet/table shape (a Verification-Matrix listing one
+      fully-qualified `*IT`/`*Test` per line, or a per-test markdown table row),
+      but E195 (check_l2_detail_sink), the companion that encodes the SAME
+      test_inventory leak verdict, was BLIND to that shape: its only
+      test_inventory probe required three-or-more test tokens ON ONE LINE (a
+      comma run). A reviewer running the rule-card-cited E195 advisory over a
+      one-FQN-per-bullet feature-catalog therefore got a false all-clear while
+      E194 fired — a two-helpers-one-verdict coverage asymmetry. The naive risk
+      is symmetric to the W15 case: closing the gap by widening E195 without
+      mirroring E194's D3 enforcer-citation carve-out would make E195 over-fire
+      on a single `*ArchTest` bullet (a defensible enforcer identity the verdict
+      keeps), trading an under-fire for an over-fire. The structural fix grew the
+      E195 test_inventory probe to recognise the bullet/table inventory shape AND
+      ported E194's `_is_d3_enforcer_citation` carve-out byte-for-byte (a lone
+      `*ArchTest` bullet, an "enforced by `X`" mechanism clause, a Rule R-C.a
+      enforcing-test citation naming at most two tests is spared) so both helpers
+      now cover the same leak surface and spare the same citations. The same R1
+      wave also DRAINED the actual leaks the coverage gap had been hiding: the
+      hand-authored `saa.verificationTestFqns` test-class inventories were
+      removed from the feature registry source (`architecture/features/features.dsl`),
+      so the rendered L1 feature catalogs
+      (`architecture/docs/L1/**/features/README.md`) no longer enumerate
+      test classes inline — shrinking the residual E194 feature-catalog leak set
+      this family's open_residual had flagged.
     surfaces:
-      - gate/lib/check_l2_detail_sink.py (delegation-pointer + wire-pointer guards; dated-grandfather integration)
-      - gate/lib/check_layer_purity.py (D3 enforcing-test-citation carve-out)
+      - gate/lib/check_l2_detail_sink.py (delegation-pointer + wire-pointer guards; dated-grandfather integration; R1 bullet/table test_inventory probe + E194-mirrored D3 enforcer-citation carve-out)
+      - gate/lib/check_layer_purity.py (D3 enforcing-test-citation carve-out; the L8 bullet/table test_inventory probe E195 converged onto)
       - gate/check_architecture_sync.sh (Rule 145 changed-files-blocking wiring)
+      - gate/test_architecture_sync_gate.sh (test_rule_145_l2_detail_sink_bullet_test_inventory_neg — convergence + D3-carve-out fixture)
+      - architecture/features/features.dsl (R1: hand-authored saa.verificationTestFqns test-class inventories drained from the feature registry source)
       - docs/governance/layer-purity-temporary-violations.yaml (LPV-l0-shipped-subset-test-inventory)
       - docs/governance/rules/rule-G-27.md
     prevention_rules:
       - "Rule G-27 / Rule 145 (enforcers E194 + E195) — the two layer-purity helpers carry the delegation-vs-leak discriminators in code: E195 a delegation-pointer guard (explicit delegation cue + a contract/L2/fact/ADR home in the bullet neighbourhood) + a wire-pointer guard (a wire_format match co-citing its own contract/ADR/enforcer is a reference) + the SAME dated grandfather list E194 honours; E194 a D3 enforcer-citation carve-out (a constraint naming its single locked enforcing test via an 'Enforced by ... per Rule R-C.a' clause is defensible even when the test is an *IT, while a genuine multi-test inventory table/bullet still leaks)."
       - "Promotion discipline (this wave): when promoting an advisory altitude/layer gate to a blocking rung, FIRST run it blocking against the live corpus and CLASSIFY every finding as (a) genuine leak -> migrate, (b) delegation pointer / mechanism citation -> teach the probe the shape, or (c) known-but-unmigrated debt -> dated grandfather row; NEVER weaken the probe's leak detection to pass. The anti-overreach self-test (a genuine leak with no delegation cue still fails closed) is mandatory alongside each new guard so the guard cannot silently blanket-disable detection."
       - "Self-test parity (Rule 89 / G-5.b): each guard + carve-out ships positive AND negative fixtures (delegation pointer passes; disclaimer passes; grandfathered leak tolerated; genuine leak still fails; D3 citation passes; multi-test inventory still fails) so a future regression that re-blunts a probe is caught by the gate self-test harness."
+      - "Two-helpers-one-verdict coverage parity (R1): when two advisory helpers encode ONE adjudicated verdict (E194 + E195 both encode the layer-purity test_inventory leak), every leak SHAPE one helper detects (a comma run, a one-FQN-per-bullet list, a per-test markdown table) MUST be detected by the other, and every defensible-citation SHAPE one helper spares (a lone *ArchTest bullet, an 'enforced by `X`' clause, a Rule R-C.a single-test citation) MUST be spared by the other — otherwise the helper with the narrower probe hands a false all-clear on the surface the broader one blocks. The R1 fix grew E195's test_inventory probe to the bullet/table shape and ported E194's `_is_d3_enforcer_citation` carve-out byte-for-byte; the `test_rule_145_l2_detail_sink_bullet_test_inventory_neg` fixture locks BOTH directions (a bullet inventory fails; a lone *ArchTest bullet is spared) so a future divergence is caught."
     cleanup_status: structurally_addressed
     open_residual: |
-      The changed-files-blocking rung is clean: both helpers exit 0 on the W15
-      changed L0/L1 set (0 active findings; E194 51 grandfathered, E195 7
-      grandfathered) and the six new self-tests pass. The guards are the
-      structural fix for the leak-vs-pointer boundary at this rung. Residual:
-      the TERMINAL full-blocking rung is NOT yet clean — 23 E194 findings remain
-      in the L1 feature-catalog / module-README corpus (architecture/docs/L1/**/
-      features/*.md + */README.md) that the W12-W15 module-root + 4+1 cleanup
-      did not touch; promoting Rule 145 to full-blocking per ADR-0159 §9 requires
-      draining or grandfathering those first. The delegation guards are
-      deliberately conservative (explicit cue + home, bounded ±2-line window);
-      a future leak phrased to mimic a delegation pointer without a real home
-      would still be caught (no home reference -> not suppressed), but the guard
-      library is regex and a sufficiently adversarial author could construct a
-      borderline line — the dated grandfather list remains the sanctioned
-      tolerance and the full-corpus advisory scan remains the backstop.
+      Both rungs measured on the R1 working tree are clean: at full corpus
+      (advisory) E194 reports 0 active findings over 91 L0/L1 documents (34
+      grandfathered) and E195 reports 0 active findings (7 grandfathered); the
+      changed-files-blocking rung is likewise 0/0. The W15 open_residual flagged
+      ~23 E194 feature-catalog findings; the W16-W29 cleanup waves plus R1's
+      `saa.verificationTestFqns` drain from the feature registry source have
+      since reduced the ACTIVE feature-catalog leak set to zero, so the rendered
+      L1 feature catalogs no longer enumerate test classes inline. After R1 the
+      two helpers also cover the SAME test_inventory leak shapes (comma run +
+      one-FQN-per-bullet list + per-test markdown table) and spare the SAME D3
+      enforcer citations, so neither hands a false all-clear the other would
+      block; the self-tests pass, now including the R1 convergence fixture.
+      Residual is no longer an ACTIVE-finding backlog but the dated GRANDFATHER
+      debt: the TERMINAL full-blocking rung per ADR-0159 §9 stays blocked until
+      the 34 E194 + 7 E195 grandfathered rows in
+      docs/governance/layer-purity-temporary-violations.yaml are migrated to
+      their L2 / contract / generated-fact homes (or expire at their per-row
+      sunset) — promoting to full-blocking while any row is open would either
+      fail on the grandfathered loci or require the list to keep tolerating them.
+      The delegation + inventory guards remain deliberately conservative
+      (explicit cue + home, bounded window; an *ArchTest / single-citation
+      carve-out); a future leak phrased to mimic a delegation pointer without a
+      real home, or an inventory disguised below the carve-out threshold, is
+      still caught, but the guard library is regex and a sufficiently adversarial
+      author could construct a borderline line — the dated grandfather list
+      remains the sanctioned tolerance and the full-corpus advisory scan remains
+      the backstop.
 
   - id: F-ratchet-promotion-without-dated-baseline
     title: An Advisory Gate Promoted to Changed-Files-Blocking on a Corpus Carrying Historical Findings Hard-Blocks the Whole Corpus Without a Dated Baseline Allow-List

@@ -40,6 +40,8 @@ This document is the **declarative L0** system boundary + 65 numbered architectu
 - **L1 module design** (how a module realises its slice of the constraints) — read [`architecture/docs/L1/<module>{.md,/}`](../L1/) for that.
 - **Per-capability shipped/deferred ledger** — read [`docs/governance/architecture-status.yaml#capabilities`](../../../docs/governance/architecture-status.yaml) for that.
 
+**Known lower-altitude residue in §4 — single reading.** The four "does NOT carry" clauses above are the standing intent, but they are NOT yet uniformly true of the §4 body: a closed, dated set of §4 constraints (and the §1 W0 shipped-subset paragraph) still state runtime-contract, persistence, filter-ordering, or method-signature detail inline — e.g. §4 #3 the `SET LOCAL app.tenant_id` GUC + RLS-policy mechanism, §4 #16 the hook `@Order` / `Class.getName()` tie-break ordering algorithm, §4 #20 the `withStatus → RunStateMachine.validate` call chain + HTTP 200/409 + optimistic-lock CAS predicate, §4 #28 the bounded-buffer `DROP_OLDEST` wire shape, plus the re-authorization 403 (§4 #14), the kernel-SPI accessor signatures (§4 #22), the suspension-atomicity sequence (§4 #23), and the `CausalPayloadEnvelope` field shape (§4 #25). To prevent two readings of the same fact: where any §4 inline detail in a lower-altitude category conflicts with the demotion recorded in the normalized-ADR views (`docs/adr/normalized/ADR-*.yaml`, which quarantine exactly this detail under `non_authoritative_legacy_content` / `l2_refs` per ADR-0160), **the normalized demotion governs and the §4 inline form is a time-boxed grandfathered violation, NOT independent standing L0 authority**. The closed, per-entry-dated grandfather list of these loci is [`docs/governance/layer-purity-temporary-violations.yaml`](../../../docs/governance/layer-purity-temporary-violations.yaml) (authority ADR-0159 §7; category vocabulary in [`docs/governance/layer-purity-policy.yaml`](../../../docs/governance/layer-purity-policy.yaml); baseline-truth scan at [`docs/governance/remediation-inventory/layer-purity-scan.md`](../../../docs/governance/remediation-inventory/layer-purity-scan.md)); the highest-priority L0 loci carry a 2026-06-30 (v1.0) sunset by which the detail MUST migrate to its L2 / contract / generated-fact home and the inline form be reduced to the structural identity, and the lane-purity gate in the Rule G-27..G-33 band enforces this once promoted to blocking per ADR-0159 §9. The structural identity each constraint asserts (e.g. "tenant isolation is fail-closed", "the run has a formal DFA", "hooks exist at 10 named positions") is the defensible L0 commitment and stays.
+
 Readers seeking "the architecture" should start at [`architecture/workspace.dsl`](../../workspace.dsl) (the machine-readable architecture authority root per ADR-0147 + ADR-0150). This document is one slice (the declarative constraint corpus), not the architecture as a whole.
 
 ## 0.7 Constraint ↔ Rule cross-reference
@@ -86,7 +88,7 @@ Three named verticals span every horizontal layer (HTTP edge → orchestration �
 
 ### 0.5.1 Tenant Vertical
 
-Carrier: `TenantContext` (HTTP edge ThreadLocal, valid for one request) + `RunContext.tenantId()` (canonical inside orchestration, ADR-0023). Rule R-C.e (L1 generalisation per ADR-0055) enforces that no runtime production class imports any class under `com.huawei.ascend.service.platform..`; the original narrow case — no read of `TenantContextHolder` — is preserved as defence-in-depth. Every persisted row carries `tenant_id NOT NULL`. References: §4 #3, §4 #22, §4 #37, Rule R-C.e.
+Carrier: `TenantContext` (HTTP edge ThreadLocal, valid for one request) + `RunContext.tenantId()` (canonical inside orchestration, ADR-0023). Rule R-C.e (L1 generalisation per ADR-0055) enforces that no runtime production class imports any class under `com.huawei.ascend.service.platform..`; the original narrow case — no read of `TenantContextHolder` — is preserved as defence-in-depth. Every persisted record carries a mandatory tenant dimension; the column-level shape and the row-isolation policy are the persistence mechanism owned below L0 (§4 #3). References: §4 #3, §4 #22, §4 #37, Rule R-C.e.
 
 ### 0.5.2 Posture Vertical
 
@@ -343,22 +345,49 @@ repo-wide.
    `dev` is permissive (in-memory stores, relaxed validation).
    `research` and `prod` are fail-closed (Vault secrets, durable stores, strict JWT).
 
-3. **Tenant isolation** (phased by wave):
-   - W0 (shipped): `TenantContextFilter` reads `X-Tenant-Id` header (UUID shape),
-     stores in `TenantContextHolder` + MDC. Every persistent record carries
-     `tenant_id NOT NULL`.
-   - W1 (planned): add JWT `tenant_id` claim cross-check against the existing
-     `X-Tenant-Id` header; validate against `tenants` table (ADR-0040).
-   - W2 (planned): add `SET LOCAL app.tenant_id = :id` GUC inside each transaction;
-     enable Postgres RLS policies on tenant tables. See ADR-0005, ADR-0023.
+3. **Tenant isolation (end-to-end tenant-dimension invariant, phased by wave).** One
+   invariant binds every tenant-scoped surface and every persisted record: tenant identity
+   is a mandatory, non-optional dimension that is asserted at the admission edge, cross-checked
+   (never silently replaced) against the authenticated principal, carried unbroken through
+   orchestration, and enforced at the persistence boundary so that no tenant can observe
+   another tenant's data. The isolation strength is staged — request-scoped binding at the
+   edge first (W0), claim cross-check next (W1), database-enforced row isolation last (W2) —
+   but the *every-record-is-tenant-scoped, isolated-end-to-end* commitment holds at every
+   wave. L0 owns this invariant, not the persistence mechanism, the transaction-scoping
+   statement, the row-isolation policy, or the header name. The carrier types are
+   `TenantContext` at the HTTP edge and `RunContext.tenantId()` inside orchestration
+   (ADR-0023); the admission-edge cross-check is the `FP-TENANT-CROSS-CHECK` FunctionPoint
+   (mechanism `code-symbol/com-huawei-ascend-service-platform-tenant-jwttenantclaimcrosscheck`,
+   binding `code-symbol/com-huawei-ascend-service-platform-tenant-tenantcontextfilter`), whose
+   runtime detail — the header it reads, the cross-check sequence, the reject paths — is the
+   L2 sink [`../L2/fp-tenant-cross-check/`](../L2/fp-tenant-cross-check/). The
+   transaction-scoping statement and the row-isolation policy bodies are the persistence
+   layer's design-only artifact
+   [`../../../docs/security/rls-policy.sql`](../../../docs/security/rls-policy.sql),
+   materialised under the W2 schema migration. The per-wave shipped/deferred status is the
+   capability ledger (`tenant_context_filter` shipped W0, `rls_policy_sql` design-accepted for
+   W2) in
+   [`docs/governance/architecture-status.yaml`](../../../docs/governance/architecture-status.yaml).
+   The cross-check-not-replace half of this invariant is the same one §4 #37 binds at the HTTP
+   contract surface. See ADR-0023 (cross-boundary context propagation), ADR-0056 (JWT
+   validation + tenant claim cross-check).
 
-4. **Idempotency** (phased by wave):
-   - W0 (shipped): `IdempotencyHeaderFilter` validates the `Idempotency-Key` header
-     (UUID shape, required on POST/PUT/PATCH; missing returns 400 in research/prod).
-     No deduplication, no caching, no `IdempotencyStore` interaction.
-   - W1 (planned): wire `IdempotencyStore` with `(tenant_id, key)` claim/replay
-     semantics; concurrent duplicate returns 409; backed by Postgres `idempotency_dedup`
-     table. See ADR-0027.
+4. **Idempotency** (phased by wave). The L0 invariant is **at-most-once admission**: a
+   mutating request carrying an idempotency key is admitted exactly once per
+   `(tenant, key)` pair, and a duplicate re-presentation is decided against the prior
+   claim rather than re-executed. L0 owns the invariant and the boundary identities, not
+   the wire detail or the persistence schema.
+   - W0 (shipped): `IdempotencyHeaderFilter` validates the inbound idempotency key at the
+     admission edge; no deduplication, no caching, no `IdempotencyStore` interaction.
+   - W1 (planned): wire the `IdempotencyStore` SPI for durable claim/replay keyed by
+     `(tenant, key)`. See ADR-0027 + ADR-0057.
+
+   The header name, the mutating verbs it applies to, the malformed-key and
+   duplicate-conflict status codes, the durable claim row, and its composite key are
+   runtime-contract + persistence facts below L0: the wire authority is the mutating
+   admission operation `contract-op/createrun` (sourced from `docs/contracts/openapi-v1.yaml`),
+   and the claim/replay runtime sequence + storage schema are the L2 FunctionPoint sink
+   [`../L2/fp-idempotency-claim/`](../L2/fp-idempotency-claim/) (governed by ADR-0057).
 
 5. **Metric naming**: all custom Micrometer metrics use the prefix
    `springai_ascend_`. No bare or provider-prefixed names on platform meters.
@@ -440,11 +469,17 @@ repo-wide.
     detection. Checkpoint eviction: Runs in terminal status become evictable after N days (deferred
     — `checkpoint_eviction_policy`). See ADR-0028.
 
-14. **Resume re-authorization.** Resuming a suspended Run is a re-authorization boundary.
-    The resume request's tenant context MUST match the original `Run.tenantId`; mismatch returns
-    403 (`resume_reauthorization_check`). Actor identity at resume is captured in an audit envelope.
-    Degradation authority: S-side may substitute means (alternative tool/model) without C-side
-    approval; ends-modification requires explicit C-side authority. Per Rule 17.
+14. **Resume re-authorization.** Resuming a suspended Run is a re-authorization boundary:
+    the resuming principal's tenant context MUST match the original `Run.tenantId`, a mismatch
+    is rejected rather than silently allowed, and the actor identity at resume is captured in an
+    audit envelope. L0 owns this re-authorization *invariant*, not the rejection status code or
+    the guard's runtime sequence. The mismatch-rejection status code is a runtime-contract fact
+    below L0 (the wire authority is the resume/cancel operation `contract-op/cancelrun`, sourced
+    from `docs/contracts/openapi-v1.yaml`), and the tenant-match guard sequence is the L2
+    FunctionPoint sink [`../L2/fp-suspend-resume/`](../L2/fp-suspend-resume/) (capability
+    `resume_reauthorization_check`). Degradation authority: S-side may substitute means
+    (alternative tool/model) without C-side approval; ends-modification requires explicit C-side
+    authority. Per Rule 17.
 
 15. **SPI serialization path.** Orchestration SPI types are pure Java (`OrchestrationSpiArchTest`)
     AND must be wire-serializable by W4. `ExecutorDefinition.NodeFunction` / `Reasoner` are inline
@@ -452,32 +487,31 @@ repo-wide.
     MUST become named `CapabilityRegistry` entries resolved by name, not inline closures
     (`capability_registry_spi`, `executor_definition_serialization`).
 
-16. **Runtime Hook SPI.** Every LLM invocation, tool call, memory access, suspension, resume,
-    and error boundary flows through a hook chain. The canonical 10 hook positions (single
-    source of truth: `docs/contracts/engine-hooks.v1.yaml`) are:
+16. **Runtime Hook SPI.** The L0 invariant is **universal, ordered, observable interception**:
+    every LLM invocation, tool call, memory access, suspension, resume, and error boundary flows
+    through a deterministically ordered hook chain — no model/tool/memory boundary may bypass it —
+    and that chain is the sole emission path for `LlmCall` and middleware spans (per §4 #56 and
+    ADR-0061 §7). The chain is a contract surface, not L0 behaviour: the canonical 10 hook positions
+    are owned by `docs/contracts/engine-hooks.v1.yaml` (single source of truth) —
     `BEFORE_LLM_INVOCATION` / `AFTER_LLM_INVOCATION` /
     `BEFORE_TOOL_INVOCATION` / `AFTER_TOOL_INVOCATION` /
     `BEFORE_MEMORY_READ` / `AFTER_MEMORY_WRITE` /
-    `BEFORE_SUSPENSION` / `BEFORE_RESUME` / `ON_ERROR` / `ON_YIELD` (last added rc22 per
-    ADR-0100). Hooks are pluggable `RuntimeMiddleware` beans dispatched by
-    `agent-middleware.HookDispatcher`; the chain is **ordered** (registration order; lower
-    `@Order` fires earlier; `BEFORE_*` ascending, `AFTER_*` reverse — LIFO unwind) and exhibits
-    **two-level failure semantics**: (a) **fail-fast inside the chain** — a non-`Proceed`
-    outcome (`ShortCircuit` or `Fail`) stops subsequent middlewares for the same `HookPoint`;
-    (b) **failsafe at the invocation boundary today (W0/W2.x)** — `Fail` outcomes are
-    DISCARDED by `SyncOrchestrator` per `engine-hooks.v1.yaml` `outcome_consumption_status:
-    design_only`, so the surrounding LLM/tool invocation does not abort. The Rule R-M.c.b
-    (formerly Rule 45.b) target wires `Fail` → `Run.FAILED` and `ShortCircuit` → engine
-    bypass; that escalation activates with the W2 Telemetry Vertical. `ON_ERROR` is
-    `best_effort` per `engine-hooks.v1.yaml#failure_propagation.per_hook` — it always fires
-    the full chain to avoid masking the original error. Reference hooks shipped in W2: PII
-    filter, token counter, summariser, tool-call-limit, `LlmSpanEmitterHook`,
-    `ToolSpanEmitterHook`. Direct LLM/tool calls that bypass `HookChain` are a gate-blocking
-    defect (Rule 19 — deferred W2; `HookChain` SPI and `HookChainConformanceTest` do not exist
-    at W0). Hooks are the sole emission path for `LlmCall` and middleware spans per §4 #56 and
-    ADR-0061 §7. `@Order` tie-breaking (two hooks declaring the same `@Order` value) is
-    resolved by `Class.getName()` lexicographic order — deterministic and reproducible across
-    JVMs.
+    `BEFORE_SUSPENSION` / `BEFORE_RESUME` / `ON_ERROR` / `ON_YIELD`. L0 owns the
+    universal-interception invariant and the position contract, not the dispatch mechanics. The
+    concrete chain firing order, the deterministic tie-break, the two-level fail-fast and
+    outcome-consumption semantics, and the per-hook failure-propagation policy are runtime mechanics:
+    their authoritative behaviour is the hook contract `docs/contracts/engine-hooks.v1.yaml`, the
+    declared-order + fail-fast property is proven by the generated test fact
+    `test/com-huawei-ascend-middleware-hookdispatcherfireordertest`, and the readable runtime
+    sequence is the L2 FunctionPoint sink
+    [`../L2/fp-hook-dispatch/`](../L2/fp-hook-dispatch/) (over the dispatcher
+    `code-symbol/com-huawei-ascend-middleware-hookdispatcher` and the outcome carriers in
+    `architecture/facts/generated/code-symbols.json`). A non-`Proceed` hook outcome wired to a Run
+    failure or an engine bypass is the deferred Rule R-M.c.b (formerly Rule 45.b) escalation that
+    activates with the W2 Telemetry Vertical. Direct LLM/tool calls that bypass the hook chain are a
+    gate-blocking defect (Rule 19 — deferred W2; the conformance SPI and its test do not exist at
+    W0). See ADR-0061
+    §7.
 
 17. **Graph DSL conformance.** `ExecutorDefinition.GraphDefinition` MUST support beyond W2:
     (a) per-key `StateReducer` registry (`OverwriteReducer` — last-write-wins; `AppendReducer` —
@@ -510,22 +544,25 @@ repo-wide.
     deferred to W2 (`suspend_reason_taxonomy`, `parallel_child_dispatch`, `suspend_deadline_watchdog`).
     See ADR-0019.
 
-20. **RunStatus formal transition DFA + transition audit trail.** Legal transitions:
-    `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`;
-    `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING` (retry, new `attemptId`);
-    `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal. Every `Run.withStatus(newStatus)` MUST invoke
-    `RunStateMachine.validate(from, to)`, throwing `IllegalStateException` on illegal transitions
-    (Rule R-C.d, enforced at W0). Idempotency: `cancel` on already-cancelled run returns 200 + same row;
-    `cancel` on `SUCCEEDED`/`EXPIRED` returns 409. Every transition writes a `run_state_change` audit
-    row (W2); optimistic lock (`version` field) required before W2 Postgres. **Known W0 limitation**:
-    in the W0 in-memory tier, `Run.withStatus()` validates the DFA but does not serialise concurrent
-    HTTP cancel + orchestrator resume on the same Run; last `RunRepository.save()` wins. **Two-phase
-    migration W1.5 → W2 (per ADR-0106)**: at W1.5 the `Run` record gains a `long version` field
-    (default 0; no behavioural change — saves leave it untouched), so pre-W2 in-flight rows already
-    carry a usable version when the W2 CAS check arms. At W2 the Postgres tier enables CAS on
-    `RunRepository.save(run)` (rejected if `persisted.version != run.version() - 1`); migration is
-    a no-op for in-flight Runs because the W1.5 field is already populated. Integration test
-    `RunCancelDuringResumeRaceIT` arms the invariant in W2. See ADR-0020 + ADR-0106.
+20. **RunStatus formal transition DFA + transition audit trail.** The L0 invariant is a
+    **formal-DFA-governed, atomically-advanced, audited Run lifecycle**: a Run's status moves only
+    along legal transitions of a fixed deterministic automaton, terminal statuses are final, every
+    advance is validated (illegal transitions are rejected) and is captured in a transition audit
+    trail, and concurrent writers on the same Run are serialized so a status advance is atomic with
+    no lost update. L0 owns this invariant, not the transition table, the validator method contract,
+    the cancel-idempotency status codes, or the optimistic-lock realization. The concrete transition
+    alphabet + table, the `RunStateMachine.validate` validator hop
+    (`code-symbol/com-huawei-ascend-service-runtime-runs-runstatemachine`, enforced by Rule R-C.d),
+    the atomic compare-and-set state-transition method
+    (`code-symbol/com-huawei-ascend-service-runtime-runs-spi-runrepository#updateIfNotTerminal`), the
+    optimistic-version two-phase migration, and the concurrent cancel-vs-resume race classification
+    are the L2 FunctionPoint sink
+    [`../L2/fp-run-state-transition/`](../L2/fp-run-state-transition/) (authority ADR-0118 atomic
+    CAS + ADR-0142 Run aggregate single owner), proven by the generated test fact
+    `test/com-huawei-ascend-service-runtime-architecture-runrepositoryatomiccontracttest`. The
+    cancel-idempotency status codes (already-cancelled vs terminal) are runtime-contract facts on the
+    cancel operation `contract-op/cancelrun` (sourced from `docs/contracts/openapi-v1.yaml`). See
+    ADR-0020 + ADR-0106 + ADR-0118.
 
 21. **Typed payload + PayloadCodec SPI.** Every payload crossing a JVM boundary (checkpoint bytes,
     resume payload, streaming event) MUST be encoded via a registered `PayloadCodec<T>` with stable
@@ -579,7 +616,7 @@ repo-wide.
 
 26. **Cognition-Action separation.** Cognitive processes (LLM-driven reasoning, plan synthesis,
     hallucination tolerance) are isolated from action processes (database writes, tool invocations,
-    RLS-bound transactions, idempotent outbox events) by the orchestration SPI boundary. Cognitive
+    tenant-isolated transactions, idempotent outbox events) by the orchestration SPI boundary. Cognitive
     processes observe and produce *intent*; action processes execute *verified intent* with full
     determinism and auditability. Neither layer may bypass the SPI to reach the other directly.
     Language policy: the cognitive layer MAY be implemented in any language that can call the
@@ -601,16 +638,20 @@ repo-wide.
     before the next `execute()`. Implementation deferred to W2 (SPI) + W3 (mandatory sandbox).
     See ADR-0030, `skill_spi_lifecycle`, `skill_resource_matrix`, `untrusted_skill_sandbox_mandatory`.
 
-28. **Three-track channel isolation.** The W2 northbound streaming surface (§4 #11) is physically
-    split into three tracks: (1) **Control** — `RunControlSink.push(RunControlCommand)`: out-of-band
-    cancel/priority-suspend commands delivered before the next executor iteration boundary; (2)
-    **Data** — `Flux<RunEvent>`: typed progress events with caller-controlled demand and bounded
-    buffer (default 64 events, DROP_OLDEST overflow — Terminal events never dropped); (3)
-    **Heartbeat** — `Flux<Instant>`: liveness cadence on a dedicated scheduler independent of data
-    channel load, cadence `≤ 30 s`. `CapabilityRegistry.resolve(name, runContext)` is tenant-scoped:
-    lookups for capabilities not authorised for the requesting tenant are rejected. A `RunDispatcher`
-    SPI separates intent-enqueue from intent-execute for async dispatch at W2. Implementation
-    deferred to W2. See ADR-0031, `three_track_channel_isolation`, `run_dispatcher_spi`.
+28. **Three-track channel isolation.** The L0 invariant is **physical three-track isolation of the
+    W2 northbound streaming surface** (§4 #11): the surface is split into three independently
+    protected tracks — (1) **Control** (out-of-band cancel / priority-suspend commands delivered
+    before the next executor iteration boundary), (2) **Data** (typed progress events — never raw
+    `Object` — with caller-controlled demand and bounded buffering under which terminal events are
+    never dropped), and (3) **Heartbeat** (liveness on a scheduler independent of data-channel load)
+    — so no track's congestion can starve another; and capability resolution is tenant-scoped, with
+    cross-tenant lookups rejected. L0 owns this physical-isolation invariant, not the buffer depth,
+    the overflow strategy, the cadence bound, or the track method/type signatures. Those wire shapes
+    are the deferred W2 streaming contract surface and its L2 detail, tracked by the capability-ledger
+    keys `three_track_channel_isolation` and `run_dispatcher_spi` in
+    [`docs/governance/architecture-status.yaml`](../../../docs/governance/architecture-status.yaml);
+    a `RunDispatcher` SPI separating intent-enqueue from intent-execute lands with that surface.
+    Implementation deferred to W2. See ADR-0031.
 
 29. **Scope-based run hierarchy + planner contract.** `Run` carries a `RunScope` discriminator
     (`STEP_LOCAL | SWARM`): `STEP_LOCAL` runs are orchestrator-local, directly addressable by
@@ -981,12 +1022,22 @@ repo-wide.
 
 ## 5. W0 shipped capabilities
 
-- `GET /v1/health` — liveness probe; JSON `{status, sha, db_ping_ns, ts}`.
-- `TenantContextFilter` — extracts `X-Tenant-Id` header (UUID shape), propagates via
-  `TenantContextHolder` + MDC `tenant_id`. (W0: header-only; W1: JWT claim; W2: GUC+RLS.)
-- `IdempotencyHeaderFilter` — validates UUID shape of `Idempotency-Key` header on
-  POST/PUT/PATCH; missing key returns 400 in research/prod. (W0: validation only;
-  W1: dedup + caching backed by `IdempotencyStore`. See ADR-0027.)
+This list names the W0-shipped capabilities as **boundary identities** and their wave
+phasing. It carries no wire detail: the routes, over-the-wire body shapes, header names,
+mutating verbs, and HTTP status codes of the HTTP-edge capabilities below are
+runtime-contract facts owned by the OpenAPI surface (facts `contract-op/gethealth`,
+`contract-op/createrun`, sourced from `docs/contracts/openapi-v1.yaml`) and expanded in
+the L2 sinks [`../L2/run-http-contract/`](../L2/run-http-contract/) +
+[`../L2/fp-idempotency-claim/`](../L2/fp-idempotency-claim/).
+
+- `HealthController` — W0 liveness probe; the route and response body shape are
+  `contract-op/gethealth` (OpenAPI surface), not restated here.
+- `TenantContextFilter` — admission-edge filter that resolves the caller-asserted tenant
+  and propagates it via `TenantContextHolder` + MDC. (W0: edge binding only; W1: JWT claim
+  cross-check; W2: database-enforced row isolation — phasing and mechanism per §4 #3.)
+- `IdempotencyHeaderFilter` — admission-edge filter that validates the inbound
+  idempotency key. (W0: validation only; W1: dedup + replay backed by `IdempotencyStore`.
+  See §4 #4, ADR-0027.)
 - `IdempotencyStore` — `@Component` present but not injected at W0 (dev: WARNING log;
   research/prod: throws `IllegalStateException`). Wired in W1.
 - `GraphMemoryRepository` SPI — interface only; no implementation shipped.

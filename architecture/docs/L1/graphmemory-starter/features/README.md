@@ -77,9 +77,6 @@ commands after auto-modifying the feature's owning code.
 
 ### `FEAT-GRAPH-MEMORY`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.service.runtime.graphmemory.GraphMemoryAutoConfigurationTest`
-
 **Verification commands:**
 - `./mvnw -pl graphmemory-starter -am verify`
 

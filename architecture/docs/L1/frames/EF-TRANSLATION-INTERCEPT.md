@@ -168,18 +168,18 @@ ArchUnit enforcer; cite it in section 7):
 
 - `com.huawei.ascend.service.runtime.intercept.spi` — the public package that *is* the
   interception boundary. Its four interfaces are the boundary identity:
-  - `code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformchatclient` ::
-    `invoke(Ljava/lang/Object;Ljava/lang/String;)Ljava/util/concurrent/Flow$Publisher;`
-    — the model-call entry point.
-  - `code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformtoolcallback` ::
-    `invoke(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;` — the tool-call entry
-    point.
-  - `code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformmemoryprovider` ::
-    `readSnapshot(Ljava/lang/String;J)Ljava/lang/Object;` — the read-only session-context
-    entry point.
-  - `code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformretriever` ::
-    `retrieve(Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/Object;` — the
-    retrieval-reference entry point.
+  - `com.huawei.ascend.service.runtime.intercept.spi.PlatformChatClient`
+    (`code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformchatclient`) —
+    the model-call entry point.
+  - `com.huawei.ascend.service.runtime.intercept.spi.PlatformToolCallback`
+    (`code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformtoolcallback`) —
+    the tool-call entry point.
+  - `com.huawei.ascend.service.runtime.intercept.spi.PlatformMemoryProvider`
+    (`code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformmemoryprovider`) —
+    the read-only session-context entry point.
+  - `com.huawei.ascend.service.runtime.intercept.spi.PlatformRetriever`
+    (`code-symbol/com-huawei-ascend-service-runtime-intercept-spi-platformretriever`) —
+    the retrieval-reference entry point.
 
 **Contract operations (OpenAPI / AsyncAPI):**
 

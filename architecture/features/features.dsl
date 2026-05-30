@@ -32,7 +32,7 @@ featRunLifecycleControl = element "Run Lifecycle Control" "Feature" "Public Run 
         "saa.capabilityDomain" "runtime-run-lifecycle"
         "saa.productClaim" "PC-001|PC-003"
         "saa.requirement" "REQ-001"
-        "saa.synopsis" "Owns the public Run lifecycle surface — POST /v1/runs admission with tenant + idempotency + posture guard, POST /v1/runs/{id}/cancel re-validation and DFA transition to CANCEL_REQUESTED, GET /v1/runs/{id} tenant-scoped polling, GET /v1/runs paginated listing, and the CAS-based RunRepository.updateIfNotTerminal atomic transition that backs all of them. Run state changes are protected by the DFA in RunStateMachine; every persisted Run carries tenantId enforced by NOT NULL + RLS. Public endpoint behavior described by openapi-v1.yaml."
+        "saa.synopsis" "Owns the public Run lifecycle surface — admission, cancel re-validation, tenant-scoped status polling — and routes every Run state change through the RunRepository SPI as the single sanctioned transition path (Rule R-C.2.b, ADR-0142). Transition legality is governed by the RunStateMachine validator; tenant scoping is enforced at the repository and storage layers (Rule R-J). The concrete route verbs / paths / status codes are owned by openapi-v1.yaml; the atomic single-writer CAS obligation and persistence schema that back the transition are the development.md §5.3 L2 Boundary Contract, not restated at L1."
         "saa.aiBoundary.canModifyCode" "true"
         "saa.aiBoundary.canModifyContracts" "false"
         "saa.aiBoundary.allowedStatusTransitions" "shipped->deprecated"
@@ -41,7 +41,6 @@ featRunLifecycleControl = element "Run Lifecycle Control" "Feature" "Public Run 
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/runtime/runs|agent-service/src/main/java/com/huawei/ascend/service/runtime/state"
         "saa.goals" "Public Run lifecycle API with strict tenant isolation|Atomic CAS-based state transitions with no lost updates|Idempotent admission via IdempotencyStore"
         "saa.nonGoals" "Long-poll or websocket subscriptions (use cursor flow)|Cross-tenant aggregation"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.platform.web.runs.RunHttpContractIT|com.huawei.ascend.service.runtime.runs.RunStateMachineTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify|bash gate/check_architecture_sync.sh"
     }
 }
@@ -67,7 +66,6 @@ featEdgeComputeIngress = element "Edge to Compute Ingress" "Feature" "Edge-plane
         "saa.devPaths" "agent-bus/src/main/java/com/huawei/ascend/bus/spi/ingress"
         "saa.goals" "Single ingress hop from edge to compute_control|Wire envelope governed by versioned contract"
         "saa.nonGoals" "Provider-specific transport adapters (SDK concern)"
-        "saa.verificationTestFqns" "com.huawei.ascend.bus.spi.ingress.EdgeToComputeDirectLinkArchTest"
         "saa.verificationCommands" "./mvnw -pl agent-bus -am verify|bash gate/check_architecture_sync.sh"
     }
 }
@@ -93,7 +91,6 @@ featServerClientCallback = element "Server to Client Callback" "Feature" "S2C ca
         "saa.devPaths" "agent-bus/src/main/java/com/huawei/ascend/bus/spi/s2c|agent-service/src/main/java/com/huawei/ascend/service/runtime/s2c"
         "saa.goals" "Asynchronous capability invocation without holding client connection|Wire envelope versioned and validated"
         "saa.nonGoals" "Long-poll fallback (cursor flow handles polling)"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.runtime.s2c.S2cCallbackRoundTripIT|com.huawei.ascend.service.runtime.s2c.S2cFailureTransitionsRunToFailedIT|com.huawei.ascend.service.runtime.s2c.S2cCallbackEnvelopeValidationTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify"
     }
 }
@@ -119,7 +116,6 @@ featSuspendResumeControl = element "Suspend and Resume Control" "Feature" "Suspe
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/runtime/suspend"
         "saa.goals" "Typed suspension reasons|Resume without restart|Parent/child Run choreography"
         "saa.nonGoals" "Thread.sleep blocking suspension (Rule R-H forbids it)"
-        "saa.verificationTestFqns" "com.huawei.ascend.bus.spi.engine.SuspendSignalTest|com.huawei.ascend.bus.spi.engine.SuspendSignalLibraryTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify"
     }
 }
@@ -136,7 +132,7 @@ featIdempotencyAndReplay = element "Idempotency and Replay" "Feature" "Idempoten
         "saa.owner" "agent-service"
         "saa.sourceAdr" "ADR-0027"
         "saa.capabilityDomain" "idempotency-protocol"
-        "saa.synopsis" "Owns idempotency at the public API boundary: IdempotencyHeaderFilter extracts the Idempotency-Key header and consults IdempotencyStore (Postgres-backed, NOT NULL + UNIQUE on (tenantId, key)) to either claim a fresh slot or replay the stored response. The store carries the response envelope so replay is byte-identical without re-executing the Run. Tenant isolation is enforced at the storage engine (Rule R-J)."
+        "saa.synopsis" "Owns idempotency at the public API boundary: the IdempotencyHeaderFilter consults the IdempotencyStore to either claim a fresh slot for a request or replay the previously stored response, so a duplicated request is byte-identical without re-executing the Run. The claim namespace is tenant-scoped and tenant isolation is enforced at the storage layer (Rule R-J). The header semantics and claim/replay posture are owned by openapi-v1.yaml and ADR-0057; the persistence schema and SQL are the development.md §5.3 L2 Boundary Contract, not restated at L1."
         "saa.aiBoundary.canModifyCode" "true"
         "saa.aiBoundary.canModifyContracts" "false"
         "saa.aiBoundary.allowedStatusTransitions" "shipped->deprecated"
@@ -145,7 +141,6 @@ featIdempotencyAndReplay = element "Idempotency and Replay" "Feature" "Idempoten
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/runtime/idempotency"
         "saa.goals" "Idempotent admission with byte-identical replay|Tenant-scoped key namespace"
         "saa.nonGoals" "Cross-tenant key sharing"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.runtime.idempotency.IdempotencyHeaderFilterIT|com.huawei.ascend.service.runtime.idempotency.IdempotencyStoreTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify"
     }
 }
@@ -162,7 +157,7 @@ featTenantIsolation = element "Tenant Isolation" "Feature" "Tenant claim cross-c
         "saa.owner" "agent-service"
         "saa.sourceAdr" "ADR-0030"
         "saa.capabilityDomain" "tenant-isolation"
-        "saa.synopsis" "Owns tenant isolation across the surface: every tenant-scoped HTTP request cross-checks JWT.tenant claim against the IngressEnvelope.tenantId (Rule R-J); every tenant-bearing Flyway migration enables Postgres Row-Level Security on the same migration (Rule R-J.a); cross-tenant access at the cancel endpoint collapses to 404 not_found at W0 (deferred 403 widening per ADR-0108). The tenant contract is enforced at three layers: HTTP edge, repository layer, and storage engine."
+        "saa.synopsis" "Owns tenant isolation across the surface as defense in depth at three layers — HTTP edge, repository, and storage. The edge cross-checks the JWT tenant claim against the request's tenant identity (Rule R-J); every tenant-bearing schema migration carries Row-Level Security so the storage layer fails closed on cross-tenant reads (Rule R-J.a). The cross-tenant response posture at each route is owned by openapi-v1.yaml and ADR-0108; the Row-Level Security realisation and its schema-migration sequence are the development.md §5.3 L2 Boundary Contract, not restated at L1."
         "saa.aiBoundary.canModifyCode" "true"
         "saa.aiBoundary.canModifyContracts" "false"
         "saa.aiBoundary.allowedStatusTransitions" "shipped->deprecated"
@@ -171,7 +166,6 @@ featTenantIsolation = element "Tenant Isolation" "Feature" "Tenant claim cross-c
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/platform/tenant|agent-service/src/main/resources/db/migration"
         "saa.goals" "Defense in depth at HTTP / repo / storage layers"
         "saa.nonGoals" "Cross-tenant aggregation (handled by separate analytics surface)"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.platform.security.TenantIsolationIT|com.huawei.ascend.service.platform.tenant.TenantContextFilterIT|com.huawei.ascend.service.platform.tenant.JwtTenantClaimCrossCheckTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify"
     }
 }
@@ -188,7 +182,7 @@ featPostureBootstrap = element "Posture Bootstrap" "Feature" "Required-config po
         "saa.owner" "agent-service"
         "saa.sourceAdr" "ADR-0055"
         "saa.capabilityDomain" "posture-bootstrap"
-        "saa.synopsis" "Owns posture-aware startup: PostureBootGuard validates @RequiredConfig-annotated configuration properties before the runtime accepts traffic. In research and prod postures the boot fails closed on missing config; in dev posture it logs and allows. Posture is determined by spring.profiles.active; the guard runs in @Order(0) so misconfiguration surfaces before any framework wiring. Default posture is dev when unset, per the explicit fail-loud-on-prod-misconfig discipline of Rule D-6."
+        "saa.synopsis" "Owns posture-aware startup: PostureBootGuard validates the required-config matrix before the runtime accepts traffic. In research and prod postures the boot fails closed on missing config; in dev posture it logs and allows. Posture is selected from the active runtime profile and defaults to dev when unset, per the fail-loud-on-prod-misconfig discipline of Rule D-6. The required-config matrix and the boot-ordering guarantee that the guard runs before any other wiring are owned by ADR-0058 and ADR-0055; the framework binding is L2 / verification material, not restated at L1."
         "saa.aiBoundary.canModifyCode" "true"
         "saa.aiBoundary.canModifyContracts" "false"
         "saa.aiBoundary.allowedStatusTransitions" "shipped->deprecated"
@@ -197,7 +191,6 @@ featPostureBootstrap = element "Posture Bootstrap" "Feature" "Required-config po
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/platform/posture"
         "saa.goals" "Fail-closed posture in research/prod|Visible misconfig at startup"
         "saa.nonGoals" "Hot-reload of @RequiredConfig values"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.platform.posture.PostureBootGuardIT"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify"
     }
 }
@@ -223,7 +216,6 @@ featGraphMemory = element "Graph Memory" "Feature" "Tenant-scoped graph memory s
         "saa.devPaths" "graphmemory-starter/src/main/java"
         "saa.goals" "Tenant-scoped graph reasoning surface|Pluggable backend"
         "saa.nonGoals" "Cross-tenant graph queries|Single-backend lock-in"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.runtime.graphmemory.GraphMemoryAutoConfigurationTest"
         "saa.verificationCommands" "./mvnw -pl graphmemory-starter -am verify"
     }
 }
@@ -249,7 +241,6 @@ featEngineDispatchAndHooks = element "Engine Dispatch and Hooks" "Feature" "Type
         "saa.devPaths" "agent-service/src/main/java/com/huawei/ascend/service/runtime/engine|agent-execution-engine/src/main/java"
         "saa.goals" "Typed engine dispatch + hook-based middleware|Versioned contracts at the boundary"
         "saa.nonGoals" "Per-executor instanceof checks outside the registry"
-        "saa.verificationTestFqns" "com.huawei.ascend.service.runtime.engine.EngineRegistryIT|com.huawei.ascend.service.runtime.engine.HookDispatchTest"
         "saa.verificationCommands" "./mvnw -pl agent-service -am verify|./mvnw -pl agent-execution-engine -am verify"
     }
 }

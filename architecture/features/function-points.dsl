@@ -113,7 +113,7 @@ fpS2cCallback = element "S2C Callback" "FunctionPoint" "Server-to-client callbac
     }
 }
 
-fpRunStateTransition = element "Run State Transition" "FunctionPoint" "RunRepository.updateIfNotTerminal CAS-based atomic Run status transition (Rule R-C.2.b)" "SAA FunctionPoint" {
+fpRunStateTransition = element "Run State Transition" "FunctionPoint" "RunRepository.updateIfNotTerminal — the single sanctioned Run status-transition entry point (Rule R-C.2.b)" "SAA FunctionPoint" {
     properties {
         "saa.id" "FP-RUN-STATE-TRANSITION"
         "saa.kind" "function_point"

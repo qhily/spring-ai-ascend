@@ -93,19 +93,11 @@ commands after auto-modifying the feature's owning code.
 
 ### `FEAT-EDGE-COMPUTE-INGRESS`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.bus.spi.ingress.EdgeToComputeDirectLinkArchTest`
-
 **Verification commands:**
 - `./mvnw -pl agent-bus -am verify`
 - `bash gate/check_architecture_sync.sh`
 
 ### `FEAT-SERVER-CLIENT-CALLBACK`
-
-**Verification test FQNs:**
-- `com.huawei.ascend.service.runtime.s2c.S2cCallbackRoundTripIT`
-- `com.huawei.ascend.service.runtime.s2c.S2cFailureTransitionsRunToFailedIT`
-- `com.huawei.ascend.service.runtime.s2c.S2cCallbackEnvelopeValidationTest`
 
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`

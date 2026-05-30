@@ -20,11 +20,12 @@ authority: "ADR-0078 (agent-service consolidation) + ADR-0068 (Layered 4+1) + AD
 > Flyway migration files, filter ordering, error-envelope JSON shapes,
 > method signatures, and test-class inventories are **L2 / contract /
 > verification** material. Those live in the route + engine + S2C +
-> RunEvent contracts under `docs/contracts/`, the per-view 4+1 files in
-> this directory, the L2 Boundary Contracts in
-> [`development.md`](development.md) §5, and the generated facts under
-> `architecture/facts/generated/`. The 4+1 views are the canonical
-> architectural surface; this file cross-links to them.
+> RunEvent contracts under `docs/contracts/`, the per-FunctionPoint L2
+> specs under [`../../L2/`](../../L2/README.md) (the migration target for
+> the persistence / RLS / CAS / wire realisation drained out of this
+> file), and the generated facts under
+> `architecture/facts/generated/`. The 4+1 views in this directory are the
+> canonical L1 architectural surface; this file cross-links to them.
 
 ## 0.5 Canonical L1 4+1 View Source (ADR-0143)
 
@@ -37,7 +38,7 @@ per [ADR-0143](../../../../docs/adr/0143-review-log-demotion-l1-canonical-move.y
 - **Logical:** [`./logical.md`](./logical.md) — 5-layer model (with the ADR-0140 5a/5b split + ADR-0142 single-owner + ADR-0145 RunEvent hierarchy fact) + aggregate model + state machines + vocabulary glossary.
 - **Process:** [`./process.md`](./process.md) — layer-interaction flows P1-P6 (including the concurrent-cancel loser flow P6).
 - **Physical:** [`./physical.md`](./physical.md) — 5-plane deployment + persistence-plane tenancy posture + 3-track bus + sandbox.
-- **Development:** [`./development.md`](./development.md) — package tree + Layer↔Package matrix per [ADR-0144](../../../../docs/adr/0144-layer-vs-package-matrix.yaml) + 5 L2 Boundary Contracts (Rule G-1.1.c).
+- **Development:** [`./development.md`](./development.md) — package tree + Layer↔Package matrix per [ADR-0144](../../../../docs/adr/0144-layer-vs-package-matrix.yaml) + the staged sub-package roadmap. The L2 realisation of each delegated boundary lives in the L2 corpus ([`../../L2/`](../../L2/README.md)); see the *L2 Constraint Linkage* section below.
 - **SPI Appendix:** [`./spi-appendix.md`](./spi-appendix.md) — active SPIs with 4-way parity (Rule G-1.1.b).
 
 **Historical note:** the rc53 review file (+ `.cn.md` sibling) was the
@@ -87,7 +88,7 @@ relates_to ADR-0026).
 | `platform/web` | HTTP front door + security config + error-envelope shaping. | Route + status + error-envelope shapes owned by [`openapi-v1.yaml`](../../../../docs/contracts) (Rule R-F / enforcer E8). |
 | `platform/web/runs` | The run API surface (create / get / cancel; resume W2). | Route verbs, status codes, and the cancel-vs-DELETE discipline owned by `openapi-v1.yaml` (enforcers E5/E6/E7/E8/E24); scenario grounding in [`scenarios.md`](scenarios.md) §S1/§S5. |
 | `platform/tenant` | Per-request tenant binding + MDC correlation; JWT tenant-claim cross-check. | Cross-check + binding behaviour per ADR-0040 / ADR-0056 §3 (enforcers E10, E2); filter-chain ordering is Layer 1 contract detail, not restated here. |
-| `platform/idempotency` | Durable claim/replay (`IdempotencyHeaderFilter` + the `IdempotencyStore` historical platform-internal interface — not under `.spi` per Rule R-D.d). | Claim/replay + body-drift semantics per ADR-0057 (enforcers E12/E13/E14/E22); SQL + schema are the §5.3 L2 Boundary Contract. |
+| `platform/idempotency` | Durable claim/replay (`IdempotencyHeaderFilter` + the `IdempotencyStore` historical platform-internal interface — not under `.spi` per Rule R-D.d). | Claim/replay + body-drift semantics per ADR-0057 (enforcers E12/E13/E14/E22); the SQL + schema realisation is L2 detail homed in [`../../L2/fp-idempotency-claim/README.md`](../../L2/fp-idempotency-claim/README.md). |
 | `platform/auth` | JWT validation wiring (single `JwtDecoder` per Rule D-8). | Validation matrix + dev-local-mode posture guard per ADR-0056 (enforcers E9, E11). |
 | `platform/posture` | Boot-time fail-closed gate (`PostureBootGuard`). | Required-config matrix per ADR-0058 (enforcers E11, E21, E22). |
 | `platform/observability` | Tenant tagging + forbidden-tag scrub + Telemetry-Vertical trace edge. | Metric-prefix + tag-scrub + traceparent behaviour per ADR-0061 (enforcers E18/E19/E38/E40/E41). |
@@ -102,7 +103,7 @@ relates_to ADR-0026).
 | `runtime/resilience` (+ `resilience/spi`) | Operation-routing contract + capacity registry impls. | `ResilienceContract` → [`…resilience-spi-resiliencecontract`](../../../../architecture/facts/generated/code-symbols.json); `SkillCapacityRegistry` → [`…resilience-spi-skillcapacityregistry`](../../../../architecture/facts/generated/code-symbols.json). Consults `skill-capacity.yaml` (Rule R-K). |
 | `runtime/memory/spi` | Memory SPI scaffold (no W0 adapter; consumer impl in the graphmemory starter). | `GraphMemoryRepository` → [`…memory-spi-graphmemoryrepository`](../../../../architecture/facts/generated/code-symbols.json). |
 | `runtime/s2c` | S2C callback transport reference impl (consumes `bus.spi.s2c`). | Suspension via the checked `SuspendSignal.forClientCallback(...)` variant (ADR-0074); envelope shape owned by [`s2c-callback.v1.yaml`](../../../../docs/contracts/s2c-callback.v1.yaml). |
-| `runtime/idempotency` | `IdempotencyRecord` contract-spine entity (mandatory tenant identity — Rule R-C.c trigger). | Mirrors the persistence shape consumed by the platform-side store; schema is the §5.3 L2 Boundary Contract. |
+| `runtime/idempotency` | `IdempotencyRecord` contract-spine entity (mandatory tenant identity — Rule R-C.c trigger). | Mirrors the persistence shape consumed by the platform-side store; the schema realisation is L2 detail homed in [`../../L2/fp-idempotency-claim/README.md`](../../L2/fp-idempotency-claim/README.md). |
 | `runtime/evolution` | `EvolutionExport` enum — discriminator for the ADR-0145 sealed RunEvent hierarchy. | Variant + field shapes owned by [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml); the Java sealed type lands in a follow-up impl-mode wave. |
 | `runtime/probe` | `OssApiProbe` — W0 OSS classpath shape probe. | Verification material (`tests.json`); green probe is a required per-wave gate. |
 
@@ -217,12 +218,15 @@ The test inventory (which classes assert which enforcers) is
 generated facts `architecture/facts/generated/tests.json`; it is not
 enumerated in this L1 file. Three-layer testing discipline per Rule D-4.
 
-**Out of scope at L1** (delegated to later waves — see
-[`development.md`](development.md) §4): GUC + RLS policies (W2); Spring
-Cloud Gateway + per-tenant overrides (W2-W3); three-track dispatcher +
-streaming event handoff (W2); LLM provider integrations beyond mocks
-(W2); per-tenant MCP tool registry (W3); ActionGuard chain (W3);
-Temporal workflow classes (W4).
+**Out of scope at L1** (deferred capabilities by wave — the staged
+sub-package roadmap is in [`development.md`](development.md) §4): durable
+tenant-scoped persistence (W2 — its GUC / RLS / CAS realisation is L2
+detail, homed in
+[`../../L2/fp-run-state-transition/README.md`](../../L2/fp-run-state-transition/README.md));
+Spring Cloud Gateway + per-tenant overrides (W2-W3); three-track
+dispatcher + streaming event handoff (W2); LLM provider integrations
+beyond mocks (W2); per-tenant MCP tool registry (W3); ActionGuard chain
+(W3); Temporal workflow classes (W4).
 
 ## 8. Wave plan / risks
 
@@ -243,8 +247,10 @@ Temporal workflow classes (W4).
   API; observability tag scrub. Runtime: Telemetry-Vertical trace SPI.
 - **Phase C** — merger + package rename; Rule R-C.e retargeted across
   the new sub-package boundary; old modules deleted.
-- **W2** — tenant GUC + RLS (the §5.3 L2 zone); durable `RunRepository`;
-  streaming event handoff; LLM gateway + outbox.
+- **W2** — durable tenant-scoped persistence for the Run aggregate
+  (the GUC / RLS / CAS realisation is L2 detail, homed in
+  [`../../L2/fp-run-state-transition/README.md`](../../L2/fp-run-state-transition/README.md));
+  durable `RunRepository`; streaming event handoff; LLM gateway + outbox.
 - **W3+** — per-tenant config; LLM gateway resilience routing; tool
   registry; ActionGuard.
 - **W4** — Temporal workflow + activity classes for long-running runs.
@@ -293,7 +299,7 @@ decomposes the module into **5 logical runtime-role components**:
 |---|---|---|
 | 1 | `dispatcher/` — Polymorphic Dispatcher | Unified entry point for both local function-call and remote bus-call invocations. |
 | 2 | `orchestrator/` — Reactive Orchestrator | Task tempo control, backpressure handling, A2A envelope packaging. |
-| 3 | `task/` — Task Center | Task control-state persistence (`Task` entity + `TaskStateStore` SPI; lifecycle Run ≤ Task). |
+| 3 | `task/` — Task Center | Owns Task control state through the `TaskStateStore` SPI boundary (`Task` entity; lifecycle Run ≤ Task). The durable-store realisation is L2 detail. |
 | 4 | `session/` — Session Manager | Middle/long-context management; context projection toward compute nodes (`Session` entity + `ContextProjector` SPI). |
 | 5 | `engine/{adapter,spi}/` — Execution Engine Adapter | Masks Workflow vs ReAct engine differences; pure-function compute injection (`StatelessEngine` SPI). |
 
@@ -377,10 +383,20 @@ response / aggregate carriers near these packages) are listed in
 
 ## *L2 Constraint Linkage* (Rule G-1.1.c)
 
-The 5 delegated L2 zones — (1) Run lifecycle extended for Session
-decoupling, (2) Reactive Orchestrator backpressure protocol, (3)
-Postgres RLS migration sequence, (4) DualTrackRouter predicate
-refinement, (5) Internal Event Queue binding — have their Boundary
-Contracts published in [`development.md`](development.md) §5. Each future
-L2 doc MUST satisfy the inputs / outputs / DFX obligations declared
-there.
+This L1 file names each boundary at its own altitude; the runtime / wire
+/ migration realisation lives one level down in the L2 corpus
+([`../../L2/`](../../L2/README.md)), never inside this L1 directory. Five
+constraints are delegated to L2:
+
+| # | Delegated boundary | L2 detail home |
+|---|---|---|
+| 1 | Run state transition + the GUC / RLS / CAS persistence backing it (extended for Session decoupling) | [`../../L2/fp-run-state-transition/README.md`](../../L2/fp-run-state-transition/README.md) — the shipped per-FunctionPoint spec carrying the atomic CAS method, validator hop, and tenant-scoped persistence boundary. |
+| 2 | Reactive Orchestrator backpressure protocol | No L2 spec yet (`design_only`); warrants its own L2 design document when authored, declaring its inputs / outputs / DFX obligations. |
+| 3 | Postgres RLS migration sequence (per-table policy bodies + Flyway sequence) | No standalone L2 doc yet; the shipped slice of this persistence realisation is cited from the FunctionPoint specs ([`../../L2/fp-run-state-transition/README.md`](../../L2/fp-run-state-transition/README.md), [`../../L2/fp-idempotency-claim/README.md`](../../L2/fp-idempotency-claim/README.md)); the full migration sequence warrants its own L2 design document when authored. |
+| 4 | DualTrackRouter predicate refinement | No L2 spec yet (`design_only`, W2); warrants its own L2 design document when authored. |
+| 5 | Internal Event Queue binding (Layer 3) | No L2 spec yet (`design_only` per ADR-0141); the per-variant channel mapping is contract material in [`run-event.v1.yaml`](../../../../docs/contracts/run-event.v1.yaml); the binding layer warrants its own L2 design document when authored. |
+
+Each future L2 document MUST declare the inputs / outputs / DFX
+obligations for its boundary at authoring time; this L1 file only names
+the boundary identity and points at the L2 home, it does not carry the
+realisation.

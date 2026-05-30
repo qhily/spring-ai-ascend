@@ -8870,6 +8870,67 @@ EOF
   fi
 }
 
+test_rule_145_l2_detail_sink_bullet_test_inventory_neg() {
+  # NEGATIVE + convergence (the two-helpers-one-verdict lockstep): a
+  # Verification-Matrix bullet list that names ONE fully-qualified test class
+  # per line — the shape an enumerated test catalogue takes in
+  # architecture/docs/L1/<module>/features/README.md — MUST be detected by the
+  # E195 sink (family test_inventory) and fail blocking. This is the shape the
+  # E194 (check_layer_purity) L8 probe already catches; before this fix E195 was
+  # BLIND to it (its only test_inventory probe required >=3 names ON ONE LINE),
+  # so a reviewer running the rule-card-cited E195 advisory got a false all-clear
+  # while E194 fired. The fixture also asserts E195 still SPARES a single
+  # `*ArchTest` bullet (a D3-defensible enforcer identity the verdict keeps at
+  # L0/L1, mirroring the E194 carve-out) — convergence must close the gap without
+  # over-firing in the other direction.
+  local helper="$PWD/gate/lib/check_l2_detail_sink.py"
+  if [[ ! -f "$helper" ]]; then
+    fail "rule_145_l2_detail_sink_bullet_test_inventory_neg" "Rule G-27 / Rule 145: $helper missing"
+    return
+  fi
+  local py; py=$(_g28_python_bin)
+  if [[ -z "$py" ]]; then
+    ok "rule_145_l2_detail_sink_bullet_test_inventory_neg" "Rule G-27 / Rule 145: no python on host — skipped (WSL is canonical per Rule G-7)"
+    return
+  fi
+  local sroot="$scratch/r145_sink_bullet_inventory"
+  _g27_sink_scratch "$sroot"
+  mkdir -p "$sroot/architecture/docs/L1/agent-service/features"
+  # A one-FQN-per-bullet Verification Matrix (the live features/README.md shape)
+  # PLUS a lone *ArchTest bullet (the D3 enforcer identity that must NOT flag).
+  cat > "$sroot/architecture/docs/L1/agent-service/features/README.md" <<'EOF'
+---
+level: L1
+view: features
+---
+# agent-service features
+
+## Verification Matrix
+
+### `FEAT-RUN-LIFECYCLE-CONTROL`
+
+**Verification test FQNs:**
+- `com.huawei.ascend.service.platform.web.runs.RunHttpContractIT`
+- `com.huawei.ascend.service.runtime.runs.RunStateMachineTest`
+
+### `FEAT-EDGE-INGRESS` (D3 enforcer identity — must NOT flag)
+- `com.huawei.ascend.bus.spi.ingress.EdgeToComputeDirectLinkArchTest`
+EOF
+  local out rc
+  out=$("$py" "$sroot/gate/lib/check_l2_detail_sink.py" --repo "$sroot" --mode blocking 2>&1); rc=$?
+  # Must fail (rc 1), surface the test_inventory family, flag BOTH IT/Test
+  # bullets, and NOT flag the lone *ArchTest bullet.
+  if [[ $rc -eq 1 ]] \
+     && echo "$out" | grep -q "test_inventory" \
+     && echo "$out" | grep -q "RunHttpContractIT" \
+     && echo "$out" | grep -q "RunStateMachineTest" \
+     && ! echo "$out" | grep "L2-DETAIL-SINK " | grep -q "EdgeToComputeDirectLinkArchTest"; then
+    ok "rule_145_l2_detail_sink_bullet_test_inventory_neg" "Rule G-27 / Rule 145: a one-FQN-per-bullet test inventory is detected (E195/E194 converge), the lone *ArchTest bullet is spared (D3)"
+  else
+    fail "rule_145_l2_detail_sink_bullet_test_inventory_neg" "Rule G-27 / Rule 145 bullet test-inventory convergence: rc=$rc (want 1) out=$(echo "$out" | grep 'L2-DETAIL-SINK ' | head -4 | tr '\n' '|')"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Rule 146 — frame_card_consistency (Rule G-29 / E196)
 # 2026-05-30 progressive-learning-curve-remediation W16. ADR-0161 Frame-Card /

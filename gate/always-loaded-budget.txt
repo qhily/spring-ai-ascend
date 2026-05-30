@@ -132,7 +132,15 @@ docs/onboarding/developer.md=0
 docs/onboarding/sre.md=0
 docs/onboarding/architect.md=0
 docs/onboarding/compliance-reviewer.md=0
-architecture/docs/L0/ARCHITECTURE.md=98000
+# progressive-learning-curve-remediation R1 (layer-purity verdict close):
+# ARCHITECTURE.md grew ~6.3K (97900 -> ~104178) with the §0.6 single-reading
+# reconciliation note + the §4 #3/#4/#14/#16/#20/#28 + §5 rewrites that state the
+# L0 INVARIANT and boundary identity while DELEGATING the GUC/RLS/CAS/wire/HTTP-
+# status/method-signature realisation to the L2 FunctionPoint sinks + contracts.
+# This is corrected-altitude content (the cost of doing the L2 migration in-place),
+# not bloat. Ceiling raised 98000 -> 106000 (~1.8K headroom). The standing
+# direction is still to shrink L0 as detail finishes migrating to L2.
+architecture/docs/L0/ARCHITECTURE.md=106000
 # Fact-Layer W6 (ADR-0154 / Rule G-15): AGENTS.md grew ~310 bytes with the
 # 6-point AI consumption contract + the fact-layer-first reading-path entry
 # (Step 1) + the LLM-no-author wording. Ceiling raised 8500 -> 9000 with

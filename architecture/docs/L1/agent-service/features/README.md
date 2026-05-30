@@ -109,15 +109,15 @@ Owns the engine boundary: every Run dispatch goes through EngineRegistry.resolve
 
 ### `FEAT-IDEMPOTENCY-AND-REPLAY`
 
-Owns idempotency at the public API boundary: IdempotencyHeaderFilter extracts the Idempotency-Key header and consults IdempotencyStore (Postgres-backed, NOT NULL + UNIQUE on (tenantId, key)) to either claim a fresh slot or replay the stored response. The store carries the response envelope so replay is byte-identical without re-executing the Run. Tenant isolation is enforced at the storage engine (Rule R-J).
+Owns idempotency at the public API boundary: the IdempotencyHeaderFilter consults the IdempotencyStore to either claim a fresh slot for a request or replay the previously stored response, so a duplicated request is byte-identical without re-executing the Run. The claim namespace is tenant-scoped and tenant isolation is enforced at the storage layer (Rule R-J). The header semantics and claim/replay posture are owned by openapi-v1.yaml and ADR-0057; the persistence schema and SQL are the development.md §5.3 L2 Boundary Contract, not restated at L1.
 
 ### `FEAT-POSTURE-BOOTSTRAP`
 
-Owns posture-aware startup: PostureBootGuard validates @RequiredConfig-annotated configuration properties before the runtime accepts traffic. In research and prod postures the boot fails closed on missing config; in dev posture it logs and allows. Posture is determined by spring.profiles.active; the guard runs in @Order(0) so misconfiguration surfaces before any framework wiring. Default posture is dev when unset, per the explicit fail-loud-on-prod-misconfig discipline of Rule D-6.
+Owns posture-aware startup: PostureBootGuard validates the required-config matrix before the runtime accepts traffic. In research and prod postures the boot fails closed on missing config; in dev posture it logs and allows. Posture is selected from the active runtime profile and defaults to dev when unset, per the fail-loud-on-prod-misconfig discipline of Rule D-6. The required-config matrix and the boot-ordering guarantee that the guard runs before any other wiring are owned by ADR-0058 and ADR-0055; the framework binding is L2 / verification material, not restated at L1.
 
 ### `FEAT-RUN-LIFECYCLE-CONTROL`
 
-Owns the public Run lifecycle surface — POST /v1/runs admission with tenant + idempotency + posture guard, POST /v1/runs/{id}/cancel re-validation and DFA transition to CANCEL_REQUESTED, GET /v1/runs/{id} tenant-scoped polling, GET /v1/runs paginated listing, and the CAS-based RunRepository.updateIfNotTerminal atomic transition that backs all of them. Run state changes are protected by the DFA in RunStateMachine; every persisted Run carries tenantId enforced by NOT NULL + RLS. Public endpoint behavior described by openapi-v1.yaml.
+Owns the public Run lifecycle surface — admission, cancel re-validation, tenant-scoped status polling — and routes every Run state change through the RunRepository SPI as the single sanctioned transition path (Rule R-C.2.b, ADR-0142). Transition legality is governed by the RunStateMachine validator; tenant scoping is enforced at the repository and storage layers (Rule R-J). The concrete route verbs / paths / status codes are owned by openapi-v1.yaml; the atomic single-writer CAS obligation and persistence schema that back the transition are the development.md §5.3 L2 Boundary Contract, not restated at L1.
 
 ### `FEAT-SUSPEND-RESUME-CONTROL`
 
@@ -125,7 +125,7 @@ Owns Run-level suspension and resume: SuspendSignal sealed-type variants (forCli
 
 ### `FEAT-TENANT-ISOLATION`
 
-Owns tenant isolation across the surface: every tenant-scoped HTTP request cross-checks JWT.tenant claim against the IngressEnvelope.tenantId (Rule R-J); every tenant-bearing Flyway migration enables Postgres Row-Level Security on the same migration (Rule R-J.a); cross-tenant access at the cancel endpoint collapses to 404 not_found at W0 (deferred 403 widening per ADR-0108). The tenant contract is enforced at three layers: HTTP edge, repository layer, and storage engine.
+Owns tenant isolation across the surface as defense in depth at three layers — HTTP edge, repository, and storage. The edge cross-checks the JWT tenant claim against the request's tenant identity (Rule R-J); every tenant-bearing schema migration carries Row-Level Security so the storage layer fails closed on cross-tenant reads (Rule R-J.a). The cross-tenant response posture at each route is owned by openapi-v1.yaml and ADR-0108; the Row-Level Security realisation and its schema-migration sequence are the development.md §5.3 L2 Boundary Contract, not restated at L1.
 
 ## 6. DFX Requirements
 
@@ -155,36 +155,21 @@ commands after auto-modifying the feature's owning code.
 
 ### `FEAT-ENGINE-DISPATCH-AND-HOOKS`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.service.runtime.engine.EngineRegistryIT`
-- `com.huawei.ascend.service.runtime.engine.HookDispatchTest`
-
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
 - `./mvnw -pl agent-execution-engine -am verify`
 
 ### `FEAT-IDEMPOTENCY-AND-REPLAY`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.service.runtime.idempotency.IdempotencyHeaderFilterIT`
-- `com.huawei.ascend.service.runtime.idempotency.IdempotencyStoreTest`
-
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
 
 ### `FEAT-POSTURE-BOOTSTRAP`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.service.platform.posture.PostureBootGuardIT`
-
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
 
 ### `FEAT-RUN-LIFECYCLE-CONTROL`
-
-**Verification test FQNs:**
-- `com.huawei.ascend.service.platform.web.runs.RunHttpContractIT`
-- `com.huawei.ascend.service.runtime.runs.RunStateMachineTest`
 
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
@@ -192,19 +177,10 @@ commands after auto-modifying the feature's owning code.
 
 ### `FEAT-SUSPEND-RESUME-CONTROL`
 
-**Verification test FQNs:**
-- `com.huawei.ascend.bus.spi.engine.SuspendSignalTest`
-- `com.huawei.ascend.bus.spi.engine.SuspendSignalLibraryTest`
-
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
 
 ### `FEAT-TENANT-ISOLATION`
-
-**Verification test FQNs:**
-- `com.huawei.ascend.service.platform.security.TenantIsolationIT`
-- `com.huawei.ascend.service.platform.tenant.TenantContextFilterIT`
-- `com.huawei.ascend.service.platform.tenant.JwtTenantClaimCrossCheckTest`
 
 **Verification commands:**
 - `./mvnw -pl agent-service -am verify`
