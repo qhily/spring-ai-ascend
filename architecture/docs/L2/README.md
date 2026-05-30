@@ -25,9 +25,16 @@ L2 documents are **per-feature** technical-detail designs that bind specific imp
 docs/L2/run-http-contract/logical.md         # L2, logical view, run HTTP contract
 docs/L2/run-http-contract/process.md         # L2, process view, idempotency body lifetime
 docs/L2/telemetry-vertical/development.md    # L2, development view, package layout
+docs/L2/fp-create-run/README.md              # L2, per-FunctionPoint spec (one entry verb)
 ```
 
-A single-file form (`docs/L2/<feature>.md`) is permitted when only one view is in scope.
+A single-file form (`docs/L2/<feature>.md`) is permitted when only one view is
+in scope. A per-FunctionPoint spec uses the lowercase `fp-<name>/README.md`
+directory form, where `fp-<name>` is the kebab-lowercase of the FunctionPoint
+`saa.id` (`FP-CREATE-RUN` → `fp-create-run`). The lowercase slug is load-bearing:
+the readiness gate (`gate/lib/check_feature_readiness.py`) probes the lowercased
+slug, and a case-sensitive CI filesystem will not resolve an upper-cased
+directory.
 
 ## Gate behaviour
 
@@ -37,13 +44,50 @@ A single-file form (`docs/L2/<feature>.md`) is permitted when only one view is i
 
 ## Current contents
 
-This directory ships empty at W1 entry. First L2 documents to land (post-W1):
+The L2 corpus has two shapes of document, both per-detail and never per-module:
 
-| Slug | Trigger |
+**Feature / vertical sinks** — multi-view technical-detail designs keyed by a
+feature or use-case slug, carrying the wire matrix, body-lifetime, sequence, and
+package-layout detail drained out of L0 / L1 prose by the layer-purity verdict
+(Rule 145 / E194-E195):
+
+| Slug | Detail it homes |
 |---|---|
-| `run-http-contract` | when authenticated `POST /v1/runs` matrix completes (closes P0-2 / P0-3 from L1 expert review) |
-| `telemetry-vertical` | when W2 Hook SPI un-freezes |
-| `idempotency-body-lifetime` | when `IdempotencyHeaderFilter` body-wrapper fix lands (closes P1-1) |
+| `run-http-contract` | the authenticated `POST /v1/runs` status-code matrix, request/response field shapes, filter-chain ordering, idempotency body-lifetime, and the cancel-vs-complete race resolution |
+| `telemetry-vertical` | the hook-outcome telemetry vertical (logical + process views) |
+| `engine-port-boundary` | the neutral transport-agnostic `EnginePort` Service↔Engine boundary (development / process / physical / scenarios views, ADR-0158) |
+
+**Per-FunctionPoint specs** — one `fp-<name>/README.md` per shipped
+FunctionPoint, the method-level detail home (entry method, runtime sequence,
+error matrix, contract + test evidence) for one entry verb. Each is a READABLE
+INTERPRETATION layer (ADR-0161 / Rule 146): it invents no FunctionPoint ID,
+frame ID, operation ID, status code, or method name — every identity is copied
+from the authoring DSL (`architecture/features/function-points.dsl`,
+`engineering-frames.dsl`) and every fact is cited from the generated facts.
+Authored from [`_function-point-template.md`](_function-point-template.md):
+
+| Slug | Owning EngineeringFrame |
+|---|---|
+| `fp-create-run` | `EF-ACCESS-ADMISSION` |
+| `fp-get-run-status` | `EF-ACCESS-ADMISSION` |
+| `fp-idempotency-claim` | `EF-ACCESS-ADMISSION` |
+| `fp-tenant-cross-check` | `EF-ACCESS-ADMISSION` |
+| `fp-posture-boot-guard` | `EF-ACCESS-ADMISSION` |
+| `fp-cancel-run` | `EF-TASK-CONTROL` |
+| `fp-suspend-resume` | `EF-TASK-CONTROL` |
+| `fp-child-run-spawn` | `EF-TASK-CONTROL` |
+| `fp-run-state-transition` | `EF-SESSION-TASK-STATE` |
+| `fp-ingress-envelope` | `EF-INGRESS-GATEWAY` |
+| `fp-s2c-callback` | `EF-S2C-TRANSPORT` |
+| `fp-engine-dispatch` | `EF-ENGINE-REGISTRY` |
+| `fp-hook-dispatch` | `EF-HOOK-SURFACE` |
+| `fp-graph-memory-store` | `EF-GRAPHMEMORY-AUTOCONFIG` |
+
+The owning-frame column is the `anchors` edge in
+`architecture/features/engineering-frames.dsl`; it is the authority, this table
+a readable view of it. The four `design_only` A2A / MQ FunctionPoints
+(`FP-A2A-MESSAGE-SEND`, `FP-A2A-TASKS-CANCEL`, `FP-A2A-TASKS-RESUBSCRIBE`,
+`FP-MQ-INBOUND`) carry no L2 spec yet — they have no generated facts to cite.
 
 ## Authority
 
