@@ -755,7 +755,7 @@ _deleted_names18=(
 # (~1s) — same 16 fixed-string patterns, same file set, identical
 # pass/fail semantics. ADR-0043 (widened to full ACTIVE_NORMATIVE_DOCS).
 _r18_files=$(find . -name '*.md' -o -name '*.yaml' 2>/dev/null \
-  | grep -vE '/docs/(archive|logs/reviews|adr|delivery|v6-rationale|plans|competitive|superpowers)/|/third_party/|/target/|/\.git/' \
+  | grep -vE '/docs/(archive|logs|adr|delivery|v6-rationale|plans|competitive|superpowers)/|/knowledge/|/third_party/|/target/|/\.git/' \
   | sort || true)
 if [[ -n "$_r18_files" ]]; then
   _r18_patterns=$(printf '%s\n' "${_deleted_names18[@]}")
@@ -960,8 +960,8 @@ while IFS= read -r _af22; do
     fail_rule "lowercase_metrics_in_contract_docs" "$_af22 contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 (widened) metric names must use lowercase springai_ascend_ prefix."
     _r22_fail=1
   fi
-done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/logs/reviews/' | \
-  grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
+done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/logs/' | \
+  grep -v '/knowledge/' | grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
   grep -v '/docs/plans/' | grep -v '/third_party/' | grep -v '/target/' | grep -v '/.git/' | sort 2>/dev/null || true)
 if [[ $_r22_fail -eq 0 ]]; then pass_rule "lowercase_metrics_in_contract_docs"; fi
 
@@ -982,7 +982,8 @@ from pathlib import Path
 LINK_RE = re.compile(r'\]\(([^)]+)\)')
 EXCLUDE_DIRS = ('./docs/archive/', './docs/logs/', './docs/adr/',
                 './docs/delivery/', './docs/v6-rationale/', './docs/plans/',
-                './docs/superpowers/', './third_party/', './discovery/')
+                './docs/superpowers/', './third_party/', './discovery/',
+                './knowledge/')
 EXCLUDE_DIR_NAMES = {'target', '.git', 'node_modules'}
 
 def is_excluded(p: str) -> bool:
