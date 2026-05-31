@@ -189,7 +189,7 @@ Counts are **reachable nodes that need a refresh edit** (stale link, moved targe
 - Decide: restore the contract YAMLs, or rewrite quickstart to the present contract layout. **(blocks the quickstart "operational onboarding" path)**
 
 ### E. onboarding / runbooks / misc — worklist size: **3 broken targets**
-- `docs/runbooks/debug-first-evidence.md` — BROKEN, referenced by `quickstart.md` **and** `rule-R-D`-chain review doc; the dir `docs/runbooks/` does not exist (Rule D-3.b cites this runbook as its operationalisation — a governance dangling ref).
+- `docs/harness/debug-first-evidence.md` — BROKEN, referenced by `quickstart.md` **and** `rule-R-D`-chain review doc; the dir `docs/runbooks/` does not exist (Rule D-3.b cites this runbook as its operationalisation — a governance dangling ref).
 - `docs/dfx` (BROKEN dir link from quickstart) — content moved under `docs/contracts/dfx/` and `docs/architecture/…/dfx`.
 - `docs/adr/relative-path` (BROKEN) — a literal placeholder string inside ADR-0043 prose, not a real link (cosmetic; can be left or de-linked).
 
@@ -241,7 +241,7 @@ docs/contracts/vector-store.v1.yaml
 docs/cross-cutting/posture-model.md
 docs/dfx
 docs/governance/rules/rule-79.md
-docs/runbooks/debug-first-evidence.md
+docs/harness/debug-first-evidence.md
 ```
 
 ## Appendix — files inspected (evidence)

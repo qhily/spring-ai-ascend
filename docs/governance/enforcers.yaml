@@ -1120,7 +1120,7 @@
   level: L0
   view: process
   artifact: gate/check_architecture_sync.sh#rule_79_runbook_present_and_cited
-  asserts: "docs/runbooks/debug-first-evidence.md exists with the canonical title 'Evidence-First Debug Sequence', AND docs/governance/rules/rule-D-3.b.md references the runbook path — catches both runbook deletion and card↔runbook link breakage."
+  asserts: "docs/harness/debug-first-evidence.md exists with the canonical title 'Evidence-First Debug Sequence', AND docs/governance/rules/rule-D-3.b.md references the runbook path — catches both runbook deletion and card↔runbook link breakage."
   governance_infra: true
 
 # ---------------------------------------------------------------------------

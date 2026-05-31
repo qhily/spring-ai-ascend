@@ -3205,27 +3205,27 @@ fi
 
 # ===========================================================================
 # 2026-05-18 beyond-SDD review response wave -- Rule 79 self-test
-# Authority: docs/governance/rules/rule-79.md + docs/runbooks/debug-first-evidence.md
+# Authority: docs/governance/rules/rule-79.md + docs/harness/debug-first-evidence.md
 # ===========================================================================
 test_rule79_evidence_first_debug_runbook() {
 
 ## Positive: runbook exists with canonical title AND card cites it -> Rule 79 PASS
 _r79_pos="$scratch/r79_pos"
 mkdir -p "$_r79_pos/docs/runbooks" "$_r79_pos/docs/governance/rules"
-cat > "$_r79_pos/docs/runbooks/debug-first-evidence.md" <<'DOCEOF'
+cat > "$_r79_pos/docs/harness/debug-first-evidence.md" <<'DOCEOF'
 # Evidence-First Debug Sequence
 Steps...
 DOCEOF
 cat > "$_r79_pos/docs/governance/rules/rule-79.md" <<'DOCEOF'
-Operationalised by docs/runbooks/debug-first-evidence.md.
+Operationalised by docs/harness/debug-first-evidence.md.
 DOCEOF
 _r79_pos_runbook_ok=0
 _r79_pos_card_ok=0
-[[ -f "$_r79_pos/docs/runbooks/debug-first-evidence.md" ]] && \
-  grep -qF 'Evidence-First Debug Sequence' "$_r79_pos/docs/runbooks/debug-first-evidence.md" && \
+[[ -f "$_r79_pos/docs/harness/debug-first-evidence.md" ]] && \
+  grep -qF 'Evidence-First Debug Sequence' "$_r79_pos/docs/harness/debug-first-evidence.md" && \
   _r79_pos_runbook_ok=1
 [[ -f "$_r79_pos/docs/governance/rules/rule-79.md" ]] && \
-  grep -qF 'docs/runbooks/debug-first-evidence.md' "$_r79_pos/docs/governance/rules/rule-79.md" && \
+  grep -qF 'docs/harness/debug-first-evidence.md' "$_r79_pos/docs/governance/rules/rule-79.md" && \
   _r79_pos_card_ok=1
 if [[ $_r79_pos_runbook_ok -eq 1 && $_r79_pos_card_ok -eq 1 ]]; then
   ok "rule79_evidence_first_debug_runbook_pos" "runbook + canonical title + card-citation present (PASS)"
@@ -3236,7 +3236,7 @@ fi
 ## Negative: card exists but does NOT reference runbook -> Rule 79 FAIL
 _r79_neg="$scratch/r79_neg"
 mkdir -p "$_r79_neg/docs/runbooks" "$_r79_neg/docs/governance/rules"
-cat > "$_r79_neg/docs/runbooks/debug-first-evidence.md" <<'DOCEOF'
+cat > "$_r79_neg/docs/harness/debug-first-evidence.md" <<'DOCEOF'
 # Evidence-First Debug Sequence
 Steps...
 DOCEOF
@@ -3244,7 +3244,7 @@ cat > "$_r79_neg/docs/governance/rules/rule-79.md" <<'DOCEOF'
 This card forgot to cite the runbook path. Rule 79 catches the broken link.
 DOCEOF
 _r79_neg_card_cites=0
-grep -qF 'docs/runbooks/debug-first-evidence.md' "$_r79_neg/docs/governance/rules/rule-79.md" 2>/dev/null && _r79_neg_card_cites=1
+grep -qF 'docs/harness/debug-first-evidence.md' "$_r79_neg/docs/governance/rules/rule-79.md" 2>/dev/null && _r79_neg_card_cites=1
 if [[ $_r79_neg_card_cites -eq 0 ]]; then
   ok "rule79_evidence_first_debug_runbook_neg" "card without runbook citation correctly triggers FAIL"
 else

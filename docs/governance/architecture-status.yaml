@@ -151,7 +151,7 @@ capabilities:
     tests:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
-    latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
+    latest_delivery_file: docs/logs/delivery/2026-05-12-e0ccb6e.md
     baseline_metrics:
       # Other docs (README.md, gate/README.md) reference this block; raw numeric claims in those entrypoints
       active_engineering_rules: 55              # live count of rule cards under docs/governance/rules/ with status:active (grep -lE '^status:[[:space:]]*active' rule-*.md per gate Rule 101.b — counts active + active_advisory). Semantic shift 2026-05-28: cards are sole rule authority (Rule 68/69) so this metric now counts cards, not CLAUDE.md headings. engineport-frame-authority-convergence: +5 cards G-22..G-26 (accepted-ADR frame-map coherence, shipped-frame anchor integrity, old-orchestration-spi package ban, Tier-1 non-English lint, local-plan-path ban) on the 50 baseline.
@@ -359,7 +359,7 @@ capabilities:
     shipped: true
     l0_decision: architecture/docs/L0/ARCHITECTURE.md
     l2_documents:
-      - docs/cross-cutting/posture-model.md
+      - docs/architecture/l0/cross-cutting/posture-model.md
       - architecture/docs/L1/agent-service/ARCHITECTURE.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/posture/PostureBootGuard.java
@@ -1547,7 +1547,7 @@ capabilities:
       - docs/adr/0061-telemetry-vertical-layer.md
       - docs/adr/0062-trace-run-session-identity.md
       - docs/adr/0063-client-sdk-observability-contract.md
-      - docs/telemetry/policy.md
+      - docs/architecture/l0/cross-cutting/telemetry-policy.md
     implementation: null
     tests: []
     allowed_claim: "Section 4 #53 invariant — Telemetry Vertical (Trace + Span + LlmCall) is a first-class cross-cutting concept in architecture/docs/L0/ARCHITECTURE.md §0.5.3. Every layer emits via TraceContext SPI or Hook SPI; direct emission forbidden. Full engine (OTel SDK + OTLP exporter + trace_store dual-write + Hook SPI un-deferred + LlmGateway GENERATION spans) lands at W2. See ADR-0061."
@@ -1574,7 +1574,7 @@ capabilities:
     l0_decision: docs/adr/0061-telemetry-vertical-layer.md
     l2_documents:
       - docs/adr/0061-telemetry-vertical-layer.md
-      - docs/telemetry/policy.md
+      - docs/architecture/l0/cross-cutting/telemetry-policy.md
       - architecture/docs/L1/agent-service/ARCHITECTURE.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/observability/TraceExtractFilter.java
@@ -1591,7 +1591,7 @@ capabilities:
     l0_decision: docs/adr/0061-telemetry-vertical-layer.md
     l2_documents:
       - docs/adr/0061-telemetry-vertical-layer.md
-      - docs/telemetry/policy.md
+      - docs/architecture/l0/cross-cutting/telemetry-policy.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/observability/TraceExtractFilter.java
     tests:

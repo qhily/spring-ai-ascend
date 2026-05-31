@@ -73,7 +73,7 @@ should precede trusting any green.
   needs `level:`/`view:`.
 - 1 — `always_loaded_budget_enforced`: `docs/onboarding/{developer,sre,architect,
   compliance-reviewer}.md` missing (reorg) → restore or drop from the budget list.
-- 1 — `rule_79_runbook_present_and_cited`: `docs/runbooks/debug-first-evidence.md` missing.
+- 1 — `rule_79_runbook_present_and_cited`: `docs/harness/debug-first-evidence.md` missing.
 - 1 — `template_render_idempotency`: stale output path `docs/L1/agent-service/README.md`.
 - 1 — workspace `surface-classification.dsl` drift (regen needed; advisory in soak).
 
