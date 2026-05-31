@@ -186,20 +186,26 @@
 #                     (the element name + its role as a boundary/anchor identity --
 #                     D1/D2 -- and the ADR/Rule citation -- D3).
 #
-# Coverage note. The element `description` strings of the four registered fragments
-#   were scanned on the current disk state by the BY-FACT-ID marker set (the same
+# Coverage note. The element `description` strings of the registered fragments were
+#   scanned on the current disk state by the BY-FACT-ID marker set (the same
 #   leaked-category markers the L0/L1 scan uses -- named SPI methods, state-name
 #   arrow runs, route x verb, call chains -- NOT only the narrow paren/fence trigger
-#   the current canonical probe fires on); the scan found FOUR live leaks, all in
-#   function-points.dsl, all frozen below:
+#   the current canonical probe fires on). A prior revision found FOUR live leaks,
+#   all in function-points.dsl:
 #     * fpCreateRun / fpGetRunStatus / fpCancelRun -- a literal route x verb (L4;
 #       fpCancelRun also a same-block DFA-transition residue, L2).
 #     * fpEngineDispatch -- the EngineRegistry.resolve(envelope) -> ExecutorAdapter
 #       call-and-dispatch arrow chain (L1).
-#   Both the route x verb and the .resolve(envelope) -> dispatch arrow chain are
-#   by-fact-id leaks on whose surface form the current canonical probe also fires
-#   today; the by-fact-id criterion and the probe agree on these four. They share
-#   the v1.0-boundary 2026-06-30 sunset.
+#   The 2026-05-31 residual-cleanup C3b wave then GENUINELY DISCHARGED all four by
+#   migrating the leaked detail out of the `description` into a claim-agnostic
+#   structural synopsis (FunctionPoint identity + ADR/Rule citation + a delegation
+#   pointer NAMING the migrated category), so the scan now finds ZERO live leak on
+#   this surface and the list is EMPTY -- the correct end state for a fully-drained
+#   surface (see the discharge note above the `violations:` key). The by-fact-id
+#   detail (the literal route, the DFA target state NAME, the resolve-and-dispatch
+#   arrow) was genuinely removed, NOT re-phrased into a probe-evading form -- verified
+#   on the live disk state with the canonical probe BEFORE (all four fired) and AFTER
+#   (all four clean).
 #
 #   Two descriptions the verdict's by-fact-id DSL scope would also have named --
 #   fpRunStateTransition and fpSuspendResume -- have since been drained by the
@@ -255,65 +261,72 @@
 
 schema_version: 1
 authority: ADR-0159
-last_updated: 2026-05-30
+last_updated: 2026-05-31
 status: advisory
 list_closed: true
 
-violations:
+# Fully drained 2026-05-31 (residual-cleanup C3b). All four DSL-description rows
+# were genuinely DISCHARGED by raising the offending function-points.dsl element
+# `description` strings to a claim-agnostic structural synopsis (FunctionPoint
+# identity + ADR/Rule citation + a delegation pointer NAMING the migrated category),
+# letting each element's existing saa.contract_op_refs / saa.code_entrypoint_refs /
+# saa.fact_refs property + the generated facts carry the behaviour. The canonical
+# probe library (gate/lib/check_layer_purity.py _scan_text_for_leaks, the same
+# imported trigger set the eventual E202 reuses) now reports ZERO leak on all four
+# drained descriptions on the current disk state, and ZERO by-fact-id detail remains
+# (genuine drain, not a probe-evading rephrase — see the discharge note below). An
+# empty closed list is the correct end state for a fully-drained surface; the file
+# is retained because the policy governed_surfaces row `dsl-element-description`
+# names it as the per-surface allow-list for the RESERVED E202 / Rule 152 / Rule
+# G-35, and any future hand-authored description leak on this tier is fixed (or,
+# while E202 is pre-blocking, re-frozen with a dated row) at authoring time, never
+# grandfathered.
+#
+# Discharge note (residual-cleanup C3b, 2026-05-31). The four rows below were the
+# live run-lifecycle-vertical leaks the prior revisions froze; this wave migrated
+# each leaked detail OUT of the element `description` (verified on the live disk
+# state with the canonical probe both BEFORE — all four fired — and AFTER — all four
+# clean):
+#   * LPV-DSL-fp-create-run-route-verb (fpCreateRun, L4) — the literal `POST /v1/runs`
+#     route x verb drained; the description now states the run-admission identity +
+#     the ADR-0040/REQ-001 citation and delegates the route x verb to
+#     contract-op/createrun (the home the saa.contract_op_refs property already
+#     names). No literal route remains; the L4 route probe no longer fires.
+#   * LPV-DSL-fp-cancel-run-route-verb-dfa (fpCancelRun, L4 + L2) — the literal
+#     `POST /v1/runs/(runId)/cancel` route x verb AND the named DFA target state
+#     `CANCEL_REQUESTED` drained; the description now states the run-cancellation
+#     identity + the ADR-0108/REQ-001 citation and delegates the route x verb to
+#     contract-op/cancelrun and the DFA target state to the fp-run-state-transition
+#     L2 design. Neither the literal route nor the state NAME remains; neither the L4
+#     route probe nor the L2 sequence probe fires.
+#   * LPV-DSL-fp-get-run-status-route-verb (fpGetRunStatus, L4) — the literal
+#     `GET /v1/runs/(runId)` route x verb drained; the description keeps the
+#     tenant-scoped-polling identity + the ADR-0040/REQ-001 citation and delegates
+#     the route x verb to contract-op/getrun. No literal route remains; the L4 route
+#     probe no longer fires.
+#   * LPV-DSL-fp-engine-dispatch-call-chain (fpEngineDispatch, L1) — the
+#     `EngineRegistry.resolve(envelope) -> typed ExecutorAdapter dispatch`
+#     method-call-and-dispatch arrow chain drained; the description keeps the
+#     Engine-Dispatch identity over the engine-envelope.v1.yaml contract surface +
+#     the Rule R-M.a citation, names `EngineRegistry` only as a bare D1 boundary
+#     identity (no `.resolve(` abutting-paren call, no `->` arrow), and delegates the
+#     resolve-and-dispatch shape to the code-symbols facts + the contract. No call
+#     chain remains; the L1 method-call-chain probe no longer fires.
+# This mirrors the already-accepted NON-member precedent recorded in the
+# Live-leak discipline note (fpRunStateTransition's `updateIfNotTerminal` and
+# fpSuspendResume's throw/-> state sequence were likewise drained, leaving only bare
+# D1 boundary identities) — the by-fact-id detail is genuinely removed, NOT
+# re-phrased into a probe-evading surface form, so the by-fact-id membership test
+# makes all four NON-members and they are removed, not re-kept. The reconcile step
+# applied each rewrite to the AUTHORED architecture/features/function-points.dsl
+# directly (the only surface that carries these `description` strings); the
+# descriptions feed neither the emitted architecture/generated/*.dsl fragments
+# (re-emitted from Java by AllFragmentsCli — a disjoint file set) nor
+# docs/governance/architecture-graph.yaml (built from enforcers/principle-coverage/
+# status-ledger/ADR/module-metadata, not from feature-fragment descriptions) nor the
+# rendered features catalog (render_features_catalog.py emits saa.synopsis, which
+# these FunctionPoints do not carry), so no generated artefact changed and no
+# fact/graph/catalog regeneration was required. The authority cascade (generated
+# facts > DSL > Card/prose) is untouched.
 
-  # ======================================================================
-  # function-points.dsl -- the run-lifecycle vertical descriptions.
-  # Highest priority; sunset 2026-06-30 (v1.0 boundary). The DSL tier
-  # outranks the L0/L1 prose AND the ledger per the authority cascade, and
-  # these are the same run-lifecycle loci the convergence-scan verdict named
-  # at the lower surfaces, so they share the L0 highest-priority sunset.
-  # ======================================================================
-
-  - id: LPV-DSL-fp-create-run-route-verb
-    layer: DSL-DESCRIPTION
-    file: architecture/features/function-points.dsl
-    element: fpCreateRun
-    saa_id: FP-CREATE-RUN
-    locus: "fpCreateRun element declaration : 21"
-    category: L4-http-status-route-verb
-    trigger: "POST /v1/runs"
-    migrate_to: "docs/contracts/openapi-v1.yaml (contract-op/createrun route x verb) + architecture/facts/generated/contract-surfaces.json"
-    sunset_date: 2026-06-30
-    defensible_part: "The FunctionPoint identity (Create Run: admit a new Run with tenant + idempotency + posture guard; the ADR-0020 / REQ-001 citation; the saa.contract_op_refs=contract-op/createrun pointer that already names the contract home) stays; the literal route x verb migrates to the contract surface the property already points at."
-
-  - id: LPV-DSL-fp-cancel-run-route-verb-dfa
-    layer: DSL-DESCRIPTION
-    file: architecture/features/function-points.dsl
-    element: fpCancelRun
-    saa_id: FP-CANCEL-RUN
-    locus: "fpCancelRun element declaration : 40"
-    category: L4-http-status-route-verb
-    categories: [L4-http-status-route-verb, L2-runtime-sequence]
-    trigger: "POST /v1/runs/(runId)/cancel -- re-validate tenant + DFA transition to CANCEL_REQUESTED"
-    migrate_to: "docs/contracts/openapi-v1.yaml (contract-op/cancelrun route x verb) + architecture/docs/L2/fp-run-state-transition/ (DFA transition)"
-    sunset_date: 2026-06-30
-    defensible_part: "The FunctionPoint identity (Cancel Run; the ADR-0108 / REQ-001 citation; the saa.contract_op_refs=contract-op/cancelrun pointer) stays; the route x verb and the named DFA target state (CANCEL_REQUESTED) migrate to the contract + the L2 run-state design. The L4 probe fires on the route x verb; the DFA-transition clause is the same-block runtime-sequence residue scoped for the migration."
-
-  - id: LPV-DSL-fp-get-run-status-route-verb
-    layer: DSL-DESCRIPTION
-    file: architecture/features/function-points.dsl
-    element: fpGetRunStatus
-    saa_id: FP-GET-RUN-STATUS
-    locus: "fpGetRunStatus element declaration : 59"
-    category: L4-http-status-route-verb
-    trigger: "GET /v1/runs/(runId) -- tenant-scoped polling endpoint for Run state + last error"
-    migrate_to: "docs/contracts/openapi-v1.yaml (contract-op/getrun route x verb) + architecture/facts/generated/contract-surfaces.json"
-    sunset_date: 2026-06-30
-    defensible_part: "The FunctionPoint identity (Get Run Status: tenant-scoped polling for Run state) stays; the literal route x verb migrates to the contract the saa.contract_op_refs property already names."
-
-  - id: LPV-DSL-fp-engine-dispatch-call-chain
-    layer: DSL-DESCRIPTION
-    file: architecture/features/function-points.dsl
-    element: fpEngineDispatch
-    saa_id: FP-ENGINE-DISPATCH
-    locus: "fpEngineDispatch element declaration : 228"
-    category: L1-method-call-chain
-    trigger: "EngineRegistry.resolve(envelope) -> typed ExecutorAdapter dispatch"
-    migrate_to: "architecture/facts/generated/code-symbols.json (EngineRegistry.resolve shape) + docs/contracts/engine-envelope.v1.yaml + architecture/docs/L2/fp-engine-dispatch/"
-    sunset_date: 2026-06-30
-    defensible_part: "The FunctionPoint identity (Engine Dispatch via engine-envelope.v1.yaml; the Rule R-M.a citation -- the contract surface is already named as the home) stays; the EngineRegistry.resolve(envelope) -> ExecutorAdapter call-and-dispatch chain is code-symbol / contract behaviour the generated facts + the contract own. The description should POINT at engine-envelope.v1.yaml (it already does) rather than restate the dispatch arrow."
+violations: []

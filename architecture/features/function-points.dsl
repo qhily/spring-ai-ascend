@@ -18,7 +18,7 @@
 // Relationship declarations live in verification.dsl to keep this file
 // focused on the function-point inventory itself.
 
-fpCreateRun = element "Create Run" "FunctionPoint" "POST /v1/runs — admit a new Run with tenant + idempotency + posture guard" "SAA FunctionPoint" {
+fpCreateRun = element "Create Run" "FunctionPoint" "Run-admission entry at the run ingress — admit a new Run under tenant + idempotency + posture guard (ADR-0040 / REQ-001; route x verb owned by contract-op/createrun)" "SAA FunctionPoint" {
     properties {
         "saa.id" "FP-CREATE-RUN"
         "saa.kind" "function_point"
@@ -37,7 +37,7 @@ fpCreateRun = element "Create Run" "FunctionPoint" "POST /v1/runs — admit a ne
     }
 }
 
-fpCancelRun = element "Cancel Run" "FunctionPoint" "POST /v1/runs/(runId)/cancel — re-validate tenant + DFA transition to CANCEL_REQUESTED" "SAA FunctionPoint" {
+fpCancelRun = element "Cancel Run" "FunctionPoint" "Run-cancellation entry at the run-control ingress — tenant-revalidated cancel admission (ADR-0108 / REQ-001; route x verb owned by contract-op/cancelrun, the DFA target state by the fp-run-state-transition L2 design)" "SAA FunctionPoint" {
     properties {
         "saa.id" "FP-CANCEL-RUN"
         "saa.kind" "function_point"
@@ -56,7 +56,7 @@ fpCancelRun = element "Cancel Run" "FunctionPoint" "POST /v1/runs/(runId)/cancel
     }
 }
 
-fpGetRunStatus = element "Get Run Status" "FunctionPoint" "GET /v1/runs/(runId) — tenant-scoped polling endpoint for Run state + last error" "SAA FunctionPoint" {
+fpGetRunStatus = element "Get Run Status" "FunctionPoint" "Run-status query at the run-query ingress — tenant-scoped polling for Run state + last error (ADR-0040 / REQ-001; route x verb owned by contract-op/getrun)" "SAA FunctionPoint" {
     properties {
         "saa.id" "FP-GET-RUN-STATUS"
         "saa.kind" "function_point"
@@ -260,7 +260,7 @@ fpGraphMemoryStore = element "Graph Memory Store" "FunctionPoint" "GraphMemoryRe
     }
 }
 
-fpEngineDispatch = element "Engine Dispatch" "FunctionPoint" "EngineRegistry.resolve(envelope) -> typed ExecutorAdapter dispatch via engine-envelope.v1.yaml (Rule R-M.a)" "SAA FunctionPoint" {
+fpEngineDispatch = element "Engine Dispatch" "FunctionPoint" "Engine dispatch at the EngineRegistry boundary over the engine-envelope.v1.yaml contract surface (Rule R-M.a; resolve-and-dispatch shape owned by the code-symbols facts + the contract)" "SAA FunctionPoint" {
     properties {
         "saa.id" "FP-ENGINE-DISPATCH"
         "saa.kind" "function_point"
