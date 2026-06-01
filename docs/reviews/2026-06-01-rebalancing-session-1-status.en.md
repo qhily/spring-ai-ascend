@@ -95,3 +95,22 @@ Two decisions would unblock the rest: (1) reorg disposition (repair vs revert+re
 (2) authorize the fail-open fix + the gate retirement (delicate) before chasing a
 green that the fail-open currently fakes. The knowledge system + keystone + main-path
 restores are safe to keep regardless.
+
+---
+
+## FINAL — all 11 waves complete (GATE: PASS, non-vacuous)
+
+Session 1 closed all waves on `governance/knowledge-governance-separation` (42 commits, nothing merged):
+
+- Gate: **264 → 0 failures**, verified `GATE: PASS` (non-vacuous; architecture-of-record restored, workspace gate real).
+- **G-track simplification: rule checks 157 → 36 (−77%), enforcers 190 → 89 (−53%)** — retired in safe
+  cascade batches by the `bulk-gtrack-retirement` workflow (commit-only-if-green; reverts any batch that
+  would break the gate; protected the safety core: tenant/RLS/secret/contract/release/fact-integrity).
+- Knowledge system built (`knowledge/` + advisory tooling + usage guide) and made findable in place
+  (search spans `docs/adr` + `docs/logs` + `docs/architecture`); keystone narrows governance off
+  knowledge + history; main-path (architecture-of-record + contracts) restored; `CLAUDE.md`/`README`
+  refreshed to the model; PRE2/PRE3 done (ADR hygiene tracked as advisory backlog).
+- Remaining work is **advisory knowledge maintenance** only (see `knowledge/adr-maintenance-backlog.md`),
+  not blocking.
+
+Reversible at every commit; ready for human review before any merge to `main`.
