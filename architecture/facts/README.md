@@ -16,12 +16,12 @@ non-goals; this directory carries the factual ground-truth they must agree with.
 ## Why this directory exists
 
 The expert review filed under
-[`docs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md`](../../docs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md)
+[`docs/logs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md`](../../docs/logs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md)
 argued that AI agents using the L1 Feature Registry must not be required to
 infer factual claims (code paths, SPI signatures, test FQNs, contract operations,
 module dependencies, runtime configuration) from hand-authored DSL or rendered
 Markdown. The engineering response under
-[`docs/reviews/2026-05-27-l1-structured-facts-response.en.md`](../../docs/reviews/2026-05-27-l1-structured-facts-response.en.md)
+[`docs/logs/reviews/2026-05-27-l1-structured-facts-response.en.md`](../../docs/logs/reviews/2026-05-27-l1-structured-facts-response.en.md)
 adopts that direction: a parallel, deterministically-generated fact layer is
 introduced as the AI's primary input for implementation decisions; the human-
 authored layer is downgraded to "intent / rationale" and cited *alongside* the
@@ -152,7 +152,7 @@ P0-1..P2-3. Current authoritative state (single source: this section +
 | Rule G-15 sub-clause `.d` (FunctionPoint ref resolver) | blocking | Round-2 Wave A (closes P1-2) |
 
 > Wave-status history: Round-1 ship notes lived inline in
-> `docs/reviews/2026-05-27-l1-structured-facts-response.en.md`; Round-2
+> `docs/logs/reviews/2026-05-27-l1-structured-facts-response.en.md`; Round-2
 > corrective ship notes live in
 > `docs/reviews/2026-05-28-fact-layer-delivery-correction-response.en.md`.
 > Do not chase wave status anywhere else in the repository — those two
@@ -169,7 +169,7 @@ P0-1..P2-3. Current authoritative state (single source: this section +
   `saa.*` property as `intent` / `factual_generated` /
   `factual_hand_authored_grandfathered` with sunset dates
 - `tools/architecture-workspace/` — home of the Java extractor binaries
-- `docs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md` —
+- `docs/logs/reviews/2026-05-27-l1-structured-facts-for-ai-unbiased-understanding.en.md` —
   expert review that triggered this layer
-- `docs/reviews/2026-05-27-l1-structured-facts-response.en.md` — engineering
+- `docs/logs/reviews/2026-05-27-l1-structured-facts-response.en.md` — engineering
   response with per-SFR accept/reject decisions
