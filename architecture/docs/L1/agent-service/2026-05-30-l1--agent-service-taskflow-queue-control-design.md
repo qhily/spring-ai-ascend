@@ -11,6 +11,13 @@ This wave keeps the taskflow surface intentionally small. It defines:
 
 It does not define any new taskflow SPI in this wave. SPI remains reserved for "this module defines the interface, another provider implements it" extension points. The current taskflow surface is internal API and local component code.
 
+Morning update, 2026-06-01:
+
+- L1-facing task control remains a single `runTask(RunTaskCommand)` method.
+- `RUN`, `RESUME_INPUT`, and `CANCEL` are carried by `TaskAction`, not by separate handler methods.
+- No `RuntimeQueueGateway` is defined. Runtime reports state through the adapter back to L4 `TaskControlClient.mark*`; any runtime detail that must be queued is first returned to L4.
+- The document now lives under the active `architecture/docs/L1/agent-service/` authority root after the repository's architecture-tree migration.
+
 ## 2. Package Layout
 
 ```text
@@ -55,6 +62,7 @@ public final class QueueFactory {
 ```
 
 The queue does not own task state and does not inspect item payload type.
+The queue also does not expose a runtime gateway. L5 runtime code must not publish to or consume from taskflow queues directly.
 
 ## 4. Task Model
 
