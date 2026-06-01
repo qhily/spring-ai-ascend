@@ -194,7 +194,8 @@ public final class A2aJsonRpcController {
                 new A2aEnvelope.A2aMessage(
                         messageText(message),
                         parts(message.get("parts")),
-                        metadataMap(metadata)));
+                        metadataMap(metadata)),
+                pushNotificationConfig(params));
     }
 
     private A2aEnvelope toCancelEnvelope(JsonNode params) {
@@ -215,7 +216,28 @@ public final class A2aJsonRpcController {
                 new A2aEnvelope.A2aMessage(
                         null,
                         List.of(),
-                        Map.of("taskId", taskId == null ? "" : taskId)));
+                        Map.of("taskId", taskId == null ? "" : taskId)),
+                null);
+    }
+
+    private A2aEnvelope.A2aPushNotificationConfig pushNotificationConfig(JsonNode params) {
+        JsonNode config = params.path("configuration").path("taskPushNotificationConfig");
+        if (config == null || config.isMissingNode() || config.isNull()) {
+            return null;
+        }
+        String url = text(config.get("url"));
+        if (url == null || url.isBlank()) {
+            throw new IllegalArgumentException("Missing A2A taskPushNotificationConfig.url");
+        }
+        JsonNode authentication = object(config.get("authentication"));
+        return new A2aEnvelope.A2aPushNotificationConfig(
+                text(config.get("id")),
+                text(config.get("taskId")),
+                url,
+                text(config.get("token")),
+                text(authentication.get("scheme")),
+                text(authentication.get("credentials")),
+                text(config.get("tenant")));
     }
 
     private A2aTaskQueryParams toTaskQuery(JsonNode params) {

@@ -56,7 +56,7 @@ public class AccessLayerConfiguration {
     AgentCard a2aAgentCard() {
         AgentCapabilities capabilities = AgentCapabilities.builder()
                 .streaming(true)
-                .pushNotifications(false)
+                .pushNotifications(true)
                 .extendedAgentCard(false)
                 .build();
         return AgentCard.builder()

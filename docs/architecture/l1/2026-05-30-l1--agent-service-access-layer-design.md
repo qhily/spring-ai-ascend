@@ -159,9 +159,10 @@ public record EgressBinding(
 | `NotificationType` | `LLM_RESULT` | LLM 生成文本、结构化内容或流式结果片段。 |
 | `NotificationType` | `ERROR` | 内部执行失败或业务错误。 |
 | `NotificationFrame` | `terminal` | 是否最后一帧；结束语义不放在 `NotificationType` 中。 |
-| `EgressBinding` | `deliveryMode` | A2A 场景当前取 `SYNC` 或 `STREAM`，异步通道取 `ASYNC`。A2A push notification 后续如接入，应使用标准 A2A push config，不新增自定义 `reply.mode`。 |
-| `EgressBinding` | `targetRef` | 具体交付目标；流式 A2A 当前可标记为 `sse`，异步通道为 reply topic/queue。 |
+| `EgressBinding` | `deliveryMode` | A2A 场景取 `SYNC / STREAM / PUSH_NOTIFICATION`，异步通道取 `ASYNC`。 |
+| `EgressBinding` | `targetRef` | 具体交付目标；流式 A2A 当前可标记为 `sse`，push notification 为标准配置中的 callback URL，异步通道为 reply topic/queue。 |
 | `EgressBinding` | `correlationId` | 外部请求关联标识。 |
+| `EgressBinding` | `attributes` | 出站扩展属性；例如 A2A push notification token/auth 信息。 |
 
 `NotificationFrame` 不要求 L4/L5 填写 `sequence / artifactId / protocol metadata`。这些字段由 L1 出站适配器按 `tenantId + sessionId + taskId` 的投递上下文补齐。
 
@@ -189,10 +190,11 @@ A2A 对外只暴露标准 JSON-RPC 单入口和标准 Agent Card 发现入口。
 |---|---|---|---|
 | `SendMessage` | `SendMessageRequest` | 将 `params.message` 转为 `A2aEnvelope -> AccessIntent`，调用 `A2aAccessService.send`。 | `SendMessageResponse` |
 | `SendStreamingMessage` | `SendStreamingMessageRequest` | 将请求转为 `A2aEnvelope -> AccessIntent`，创建 stream egress binding，并返回 SSE。 | SSE 中每帧为 `SendStreamingMessageResponse` |
+| `SendMessage` + `configuration.taskPushNotificationConfig` | `SendMessageRequest` | 使用 A2A 标准 push notification 配置创建出站绑定；L4/L5 后续通知由 L1 POST 到配置 URL。 | `SendMessageResponse` |
 | `GetTask` | `GetTaskRequest` | 按 `tenantId + sessionId + taskId` 查询 L1 出站 registry，并聚合为 SDK `Task`。 | `GetTaskResponse` |
 | `CancelTask` | `CancelTaskRequest` | 转为 `AccessOperation.CANCEL` 并透传给 L4。 | `CancelTaskResponse` |
 
-第一版不实现 A2A push notification 配置方法。后续如需要离线回调，应按 A2A 标准 push notification config 扩展，而不是在请求体里自定义 `reply.mode / reply.target`。
+Push notification 不使用自定义 `reply.mode / reply.target`。外部调用方应按 A2A 标准把 `taskPushNotificationConfig` 放在 `params.configuration` 下。
 
 ### 5.1 A2A 请求体约定
 
@@ -230,6 +232,46 @@ A2A 对外只暴露标准 JSON-RPC 单入口和标准 Agent Card 发现入口。
 ```
 
 `SendStreamingMessage` 请求体与 `SendMessage` 一致，只是 `method` 改为 `SendStreamingMessage`，响应为 `text/event-stream`。
+
+Push notification 示例：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-004",
+  "method": "SendMessage",
+  "params": {
+    "configuration": {
+      "taskPushNotificationConfig": {
+        "id": "push-config-001",
+        "url": "http://localhost:9001/a2a/callback",
+        "token": "optional-token",
+        "authentication": {
+          "scheme": "Bearer",
+          "credentials": "optional-credential"
+        }
+      }
+    },
+    "message": {
+      "role": "user",
+      "messageId": "msg-004",
+      "contextId": "session-123",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "帮我规划一个三天上海行程"
+        }
+      ],
+      "metadata": {
+        "tenantId": "tenant-001",
+        "userId": "user-001",
+        "agentId": "travel-agent",
+        "sessionId": "session-123"
+      }
+    }
+  }
+}
+```
 
 `GetTask` 示例：
 
@@ -282,7 +324,7 @@ A2A 对外只暴露标准 JSON-RPC 单入口和标准 Agent Card 发现入口。
 | `LLM_RESULT` | Agent `Message` | LLM 中间片段为 working，terminal 帧为 completed。 |
 | `ERROR` | `TaskStatusUpdateEvent(FAILED)` | 表示执行失败；错误信息放入 status message。 |
 
-`A2aOutput` 当前保留 `kind/body/metadata` 便于内部调试，同时新增持有 SDK `StreamingEventKind event`，真实 A2A SSE 输出使用 `event` 构造 `SendStreamingMessageResponse`。
+`A2aOutput` 当前保留 `kind/body/metadata` 便于内部调试，同时新增持有 SDK `StreamingEventKind event`，真实 A2A SSE 输出使用 `event` 构造 `SendStreamingMessageResponse`，push notification 使用同一个 `event` 序列化后 POST 到配置的 callback URL。
 
 `GetTask` 不直接返回 `A2aOutput` 列表，而是通过 `A2aTaskMapper` 将 registry 中的输出聚合为 SDK `Task`，包含 status、history 和 artifacts。
 
@@ -406,7 +448,7 @@ L4/L5
 | `protocol/a2a/A2aOutputSink.java` | A2A 输出落点接口。 |
 | `protocol/a2a/A2aOutputHandle.java` | A2A 输出索引键。 |
 | `protocol/a2a/A2aOutputRegistry.java` | A2A 输出 registry，支持列表查询和 SSE 订阅。 |
-| `protocol/a2a/DefaultA2aOutputSink.java` | A2A 输出默认实现，写入 registry。 |
+| `protocol/a2a/DefaultA2aOutputSink.java` | A2A 输出默认实现，写入 registry；push notification 模式下同时 POST 到配置的 callback URL。 |
 | `protocol/async/AsyncIngressPort.java` | 外部异步入站端口。 |
 | `protocol/async/AsyncEnvelope.java` | 异步入站消息信封。 |
 | `protocol/async/AsyncIngressAdapter.java` | 异步入站适配器。 |
@@ -419,8 +461,128 @@ L4/L5
 ## 11. 当前落地边界
 
 - A2A 入口、Agent Card 和 JSON-RPC 响应类型已经使用 `org.a2aproject.sdk:a2a-java-sdk-server-common:1.0.0.CR1`。
-- A2A push notification 暂不实现；后续需要时按标准 push config 方法扩展。
+- A2A 普通 JSON、SSE 流式、push notification 三种回消息模式均按标准 JSON-RPC 入口接入。
 - L4/L5 不构造 A2A SDK 对象，只发送 `NotificationFrame`。
 - L3 队列接口当前在代码中有临时占位，真实 L3 落地后应替换临时实现。
 - `TaskHandler.runTask` 是 L1 到 L4 的唯一任务联动点；方法签名需要继续与 L4 文档和代码保持一致。
+
+---
+
+## 12. Postman 验证 A2A 三种模式
+
+启动临时 L1 应用：
+
+```powershell
+$env:JAVA_HOME='D:\Software\Java\jdk-21.0.11'
+$env:Path='D:\Software\Java\jdk-21.0.11\bin;D:\Software\apache-maven-3.9.16\bin;' + $env:Path
+mvn -pl agent-service spring-boot:run -Dspring-boot.run.main-class=com.huawei.ascend.service.access.temp.TemporaryA2aApplication
+```
+
+公共地址：`POST http://localhost:8080/a2a/`。
+
+### 12.1 普通 JSON 模式
+
+Header：
+
+```text
+Content-Type: application/json
+Accept: application/json
+```
+
+Body：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-send",
+  "method": "SendMessage",
+  "params": {
+    "message": {
+      "role": "user",
+      "messageId": "msg-send",
+      "contextId": "session-send",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "hello from send mode"
+        }
+      ],
+      "metadata": {
+        "tenantId": "tenant-001",
+        "userId": "user-001",
+        "agentId": "agent-001",
+        "sessionId": "session-send",
+        "idempotencyKey": "idem-send",
+        "correlationId": "corr-send"
+      }
+    }
+  }
+}
+```
+
+预期响应：HTTP 200；JSON-RPC `jsonrpc=2.0`，`id=req-send`，`result.kind=message`，`result.taskId` 为 L4 返回的任务 ID。
+
+### 12.2 SSE 流式模式
+
+Header：
+
+```text
+Content-Type: application/json
+Accept: text/event-stream
+```
+
+Body 与普通 JSON 模式一致，只把 `method` 改为 `SendStreamingMessage`。
+
+预期响应：HTTP 200；`Content-Type` 包含 `text/event-stream`；响应体包含多帧 `event:jsonrpc`，第一帧是 accepted，后续帧是 L1 将 `NotificationFrame` 映射出的 A2A `TaskStatusUpdateEvent / Message / TaskArtifactUpdateEvent`。
+
+### 12.3 Push Notification 模式
+
+先准备一个能接收 HTTP POST 的 callback 服务，例如本地启动在 `http://localhost:9001/a2a/callback`。
+
+Header：
+
+```text
+Content-Type: application/json
+Accept: application/json
+```
+
+Body：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-push",
+  "method": "SendMessage",
+  "params": {
+    "configuration": {
+      "taskPushNotificationConfig": {
+        "id": "push-config-001",
+        "url": "http://localhost:9001/a2a/callback",
+        "token": "test-token"
+      }
+    },
+    "message": {
+      "role": "user",
+      "messageId": "msg-push",
+      "contextId": "session-push",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "hello from push mode"
+        }
+      ],
+      "metadata": {
+        "tenantId": "tenant-001",
+        "userId": "user-001",
+        "agentId": "agent-001",
+        "sessionId": "session-push",
+        "idempotencyKey": "idem-push",
+        "correlationId": "corr-push"
+      }
+    }
+  }
+}
+```
+
+预期响应：调用 `/a2a/` 立即返回 HTTP 200 和 `SendMessageResponse` accepted；随后 callback 服务会收到 L1 POST 的 A2A 出站事件，Header 包含 `Content-Type: application/json`，如配置了 `token` 还会包含 `X-A2A-Notification-Token`。
 

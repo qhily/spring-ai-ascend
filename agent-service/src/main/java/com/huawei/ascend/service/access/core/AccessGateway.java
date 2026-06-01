@@ -44,6 +44,9 @@ public final class AccessGateway {
         payload.put("contextId", context.contextId());
         payload.put("correlationId", context.correlationId());
         payload.put("a2aStreaming", streaming);
+        if (envelope.pushNotificationConfig() != null) {
+            payload.put("a2aPushNotificationConfig", envelope.pushNotificationConfig());
+        }
         return new AccessIntent(
                 AccessOperation.SUBMIT,
                 context.tenantId(),
@@ -90,7 +93,8 @@ public final class AccessGateway {
                 replyChannel,
                 deliveryMode,
                 targetRef,
-                correlationId);
+                correlationId,
+                resolveAttributes(intent, deliveryMode));
         egressQueueRegistry.getOrCreate(binding);
         egressDispatcher.start(binding);
         return binding;
@@ -109,6 +113,10 @@ public final class AccessGateway {
             return replyTopic == null ? null : replyTopic.toString();
         }
         if (intent.payload() instanceof Map<?, ?> payload) {
+            A2aEnvelope.A2aPushNotificationConfig pushConfig = pushConfig(payload);
+            if (pushConfig != null && pushConfig.url() != null && !pushConfig.url().isBlank()) {
+                return pushConfig.url();
+            }
             Object stream = payload.get("a2aStreaming");
             return Boolean.TRUE.equals(stream) ? "sse" : null;
         }
@@ -120,6 +128,10 @@ public final class AccessGateway {
             return ReplyChannel.ASYNC.name();
         }
         if (intent.payload() instanceof Map<?, ?> payload) {
+            A2aEnvelope.A2aPushNotificationConfig pushConfig = pushConfig(payload);
+            if (pushConfig != null && pushConfig.url() != null && !pushConfig.url().isBlank()) {
+                return "PUSH_NOTIFICATION";
+            }
             Object stream = payload.get("a2aStreaming");
             return Boolean.TRUE.equals(stream) ? "STREAM" : "SYNC";
         }
@@ -132,6 +144,35 @@ public final class AccessGateway {
             return correlationId == null ? null : correlationId.toString();
         }
         return null;
+    }
+
+    private static Map<String, Object> resolveAttributes(AccessIntent intent, String deliveryMode) {
+        if (!"PUSH_NOTIFICATION".equals(deliveryMode) || !(intent.payload() instanceof Map<?, ?> payload)) {
+            return Map.of();
+        }
+        A2aEnvelope.A2aPushNotificationConfig pushConfig = pushConfig(payload);
+        if (pushConfig == null) {
+            return Map.of();
+        }
+        HashMap<String, Object> attributes = new HashMap<>();
+        putIfPresent(attributes, "pushNotificationConfigId", pushConfig.id());
+        putIfPresent(attributes, "pushNotificationTaskId", pushConfig.taskId());
+        putIfPresent(attributes, "pushNotificationToken", pushConfig.token());
+        putIfPresent(attributes, "pushNotificationAuthScheme", pushConfig.authScheme());
+        putIfPresent(attributes, "pushNotificationAuthCredentials", pushConfig.authCredentials());
+        putIfPresent(attributes, "pushNotificationTenant", pushConfig.tenant());
+        return Collections.unmodifiableMap(attributes);
+    }
+
+    private static A2aEnvelope.A2aPushNotificationConfig pushConfig(Map<?, ?> payload) {
+        Object value = payload.get("a2aPushNotificationConfig");
+        return value instanceof A2aEnvelope.A2aPushNotificationConfig config ? config : null;
+    }
+
+    private static void putIfPresent(HashMap<String, Object> attributes, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            attributes.put(key, value);
+        }
     }
 }
 

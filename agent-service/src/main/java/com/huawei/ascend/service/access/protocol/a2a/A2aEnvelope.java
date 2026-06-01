@@ -6,7 +6,8 @@ import java.util.Objects;
 
 public record A2aEnvelope(
         A2aContext context,
-        A2aMessage message) {
+        A2aMessage message,
+        A2aPushNotificationConfig pushNotificationConfig) {
 
     public A2aEnvelope {
         Objects.requireNonNull(context, "context");
@@ -38,6 +39,16 @@ public record A2aEnvelope(
             parts = parts == null ? List.of() : List.copyOf(parts);
             metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
         }
+    }
+
+    public record A2aPushNotificationConfig(
+            String id,
+            String taskId,
+            String url,
+            String token,
+            String authScheme,
+            String authCredentials,
+            String tenant) {
     }
 
 }
