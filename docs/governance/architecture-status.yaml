@@ -162,16 +162,16 @@ capabilities:
       section_4_constraints: 65                 # architecture/docs/L0/ARCHITECTURE.md §4 #1..#65 (unchanged at rc22)
       adr_count: 139                            # Fact-Layer W1 +1 (ADR-0154 fact-layer authority) on the L1 Feature Registry W5 baseline of 138.
       maven_tests_green: 463                    # Formula: Surefire/Failsafe XML `tests` attributes after canonical WSL `./mvnw -Pquality verify`; Round-4 Wave Alpha +2 XML-counted tests for FactLayerByteIdentityIT (Rule G-15.c.bytes byte-identity verification moved from bash gate to Maven per 2026-05-28 fourth-correction R3 redesign) on the rc54 baseline of 461.
-      architecture_graph_nodes: 550          # live recount via WSL `bash gate/build_architecture_graph.sh` per Rule G-7 (Wrote ... 550 nodes); knowledge/governance-separation G-track rebalancing batch-11 -6 on the prior 556 (3 enforcer nodes E178/E182/E183 + 3 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired). Earlier batch-10 -13 on the prior 569 (12 enforcer nodes E118/E127/E128/E129/E130/E135/E136/E137/E138/E173/E180/E181 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when those rows retired). Earlier batch-9 -9 on the prior 578 (8 enforcer nodes E77/E78/E95/E96/E103/E108/E109/E116 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when those rows retired). Earlier batch-8 -6 on the prior 584 (6 enforcer nodes E30/E31/E32/E64/E66/E67 dropped when those rows retired). Earlier batch-7 -10 on the prior 594 (6 enforcer nodes E152/E164/E165/E166/E167/E169 + 4 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired). Earlier batch-6 -2 on the prior 596 (2 enforcer nodes E71/E111 dropped when those rows retired). Earlier batch-5 -5 on the prior 601 (5 enforcer nodes E52/E53/E58/E62/E85 dropped when those rows retired). Earlier batch-3 -2 on the prior 603 (enforcer node E191 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when that row retired). Earlier batch-2 -12 on the prior 615 (8 enforcer nodes E161/E170/E171/E172/E174/E184/E189/E190 + 4 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired).
+      architecture_graph_nodes: 572          # live recount via WSL `bash gate/build_architecture_graph.sh` per Rule G-7 (Wrote ... 572 nodes; ADR format-unify 2026-06-01 +22 on prior 550 — 55 docs/adr/*.md->*.yaml became visible to the *.yaml-only graph builder, of which ~33 were already placeholder nodes from dangling .yaml cross-refs so net +22); knowledge/governance-separation G-track rebalancing batch-11 -6 on the prior 556 (3 enforcer nodes E178/E182/E183 + 3 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired). Earlier batch-10 -13 on the prior 569 (12 enforcer nodes E118/E127/E128/E129/E130/E135/E136/E137/E138/E173/E180/E181 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when those rows retired). Earlier batch-9 -9 on the prior 578 (8 enforcer nodes E77/E78/E95/E96/E103/E108/E109/E116 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when those rows retired). Earlier batch-8 -6 on the prior 584 (6 enforcer nodes E30/E31/E32/E64/E66/E67 dropped when those rows retired). Earlier batch-7 -10 on the prior 594 (6 enforcer nodes E152/E164/E165/E166/E167/E169 + 4 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired). Earlier batch-6 -2 on the prior 596 (2 enforcer nodes E71/E111 dropped when those rows retired). Earlier batch-5 -5 on the prior 601 (5 enforcer nodes E52/E53/E58/E62/E85 dropped when those rows retired). Earlier batch-3 -2 on the prior 603 (enforcer node E191 + 1 orphaned artefact node that lost its last referencing enforcer edge, dropped when that row retired). Earlier batch-2 -12 on the prior 615 (8 enforcer nodes E161/E170/E171/E172/E174/E184/E189/E190 + 4 orphaned artefact nodes that lost their last referencing enforcer edge, dropped when those rows retired).
       architecture_graph_edges: 1099         # live recount via WSL `bash gate/build_architecture_graph.sh` per Rule G-7 (Wrote ... 1099 edges); knowledge/governance-separation G-track rebalancing batch-11 -6 on the prior 1105 (enforced_by / asserts_in edges of the 3 deleted enforcers E178/E182/E183). Earlier batch-10 -24 on the prior 1129 (enforced_by / asserts_in edges of the 12 deleted enforcers E118/E127/E128/E129/E130/E135/E136/E137/E138/E173/E180/E181). Earlier batch-9 -16 on the prior 1145 (enforced_by / asserts_in edges of the 8 deleted enforcers E77/E78/E95/E96/E103/E108/E109/E116). Earlier batch-8 -12 on the prior 1157 (enforced_by / asserts_in edges of the 6 deleted enforcers E30/E31/E32/E64/E66/E67). Earlier batch-7 -12 on the prior 1169 (enforced_by / asserts_in edges of the 6 deleted enforcers E152/E164/E165/E166/E167/E169). Earlier batch-6 -4 on the prior 1173 (enforced_by / asserts_in edges of the 2 deleted enforcers E71/E111). Earlier batch-5 -10 on the prior 1183 (enforced_by / asserts_in edges of the 5 deleted enforcers E52/E53/E58/E62/E85). Earlier batch-3 -2 on the prior 1185 (enforced_by / asserts_in edges of the deleted enforcer E191). Earlier batch-2 -16 on the prior 1201 (enforced_by / asserts_in edges of the 8 deleted enforcers E161/E170/E171/E172/E174/E184/E189/E190).
-      workspace_elements: 519                   # live projection count from docs/governance/architecture-workspace-graph.yaml#node_count (re-emitted via gate/check_architecture_workspace.sh); knowledge/governance-separation G-track rebalancing batch-11 -3 on the prior 522 (3 ENF-E178/E182/E183 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 89 elements by the gate's fragment-idempotency re-emit). Earlier batch-10 -12 on the prior 534 (12 ENF-E118/E127/E128/E129/E130/E135/E136/E137/E138/E173/E180/E181 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 92 elements by the gate's fragment-idempotency re-emit). Earlier batch-9 -8 on the prior 542 (8 ENF-E77/E78/E95/E96/E103/E108/E109/E116 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 104 elements). Earlier batch-8 -6 on the prior 548 (6 ENF-E30/E31/E32/E64/E66/E67 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 112 elements). Earlier batch-7 -6 on the prior 554 (6 ENF-E152/E164/E165/E166/E167/E169 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 118 elements). Earlier batch-6 -2 on the prior 556 (2 ENF-E71/E111 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 124 elements). Earlier batch-5 -5 on the prior 561 (5 ENF-E52/E53/E58/E62/E85 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 126 elements). Earlier batch-3 -1 on the prior 562 (1 ENF-E191 enforcer projection dropped when that enforcer row retired and architecture/generated/enforcers.dsl was regenerated to 131 elements). Earlier batch-2 -8 on the prior 570 (8 ENF-E161/E170/E171/E172/E174/E184/E189/E190 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 132 elements). NEVER hand-computed — taken from the regenerated projection. Enforced by gate/lib/check_workspace_baseline_parity.py.
-      workspace_relationships: 495              # live projection edge_count from docs/governance/architecture-workspace-graph.yaml#edge_count; engineport-frame-authority-convergence: +26 on the prior 469 (16 Feature->Frame traverses edges + frame anchors/contains edges from the re-homed engine boundary). NEVER hand-computed — taken from the regenerated projection. Enforced by gate/lib/check_workspace_baseline_parity.py.
+      workspace_elements: 574                   # live projection count from docs/governance/architecture-workspace-graph.yaml#node_count (re-emitted via gate/check_architecture_workspace.sh); knowledge/governance-separation G-track rebalancing batch-11 -3 on the prior 522 (3 ENF-E178/E182/E183 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 89 elements by the gate's fragment-idempotency re-emit). Earlier batch-10 -12 on the prior 534 (12 ENF-E118/E127/E128/E129/E130/E135/E136/E137/E138/E173/E180/E181 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 92 elements by the gate's fragment-idempotency re-emit). Earlier batch-9 -8 on the prior 542 (8 ENF-E77/E78/E95/E96/E103/E108/E109/E116 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 104 elements). Earlier batch-8 -6 on the prior 548 (6 ENF-E30/E31/E32/E64/E66/E67 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 112 elements). Earlier batch-7 -6 on the prior 554 (6 ENF-E152/E164/E165/E166/E167/E169 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 118 elements). Earlier batch-6 -2 on the prior 556 (2 ENF-E71/E111 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 124 elements). Earlier batch-5 -5 on the prior 561 (5 ENF-E52/E53/E58/E62/E85 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 126 elements). Earlier batch-3 -1 on the prior 562 (1 ENF-E191 enforcer projection dropped when that enforcer row retired and architecture/generated/enforcers.dsl was regenerated to 131 elements). Earlier batch-2 -8 on the prior 570 (8 ENF-E161/E170/E171/E172/E174/E184/E189/E190 enforcer projections dropped when those enforcer rows retired and architecture/generated/enforcers.dsl was regenerated to 132 elements). NEVER hand-computed — taken from the regenerated projection. Enforced by gate/lib/check_workspace_baseline_parity.py.
+      workspace_relationships: 586              # live projection edge_count from docs/governance/architecture-workspace-graph.yaml#edge_count; engineport-frame-authority-convergence: +26 on the prior 469 (16 Feature->Frame traverses edges + frame anchors/contains edges from the re-homed engine boundary). NEVER hand-computed — taken from the regenerated projection. Enforced by gate/lib/check_workspace_baseline_parity.py.
       feature_corpus_size: 9                     # value-thread Features only (W1 seed baseline). The +6 agent-service Layer features were re-tagged to SAA EngineeringFrame per ADR-0157 (structural axis), returning the Feature corpus to 9.
       l1_modules_with_canonical_directory: 7    # NEW metric: count of <module>/ canonical directories under architecture/docs/L1/ matching _template/ basenames (L1 Feature Registry W2 — all 7 kind=domain modules adopt uniform shape).
       recurring_defect_families: 41             # live `^  - id: F-` count in docs/governance/recurring-defect-families.yaml. engineport-frame-authority-convergence registers 2 new families (F-non-english-in-tier1-authority + F-local-plan-path-in-active-authority) and records recurrences against F-numeric-drift / F-authority-surface-path-drift / F-cross-authority-agreement; the on-disk ledger was already at 39 (the prior informational baseline of 38 lagged one un-bumped addition), so 39+2=41.
       phase_contracts: 5                        # rc21 Wave 6 NEW: docs/governance/contracts/{architecture-design,engineering-implementation,integration-verification,system-commit,review-response}.md per ADR-0098.
       phase_loading_skills: 6                   # rc21 Wave 6 NEW: refresh-defect-archive (rc17) + 5 new phase skills (design-mode + impl-mode + verify-mode + commit-mode + review-mode) under .claude/skills/ per ADR-0098.
-    allowed_claim: "Architecture-sync gate implemented in bash (canonical); the PowerShell entrypoint is deprecated as of the rc2 wave (fail-closed stub; see gate/check_architecture_sync.ps1). Architecture baseline (Fact-Layer Authority Round-2 Wave A ship, 2026-05-28): 65 §4 constraints; 139 ADRs (highest ADR-0154 fact-layer authority); 36 active gate rules + Rule G-15 (Fact-Layer Integrity, sub-clauses .a/.b/.c.structural/.c.bytes/.d all BLOCKING per Round-4 Wave Alpha redesign 2026-05-28) + gate/check_architecture_workspace.sh blocking-mode workspace gate invoked after the rule loop; 55 active engineering rules (D-/R-/G-/M- namespace per ADR-0086); 104 gate self-tests; 89 enforcer rows; 463 Maven XML-counted tests after WSL-native ./mvnw -Pquality verify; 41 recurring defect families. Workspace closure at architecture/workspace.dsl: 519 elements + 495 relationships (knowledge/governance-separation G-track rebalancing projection after retiring over-coupled rules + their enforcers); architecture/docs/L1/ holds the consolidated L1 design corpus; architecture/decisions/ holds 6 anchor ADR markdown mirrors imported by Structurizr's !adrs directive; architecture/features/features.dsl holds 15 FEAT- elements with full saa.aiBoundary.* schema + 9-state lifecycle per Rule G-14. architecture/facts/generated/ is POPULATED (Fact-Layer Round-1 W2-W4 shipped 2026-05-27): module-build.json + adrs.json + runtime-config.json + contract-surfaces.json + code-symbols.json + tests.json — emitted by ExtractFactsCli under tools/architecture-workspace/.../facts/. Round-2 Wave A (2026-05-28) closed expert-review P0-1 (truth-up FunctionPoint refs against generated facts, removed FP-LIST-RUNS), P0-2 (regenerated architecture/generated/*.dsl + the agent-service feature catalog), P1-2 (implemented check_subclause_d resolver), P1-4 (re-rendered catalog). Round-2 Waves B-C follow as pre-committed contiguous PR train; verification log lives at docs/reviews/2026-05-28-fact-layer-delivery-correction-response.en.md. W5 14-day structurizr-soak runs 2026-05-27 -> 2026-06-10. Wave history retained in prior release notes; this row's numeric baseline is authoritative for release evidence."
+    allowed_claim: "Architecture-sync gate implemented in bash (canonical); the PowerShell entrypoint is deprecated as of the rc2 wave (fail-closed stub; see gate/check_architecture_sync.ps1). Architecture baseline (Fact-Layer Authority Round-2 Wave A ship, 2026-05-28): 65 §4 constraints; 139 ADRs (highest ADR-0154 fact-layer authority); 36 active gate rules + Rule G-15 (Fact-Layer Integrity, sub-clauses .a/.b/.c.structural/.c.bytes/.d all BLOCKING per Round-4 Wave Alpha redesign 2026-05-28) + gate/check_architecture_workspace.sh blocking-mode workspace gate invoked after the rule loop; 55 active engineering rules (D-/R-/G-/M- namespace per ADR-0086); 104 gate self-tests; 89 enforcer rows; 463 Maven XML-counted tests after WSL-native ./mvnw -Pquality verify; 41 recurring defect families. Workspace closure at architecture/workspace.dsl: 574 elements + 586 relationships (knowledge/governance-separation G-track rebalancing projection after retiring over-coupled rules + their enforcers); architecture/docs/L1/ holds the consolidated L1 design corpus; architecture/decisions/ holds 6 anchor ADR markdown mirrors imported by Structurizr's !adrs directive; architecture/features/features.dsl holds 15 FEAT- elements with full saa.aiBoundary.* schema + 9-state lifecycle per Rule G-14. architecture/facts/generated/ is POPULATED (Fact-Layer Round-1 W2-W4 shipped 2026-05-27): module-build.json + adrs.json + runtime-config.json + contract-surfaces.json + code-symbols.json + tests.json — emitted by ExtractFactsCli under tools/architecture-workspace/.../facts/. Round-2 Wave A (2026-05-28) closed expert-review P0-1 (truth-up FunctionPoint refs against generated facts, removed FP-LIST-RUNS), P0-2 (regenerated architecture/generated/*.dsl + the agent-service feature catalog), P1-2 (implemented check_subclause_d resolver), P1-4 (re-rendered catalog). Round-2 Waves B-C follow as pre-committed contiguous PR train; verification log lives at docs/reviews/2026-05-28-fact-layer-delivery-correction-response.en.md. W5 14-day structurizr-soak runs 2026-05-27 -> 2026-06-10. Wave history retained in prior release notes; this row's numeric baseline is authoritative for release evidence."
 
   plan_projection_contract:
     status: design_accepted
@@ -491,7 +491,7 @@ capabilities:
   suspend_reason_taxonomy:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — sealed SuspendReason variants (ChildRun | AwaitChildren | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited); each carries deadline(); JoinPolicy (ALL|ANY|N_OF); ChildFailurePolicy (PROPAGATE|IGNORE|COMPENSATE). W0 single-cause (ChildRun) is reference-only; full taxonomy implementation deferred to W2. ADR-0019."
@@ -576,7 +576,7 @@ capabilities:
   capability_registry_spi:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — CapabilityRegistry SPI for enumerating available skills/executors by name. Required before W2 Postgres-backed async orchestrator (NodeFunction lambdas must become named references for cross-JVM dispatch). Trigger moved W4→W2 per ADR-0021 layered SPI taxonomy."
@@ -620,7 +620,7 @@ capabilities:
   trace_replay_dev_surface:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0017-dev-time-trace-replay.md
+    l0_decision: docs/adr/0017-dev-time-trace-replay.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — read-only dev-time trace timeline exposed via MCP server tools (get_run_trace, list_runs); OTel-driven from trace_store table; no Admin UI; clients are dev tools (Claude Desktop, CLI). §1 Admin UI exclusion preserved. Implementation deferred to W4."
@@ -628,7 +628,7 @@ capabilities:
   sandbox_executor_spi:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0018-sandbox-executor-spi.md
+    l0_decision: docs/adr/0018-sandbox-executor-spi.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — SandboxExecutor SPI for W3 ActionGuard Bound stage. Default NoOpSandboxExecutor (in-JVM Java calls). Pluggable: GraalPolyglotSandboxExecutor scaffold (GraalVM 24.2+). Bound stage rejects on SandboxViolationException. Implementation deferred to W3."
@@ -636,7 +636,7 @@ capabilities:
   a2a_federation_strategic:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0016-a2a-federation-strategic-deferral.md
+    l0_decision: docs/adr/0016-a2a-federation-strategic-deferral.yaml
     implementation: null
     tests: []
     allowed_claim: "Post-W4 strategic reserved space — A2A protocol contract surface (AgentCard, AgentRegistry, RemoteAgentClient SPI) with pluggable registry binding (Nacos/Consul/K8s). No W1-W4 schedule. ADR-0016 names intent and reversal path."
@@ -670,7 +670,7 @@ capabilities:
   parallel_child_dispatch:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — AwaitChildren SuspendReason variant enables fan-out to multiple child Runs with JoinPolicy (ALL|ANY|N_OF). Implementation deferred to W2 alongside PostgresOrchestrator."
@@ -678,7 +678,7 @@ capabilities:
   suspend_deadline_watchdog:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — watchdog / sweeper that transitions SUSPENDED runs to EXPIRED when deadline() elapses. Implementation deferred to W2."
@@ -723,7 +723,7 @@ capabilities:
   spawn_envelope_acyclicity:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — SpawnEnvelope 16th dimension ancestorRunIds (max-depth 8, parent-propagated); orchestrator rejects spawns whose requested child run-id appears in the list; closes same-instance Run cycles only. Cross-instance federation requires signed/attested ancestor chains via a follow-up ADR. Java type and W0 SPI wire-through deferred to W2."
@@ -932,7 +932,7 @@ capabilities:
   layered_spi_taxonomy:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — Layer 1 (cross-tier core: Run/RunStatus/RunRepository/RunContext/Orchestrator/ResilienceContract); Layer 2 (tier-specific: ExecutorDefinition/NodeFunction); Layer 3 (tier-internal: Checkpointer/IdempotencyStore/PayloadCodec). W4 Temporal bypasses Layer 3. ADR-0021."
@@ -940,7 +940,7 @@ capabilities:
   payload_codec_spi:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0022-payload-codec-spi.md
+    l0_decision: docs/adr/0022-payload-codec-spi.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — PayloadCodec<T> SPI with id()/type()/encode/decode; EncodedPayload(bytes, codecId, typeRef) persistence contract; TypedPayload<T>|RawPayload sealed Payload; RunEvent sealed streaming event (NodeStarted|NodeCompleted|Suspended|Resumed|Failed|Terminal). Rule 22 gate. Implementation deferred to W2."
@@ -948,7 +948,7 @@ capabilities:
   tenant_propagation_purity:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.yaml
     implementation:
       - agent-bus/src/main/java/com/huawei/ascend/bus/spi/engine/RunContext.java
     tests:
@@ -958,7 +958,7 @@ capabilities:
   logbook_mdc_tenant_id:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/tenant/TenantContextFilter.java
     tests:
@@ -968,7 +968,7 @@ capabilities:
   suspension_write_atomicity_contract:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0024-suspension-write-atomicity.md
+    l0_decision: docs/adr/0024-suspension-write-atomicity.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — atomicity contract for RunRepository.save(suspended) + Checkpointer.save(payload) pair. W0 in-memory: single-thread sequential (invariant documented in SyncOrchestrator.executeLoop). W2 Postgres: single @Transactional block. W2 Redis: transactional outbox (ADR-0007). W4 Temporal: SPI bypassed. Rule 23 gate. W2 binding."
@@ -978,7 +978,7 @@ capabilities:
   checkpoint_ownership_boundary:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0025-checkpoint-ownership-boundary.md
+    l0_decision: docs/adr/0025-checkpoint-ownership-boundary.yaml
     implementation:
       - agent-execution-engine/src/main/java/com/huawei/ascend/engine/exec/SequentialGraphExecutor.java
       - agent-execution-engine/src/main/java/com/huawei/ascend/engine/exec/IterativeAgentLoopExecutor.java
@@ -1012,7 +1012,7 @@ capabilities:
   idempotency_store_promotion_to_interface:
     status: deferred_w1
     shipped: false
-    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.yaml
     implementation: null
     tests: []
     allowed_claim: "Deferred W1 — wire IdempotencyStore into IdempotencyHeaderFilter with (tenant_id, key) claim/replay/409-conflict semantics backed by Postgres. Currently IdempotencyStore is a @Component stub not injected in production."
@@ -1020,7 +1020,7 @@ capabilities:
   micrometer_mandatory_tenant_tag:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/observability/TenantTagMeterFilter.java
     tests:
@@ -1030,7 +1030,7 @@ capabilities:
   otel_trace_propagation_across_suspend:
     status: deferred_w2
     shipped: false
-    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.yaml
     implementation: null
     tests: []
     allowed_claim: "Deferred W2 — OTel traceparent propagated through SuspendSignal and resumed in new thread/transaction boundary. No OTel instrumentation at W0."
@@ -1048,7 +1048,7 @@ capabilities:
   causal_payload_envelope:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — CausalPayloadEnvelope wraps Payload (ADR-0022) with SemanticOntology tag + SHA-256 fingerprint + byteSize + decayed flag. Implementation deferred to W2."
@@ -1056,7 +1056,7 @@ capabilities:
   semantic_ontology_tags:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — SemanticOntology enum {FACT, PLACEHOLDER, HYPOTHESIS, REDACTED}. W2 enforcement via PayloadCodec boundary gate."
@@ -1064,7 +1064,7 @@ capabilities:
   payload_fingerprint_precommit:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/orchestration/inmemory/InMemoryCheckpointer.java
     tests:
@@ -1074,7 +1074,7 @@ capabilities:
   cognition_action_separation:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0029-cognition-action-separation.md
+    l0_decision: docs/adr/0029-cognition-action-separation.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — Cognition-Action separation principle named. Python-as-mandatory rejected; GraalPolyglot remains optional W3 sandbox impl per ADR-0018. SkillKind taxonomy (JAVA_NATIVE|MCP_TOOL|SANDBOXED_CODE_INTERPRETER) defined."
@@ -1082,7 +1082,7 @@ capabilities:
   skill_spi_lifecycle:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — Skill SPI with init/execute/suspend/teardown lifecycle; SkillCostReceipt; SkillResumeToken. Implementation deferred to W2 (SPI)."
@@ -1090,7 +1090,7 @@ capabilities:
   skill_resource_matrix:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — SkillResourceMatrix(tenantQuotaKey, globalCapacityKey, tokenBudget, wallClockMs, cpuMillis, maxMemoryBytes, concurrencyCap). Extends skill_capacity_matrix two-axis model with cost/concurrency dimensions."
@@ -1098,7 +1098,7 @@ capabilities:
   untrusted_skill_sandbox_mandatory:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — research/prod posture + UNTRUSTED SkillTrustTier MUST route through non-NoOp SandboxExecutor; startup gate asserts. Rule 27 deferred W3."
@@ -1106,7 +1106,7 @@ capabilities:
   three_track_channel_isolation:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0031-three-track-channel-isolation.md
+    l0_decision: docs/adr/0031-three-track-channel-isolation.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — Control (RunControlSink) + Data (Flux<RunEvent>) + Heartbeat (Flux<Instant>) physical channels. RunDispatcher SPI. Tenant-scoped CapabilityRegistry. Implementation deferred to W2."
@@ -1114,7 +1114,7 @@ capabilities:
   iterative_agent_loop_typed_cursor:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0022-payload-codec-spi.md
+    l0_decision: docs/adr/0022-payload-codec-spi.yaml
     implementation:
       - agent-execution-engine/src/main/java/com/huawei/ascend/engine/exec/IterativeAgentLoopExecutor.java
     tests:
@@ -1126,7 +1126,7 @@ capabilities:
   posture_single_construction_path:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0035-posture-enforcement-single-construction-path.md
+    l0_decision: docs/adr/0035-posture-enforcement-single-construction-path.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/posture/AppPostureGate.java
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/orchestration/inmemory/SyncOrchestrator.java
@@ -1141,7 +1141,7 @@ capabilities:
   run_find_root_runs:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.md
+    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/runs/spi/RunRepository.java
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/orchestration/inmemory/InMemoryRunRegistry.java
@@ -1152,7 +1152,7 @@ capabilities:
   scope_based_run_hierarchy:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.md
+    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — RunScope{STEP_LOCAL, SWARM} discriminator taxonomy; SuspendReason.SwarmDelegation variant; PlanState/RunPlanRef minimal contract. RunScope Java field deferred to W2 alongside Postgres schema rev. ADR-0032."
@@ -1160,7 +1160,7 @@ capabilities:
   logical_identity_equivalence:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0033-logical-identity-equivalence-and-deployment-locus-vocabulary.md
+    l0_decision: docs/adr/0033-logical-identity-equivalence-and-deployment-locus-vocabulary.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — deployment-locus vocabulary: S-Cloud (server, cloud-hosted), S-Edge (server, edge-deployed), C-Device (client-resident). Rule 17 S-side/C-side substitution-authority preserved unchanged. No edge posture variant (edge posture REJECTED). ADR-0033."
@@ -1168,7 +1168,7 @@ capabilities:
   memory_knowledge_taxonomy:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md
+    l0_decision: docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — 6 memory categories: M1 Short-Term Run Context, M2 Episodic Session Memory, M3 Semantic Long-Term, M4 Graph Relationship, M5 Knowledge Index, M6 Retrieved Context. Common MemoryMetadata schema with tenantId/runId/sessionId/source/ontologyTag/confidence/retentionExpiry/embeddingModelVersion/redactionState/visibilityScope. Graphiti selected as W1 reference sidecar. mem0/Cognee not-selected. Implementation deferred to W2. ADR-0034."
@@ -1176,7 +1176,7 @@ capabilities:
   contract_surface_truth_generalization:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0036-contract-surface-truth-generalization.md
+    l0_decision: docs/adr/0036-contract-surface-truth-generalization.yaml
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
@@ -1186,7 +1186,7 @@ capabilities:
   wave_authority_consolidation:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0037-wave-authority-consolidation.md
+    l0_decision: docs/adr/0037-wave-authority-consolidation.yaml
     implementation:
       - docs/archive/2026-05-13-plans-archived/README.md
     tests: []
@@ -1195,7 +1195,7 @@ capabilities:
   skill_spi_resource_tiers:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0038-skill-spi-resource-tier-classification.md
+    l0_decision: docs/adr/0038-skill-spi-resource-tier-classification.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — 4 enforceability tiers: (a) hard-enforceable (token budget, wall-clock timeout, concurrency cap, trust tier, sandbox requirement); (b) sandbox-enforceable (CPU millis, max-memory-bytes); (c) advisory/receipt (observed CPU/time/memory); (d) skill-specific hints. SkillResourceMatrix updated in ADR-0030. ADR-0038 + §4 #35."
@@ -1203,7 +1203,7 @@ capabilities:
   payload_migration_adapter:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0039-payload-migration-adapter-strategy.md
+    l0_decision: docs/adr/0039-payload-migration-adapter-strategy.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — single normative migration path: raw Object → Payload (ADR-0022) → CausalPayloadEnvelope (ADR-0028). PayloadAdapter.wrap(Object) adapter wrapper required for legacy NodeFunction/Reasoner impls. @Deprecated window mandatory before removal. ADR-0039 + §4 #36."
@@ -1211,7 +1211,7 @@ capabilities:
   run_dispatcher_spi:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0031-three-track-channel-isolation.md
+    l0_decision: docs/adr/0031-three-track-channel-isolation.yaml
     implementation: null
     tests: []
     allowed_claim: "Design only — RunDispatcher SPI: route Run to correct channel bundle (Control/Data/Heartbeat) per ADR-0031 §4 #101-125. Terminal events bypass DROP_OLDEST via reserved terminal slot (never dropped). Non-terminal events use DROP_OLDEST with counter metric. Implementation deferred to W2. ADR-0031."
@@ -1221,7 +1221,7 @@ capabilities:
   w1_http_contract_reconciliation:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0040-w1-http-contract-reconciliation.md
+    l0_decision: docs/adr/0040-w1-http-contract-reconciliation.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/web/runs/RunController.java
       - agent-service/src/main/java/com/huawei/ascend/service/platform/web/runs/RunHttpExceptionMapper.java
@@ -1242,7 +1242,7 @@ capabilities:
   active_corpus_truth_sweep:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0041-active-corpus-truth-sweep.md
+    l0_decision: docs/adr/0041-active-corpus-truth-sweep.yaml
     implementation:
       - docs/archive/2026-05-13-plans-archived/architecture-systems-engineering-plan.md
       - gate/check_architecture_sync.ps1
@@ -1263,7 +1263,7 @@ capabilities:
   active_normative_doc_catalog:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0043-active-normative-doc-catalog-and-peripheral-drift-prevention.md
+    l0_decision: docs/adr/0043-active-normative-doc-catalog-and-peripheral-drift-prevention.yaml
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
@@ -1273,7 +1273,7 @@ capabilities:
   spi_contract_precision_and_memory_metadata_reconciliation:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0044-spi-contract-precision-and-memory-metadata-reconciliation.md
+    l0_decision: docs/adr/0044-spi-contract-precision-and-memory-metadata-reconciliation.yaml
     implementation:
       - docs/contracts/contract-catalog.md
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/memory/spi/GraphMemoryRepository.java
@@ -1285,7 +1285,7 @@ capabilities:
   release_note_shipped_surface_truth_gate:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0046-release-note-shipped-surface-truth.md
+    l0_decision: docs/adr/0046-release-note-shipped-surface-truth.yaml
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
@@ -1299,7 +1299,7 @@ capabilities:
   active_entrypoint_baseline_truth_gate:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md
+    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.yaml
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
@@ -1311,7 +1311,7 @@ capabilities:
   system_boundary_prose_convention:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md
+    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
       - architecture/docs/L1/agent-service/ARCHITECTURE.md
@@ -1322,10 +1322,10 @@ capabilities:
   service_layer_microservice_commitment:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0048-service-layer-microservice-architecture-commitment.md
+    l0_decision: docs/adr/0048-service-layer-microservice-architecture-commitment.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0048-service-layer-microservice-architecture-commitment.md
+      - docs/adr/0048-service-layer-microservice-architecture-commitment.yaml
       - docs/archive/2026-05-13-serverless-architecture-future-direction.md
     tests:
       - gate/test_architecture_sync_gate.sh
@@ -1335,10 +1335,10 @@ capabilities:
   c_s_dynamic_hydration_protocol:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0049-c-s-dynamic-hydration-protocol.md
+      - docs/adr/0049-c-s-dynamic-hydration-protocol.yaml
       - docs/governance/whitepaper-alignment-matrix.md
     tests:
       - gate/test_architecture_sync_gate.sh
@@ -1348,12 +1348,12 @@ capabilities:
   workflow_intermediary_bus_and_three_track_cross_service:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.md
+    l0_decision: docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.md
-      - docs/adr/0048-service-layer-microservice-architecture-commitment.md
-      - docs/adr/0031-three-track-channel-isolation.md
+      - docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.yaml
+      - docs/adr/0048-service-layer-microservice-architecture-commitment.yaml
+      - docs/adr/0031-three-track-channel-isolation.yaml
       - docs/governance/whitepaper-alignment-matrix.md
     tests:
       - gate/test_architecture_sync_gate.sh
@@ -1363,11 +1363,11 @@ capabilities:
   memory_knowledge_ownership_boundary:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0051-memory-knowledge-ownership-boundary.md
+    l0_decision: docs/adr/0051-memory-knowledge-ownership-boundary.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0051-memory-knowledge-ownership-boundary.md
-      - docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md
+      - docs/adr/0051-memory-knowledge-ownership-boundary.yaml
+      - docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.yaml
       - docs/governance/whitepaper-alignment-matrix.md
     tests:
       - gate/test_architecture_sync_gate.sh
@@ -1377,12 +1377,12 @@ capabilities:
   skill_topology_scheduler_and_capability_bidding:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0052-skill-topology-scheduler-and-capability-bidding.md
+    l0_decision: docs/adr/0052-skill-topology-scheduler-and-capability-bidding.yaml
     implementation:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0052-skill-topology-scheduler-and-capability-bidding.md
-      - docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
-      - docs/adr/0038-skill-spi-resource-tier-classification.md
+      - docs/adr/0052-skill-topology-scheduler-and-capability-bidding.yaml
+      - docs/adr/0030-skill-spi-lifecycle-resource-matrix.yaml
+      - docs/adr/0038-skill-spi-resource-tier-classification.yaml
       - docs/governance/whitepaper-alignment-matrix.md
     tests:
       - gate/test_architecture_sync_gate.sh
@@ -1392,7 +1392,7 @@ capabilities:
   whitepaper_alignment_matrix:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.yaml
     implementation:
       - docs/governance/whitepaper-alignment-matrix.md
       - gate/check_architecture_sync.sh
@@ -1404,7 +1404,7 @@ capabilities:
   release_note_baseline_truth_gate:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.yaml
     implementation:
       - gate/check_architecture_sync.sh
       - gate/check_architecture_sync.ps1
@@ -1415,7 +1415,7 @@ capabilities:
   whitepaper_alignment_self_audit:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.yaml
     implementation:
       - docs/logs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md
     tests:
@@ -1427,10 +1427,10 @@ capabilities:
   agent_swarm_cohesive_execution_invariant:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.yaml
     l2_documents:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0053-cohesive-agent-swarm-execution.md
+      - docs/adr/0053-cohesive-agent-swarm-execution.yaml
     implementation: null
     tests: []
     allowed_claim: "Section 4 #51 invariant: agent-spawned child work remains under the same workflow authority by default. SwarmRun is alias for Run with RunScope.SWARM (ADR-0032). ParentRunRef is alias for Run.parentRunId+Run.parentNodeKey (Section 4 #9, W0 shipped). SwarmJoinPolicy is alias for JoinPolicy ALL/ANY/N_OF (ADR-0019). W0 reference impl: single ChildRun via SyncOrchestrator. W2: full taxonomy. See ADR-0053."
@@ -1438,9 +1438,9 @@ capabilities:
   spawn_envelope_contract:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.yaml
     l2_documents:
-      - docs/adr/0053-cohesive-agent-swarm-execution.md
+      - docs/adr/0053-cohesive-agent-swarm-execution.yaml
     implementation: null
     tests: []
     allowed_claim: "15-dimension consolidated envelope: parentRunRef, tenantId, permissionEnvelopeRef, budgetEnvelope, cancellationPolicy, deadline, traceCorrelation, attemptId, posture, sessionId, businessRuleSubsetRef, placeholderPolicy, memoryOwnershipScope, idempotencyContext, observabilityTags. W0 dimensions shipped: 1 (tenantId via RunContext.tenantId). W0 partial: 5 (cancellationPolicy, deadline, attemptId, posture, observabilityTags). W2 design gaps: 7 (permission scope, budget, trace correlation, session, businessRuleSubset, placeholder policy, memory ownership boundary, audit/actor identity). W1 deferred: 1 (idempotency dedup per ADR-0027). Java type for SpawnEnvelope deferred to W2. See ADR-0053 dimension table."
@@ -1448,9 +1448,9 @@ capabilities:
   cross_workflow_handoff_contract:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.yaml
     l2_documents:
-      - docs/adr/0053-cohesive-agent-swarm-execution.md
+      - docs/adr/0053-cohesive-agent-swarm-execution.yaml
     implementation: null
     tests: []
     allowed_claim: "Explicit escape-hatch contract for child execution genuinely belonging to a different workflow authority. Produces (a) new lifecycle boundary, (b) fresh resume contract, (c) explicit ownership transfer, (d) audit-grade attestation. W0 status: contract-level only; Java type deferred to W2. Implicit cross-workflow execution is forbidden by Section 4 #51. See ADR-0053."
@@ -1458,9 +1458,9 @@ capabilities:
   authority_transfer_boundary_taxonomy:
     status: design_accepted
     shipped: true
-    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.yaml
     l2_documents:
-      - docs/adr/0053-cohesive-agent-swarm-execution.md
+      - docs/adr/0053-cohesive-agent-swarm-execution.yaml
       - architecture/docs/L0/ARCHITECTURE.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/tenant/TenantContextFilter.java
@@ -1473,10 +1473,10 @@ capabilities:
   long_connection_containment_invariant:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation: null
     tests: []
     allowed_claim: "Section 4 #52 invariant: long-running calls represented as bounded runtime handles, not unbounded threads/sockets/connections. Netty/epoll is W2+ implementation guidance, NOT L0 contract. See ADR-0054."
@@ -1484,9 +1484,9 @@ capabilities:
   logical_call_handle_principle:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/runs/Run.java
       - agent-bus/src/main/java/com/huawei/ascend/bus/spi/engine/SuspendSignal.java
@@ -1497,9 +1497,9 @@ capabilities:
   suspend_instead_of_hold_principle:
     status: implemented_unverified
     shipped: true
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation:
       - agent-bus/src/main/java/com/huawei/ascend/bus/spi/engine/SuspendSignal.java
     tests:
@@ -1509,9 +1509,9 @@ capabilities:
   socket_per_tenant_cap:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation: null
     tests: []
     allowed_claim: "W1+ deferred resource-explosion vector. Per-tenant socket cap to prevent one tenant from exhausting the cross-instance P2P transport pool. Named here per ADR-0054 so it cannot be silently dropped during W1+ design. Re-introduction trigger: first W1 deployment that supports more than one tenant on the same Agent Service instance."
@@ -1519,9 +1519,9 @@ capabilities:
   file_descriptor_bound:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation: null
     tests: []
     allowed_claim: "W1+ deferred resource-explosion vector. Per-instance file-descriptor bound with per-tenant fairness. Named here per ADR-0054. Re-introduction trigger: first W1 deployment with file-based artifact handles (e.g. Tika document parsing, sandbox executor temp files)."
@@ -1529,9 +1529,9 @@ capabilities:
   in_flight_runs_pool_cap:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.yaml
     l2_documents:
-      - docs/adr/0054-long-connection-containment-runtime-handles.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.yaml
     implementation: null
     tests: []
     allowed_claim: "W1+ deferred resource-explosion vector. Per-Agent-Service-instance cap on the number of in-flight Runs. Prevents an instance from accepting Runs until JVM heap saturates. Named here per ADR-0054. Re-introduction trigger: first W1 deployment that supports concurrent Run admission via ADR-0050 Workflow Intermediary mailbox."
@@ -1541,12 +1541,12 @@ capabilities:
   telemetry_vertical:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.yaml
     l2_documents:
       - architecture/docs/L0/ARCHITECTURE.md
-      - docs/adr/0061-telemetry-vertical-layer.md
-      - docs/adr/0062-trace-run-session-identity.md
-      - docs/adr/0063-client-sdk-observability-contract.md
+      - docs/adr/0061-telemetry-vertical-layer.yaml
+      - docs/adr/0062-trace-run-session-identity.yaml
+      - docs/adr/0063-client-sdk-observability-contract.yaml
       - docs/architecture/l0/cross-cutting/telemetry-policy.md
     implementation: null
     tests: []
@@ -1555,9 +1555,9 @@ capabilities:
   trace_context_spi:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.yaml
     l2_documents:
-      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/adr/0061-telemetry-vertical-layer.yaml
       - architecture/docs/L1/agent-service/ARCHITECTURE.md
     implementation:
       - agent-bus/src/main/java/com/huawei/ascend/bus/spi/engine/TraceContext.java
@@ -1571,9 +1571,9 @@ capabilities:
   mdc_correlation_carriers:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.yaml
     l2_documents:
-      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/adr/0061-telemetry-vertical-layer.yaml
       - docs/architecture/l0/cross-cutting/telemetry-policy.md
       - architecture/docs/L1/agent-service/ARCHITECTURE.md
     implementation:
@@ -1588,9 +1588,9 @@ capabilities:
   traceparent_propagation:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.yaml
     l2_documents:
-      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/adr/0061-telemetry-vertical-layer.yaml
       - docs/architecture/l0/cross-cutting/telemetry-policy.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/platform/observability/TraceExtractFilter.java
@@ -1601,9 +1601,9 @@ capabilities:
   run_trace_session_columns:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0062-trace-run-session-identity.md
+    l0_decision: docs/adr/0062-trace-run-session-identity.yaml
     l2_documents:
-      - docs/adr/0062-trace-run-session-identity.md
+      - docs/adr/0062-trace-run-session-identity.yaml
       - architecture/docs/L0/ARCHITECTURE.md
     implementation:
       - agent-service/src/main/java/com/huawei/ascend/service/runtime/runs/Run.java
@@ -1614,9 +1614,9 @@ capabilities:
   client_sdk_observability_contract:
     status: design_accepted
     shipped: false
-    l0_decision: docs/adr/0063-client-sdk-observability-contract.md
+    l0_decision: docs/adr/0063-client-sdk-observability-contract.yaml
     l2_documents:
-      - docs/adr/0063-client-sdk-observability-contract.md
+      - docs/adr/0063-client-sdk-observability-contract.yaml
     implementation: null
     tests: []
     allowed_claim: "W3 deferred — springai-ascend-client (Java/Kotlin first; JS/Python deferred to W3+). Captures business spans locally, propagates W3C traceparent outbound, reads traceresponse for correlation, batches OTLP/HTTP, redacts PII in posture=prod. Server-side L1.x prerequisites (traceparent + MDC + traceresponse) ship at L1.x so vanilla OTel clients can integrate today; platform-owned SDK lands at W3. See ADR-0063."
@@ -1626,9 +1626,9 @@ capabilities:
   business_platform_decoupling:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0064-layer-0-governing-principles.md
+    l0_decision: docs/adr/0064-layer-0-governing-principles.yaml
     l2_documents:
-      - docs/adr/0064-layer-0-governing-principles.md
+      - docs/adr/0064-layer-0-governing-principles.yaml
       - docs/quickstart.md
       - docs/governance/rule-history.md
       - docs/governance/principle-coverage.yaml
@@ -1644,9 +1644,9 @@ capabilities:
   competitive_baselines:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0065-competitive-baselines.md
+    l0_decision: docs/adr/0065-competitive-baselines.yaml
     l2_documents:
-      - docs/adr/0065-competitive-baselines.md
+      - docs/adr/0065-competitive-baselines.yaml
       - docs/governance/competitive-baselines.yaml
     implementation:
       - docs/governance/competitive-baselines.yaml
@@ -1657,9 +1657,9 @@ capabilities:
   independent_module_evolution:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0066-independent-module-evolution.md
+    l0_decision: docs/adr/0066-independent-module-evolution.yaml
     l2_documents:
-      - docs/adr/0066-independent-module-evolution.md
+      - docs/adr/0066-independent-module-evolution.yaml
     implementation:
       - agent-service/module-metadata.yaml
       - agent-service/module-metadata.yaml
@@ -1672,9 +1672,9 @@ capabilities:
   spi_dfx_tck_codesign:
     status: test_verified
     shipped: true
-    l0_decision: docs/adr/0067-spi-dfx-tck-codesign.md
+    l0_decision: docs/adr/0067-spi-dfx-tck-codesign.yaml
     l2_documents:
-      - docs/adr/0067-spi-dfx-tck-codesign.md
+      - docs/adr/0067-spi-dfx-tck-codesign.yaml
       - docs/dfx/agent-service.yaml
       - docs/dfx/agent-service.yaml
       - docs/dfx/spring-ai-ascend-graphmemory-starter.yaml
