@@ -1,12 +1,7 @@
 package com.huawei.ascend.service.access.core;
 
-import com.huawei.ascend.service.access.egress.EgressBindingFactory;
-import com.huawei.ascend.service.access.egress.EgressDispatcher;
-import com.huawei.ascend.service.access.egress.EgressQueueRegistry;
 import com.huawei.ascend.service.access.model.AccessAcceptedResponse;
 import com.huawei.ascend.service.access.model.AccessCancelCommand;
-import com.huawei.ascend.service.access.model.EgressBinding;
-import com.huawei.ascend.service.access.model.ReplyContext;
 import com.huawei.ascend.service.schema.AgentRequest;
 import com.huawei.ascend.service.schema.Message;
 import com.huawei.ascend.service.schema.Role;
@@ -23,41 +18,30 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Submits normalized access requests into task control and binds the session
- * reply channel before dispatch.
+ * Resolves access sessions before submitting normalized requests into task control.
  */
 public final class AccessSubmissionService {
 
     private final TaskControlClient taskControlClient;
     private final SessionManager sessionManager;
-    private final EgressQueueRegistry egressQueueRegistry;
-    private final EgressDispatcher egressDispatcher;
 
     public AccessSubmissionService(
             TaskControlClient taskControlClient,
-            SessionManager sessionManager,
-            EgressQueueRegistry egressQueueRegistry,
-            EgressDispatcher egressDispatcher) {
+            SessionManager sessionManager) {
         this.taskControlClient = Objects.requireNonNull(taskControlClient, "taskControlClient");
         this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager");
-        this.egressQueueRegistry = Objects.requireNonNull(egressQueueRegistry, "egressQueueRegistry");
-        this.egressDispatcher = Objects.requireNonNull(egressDispatcher, "egressDispatcher");
     }
 
-    public CompletionStage<AccessAcceptedResponse> run(AgentRequest request, ReplyContext reply) {
+    public CompletionStage<AccessAcceptedResponse> run(AgentRequest request) {
         Objects.requireNonNull(request, "request");
-        Objects.requireNonNull(reply, "reply");
         AgentRequest resolved = resolveSession(request);
-        bindEgress(resolved, reply);
         return taskControlClient.run(new RunCommand(resolved))
                 .thenApply(result -> toAccepted(resolved, result));
     }
 
-    public CompletionStage<AccessAcceptedResponse> resume(AgentRequest request, ReplyContext reply) {
+    public CompletionStage<AccessAcceptedResponse> resume(AgentRequest request) {
         Objects.requireNonNull(request, "request");
-        Objects.requireNonNull(reply, "reply");
         AgentRequest resolved = resolveSession(request);
-        bindEgress(resolved, reply);
         return taskControlClient.resume(new ResumeCommand(null, resolved))
                 .thenApply(result -> toAccepted(resolved, result));
     }
@@ -73,12 +57,6 @@ public final class AccessSubmissionService {
                 command.reason(),
                 command.metadata());
         return taskControlClient.cancel(cancelCommand).thenApply(result -> toAccepted(command, result));
-    }
-
-    private void bindEgress(AgentRequest request, ReplyContext reply) {
-        EgressBinding binding = EgressBindingFactory.from(request, reply);
-        egressQueueRegistry.getOrCreate(binding);
-        egressDispatcher.start(binding);
     }
 
     private AgentRequest resolveSession(AgentRequest request) {
