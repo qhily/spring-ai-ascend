@@ -1,5 +1,6 @@
 package com.huawei.ascend.service.taskcontrol.api;
 
+import com.huawei.ascend.service.schema.AgentRequest;
 import com.huawei.ascend.service.taskcontrol.TaskFailureCode;
 import com.huawei.ascend.service.taskcontrol.TaskState;
 import com.huawei.ascend.service.taskcontrol.WaitingReason;
@@ -11,18 +12,24 @@ import java.util.concurrent.CompletionStage;
 /**
  * Internal Task-Centric Control (TCC) API.
  *
- * <p>This is not a Service Provider Interface. The access side calls runTask as
- * the single task intent entrypoint; runtime adapters call mark* methods to
- * report state intent. Runtime code must not publish directly to, or consume
- * directly from, the Internal Event Queue (IEQ).
+ * <p>This is not a Service Provider Interface. The access side calls
+ * action-specific task methods; runtime adapters call mark* methods to report
+ * state intent. Runtime code must not publish directly to, or consume directly
+ * from, the Internal Event Queue (IEQ).
  */
 public interface TaskControlClient {
 
-    /**
-     * Single access-facing entrypoint. TaskAction reserves RUN, RESUME_INPUT,
-     * and CANCEL without adding separate handler methods.
-     */
-    CompletionStage<TaskResult> runTask(RunTaskCommand command);
+    CompletionStage<TaskResult> run(RunCommand command);
+
+    CompletionStage<TaskResult> resume(ResumeCommand command);
+
+    CompletionStage<PreparedTaskResult> prepareRun(RunCommand command);
+
+    CompletionStage<PreparedTaskResult> prepareResume(ResumeCommand command);
+
+    CompletionStage<TaskResult> dispatchPrepared(DispatchPreparedCommand command);
+
+    CompletionStage<TaskResult> cancel(CancelCommand command);
 
     /**
      * Runtime-adapter state ingress. Implementations validate transitions and
@@ -54,32 +61,44 @@ public interface TaskControlClient {
      */
     CompletionStage<TaskResult> markCancelled(MarkTaskCommand command);
 
-    enum TaskAction {
-        RUN,
-        RESUME_INPUT,
-        CANCEL
+    record RunCommand(AgentRequest request) {
+        public RunCommand {
+            request = Objects.requireNonNull(request, "request");
+        }
     }
 
-    record RunTaskCommand(
+    record ResumeCommand(String taskId, AgentRequest request) {
+        public ResumeCommand {
+            request = Objects.requireNonNull(request, "request");
+        }
+    }
+
+    enum DispatchMode {
+        RUN,
+        RESUME
+    }
+
+    record DispatchPreparedCommand(String taskId, AgentRequest request, DispatchMode dispatchMode) {
+        public DispatchPreparedCommand {
+            taskId = requireNonBlank(taskId, "taskId");
+            request = Objects.requireNonNull(request, "request");
+            dispatchMode = Objects.requireNonNull(dispatchMode, "dispatchMode");
+        }
+    }
+
+    record CancelCommand(
             String tenantId,
+            String userId,
+            String agentId,
             String sessionId,
             String taskId,
-            String agentId,
-            TaskAction action,
-            Object input,
             String reason,
-            String idempotencyKey,
             Map<String, Object> metadata) {
 
-        public RunTaskCommand {
+        public CancelCommand {
             tenantId = requireNonBlank(tenantId, "tenantId");
             sessionId = requireNonBlank(sessionId, "sessionId");
-            action = Objects.requireNonNull(action, "action");
-            if (action == TaskAction.CANCEL) {
-                taskId = requireNonBlank(taskId, "taskId");
-            } else {
-                Objects.requireNonNull(input, "input");
-            }
+            taskId = requireNonBlank(taskId, "taskId");
             metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
         }
     }
@@ -122,6 +141,17 @@ public interface TaskControlClient {
             if (revision < 1L) {
                 throw new IllegalArgumentException("revision must be positive");
             }
+        }
+    }
+
+    record PreparedTaskResult(TaskResult task, DispatchMode dispatchMode) {
+        public PreparedTaskResult {
+            task = Objects.requireNonNull(task, "task");
+            dispatchMode = Objects.requireNonNull(dispatchMode, "dispatchMode");
+        }
+
+        public String taskId() {
+            return task.taskId();
         }
     }
 

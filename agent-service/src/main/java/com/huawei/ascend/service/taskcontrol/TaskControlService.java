@@ -7,6 +7,7 @@ import com.huawei.ascend.service.engine.api.EnqueueEngineResumeRequest;
 import com.huawei.ascend.service.engine.api.EnqueueEngineStatus;
 import com.huawei.ascend.service.engine.model.EngineExecutionScope;
 import com.huawei.ascend.service.engine.model.EngineInput;
+import com.huawei.ascend.service.schema.AgentRequest;
 import com.huawei.ascend.service.schema.Message;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient;
 import com.huawei.ascend.service.queue.QueueFactory;
@@ -32,7 +33,7 @@ public class TaskControlService implements TaskControlClient {
     private final Supplier<EngineDispatchApi> engineDispatchApi;
     private final Clock clock;
     private final ConcurrentMap<SessionKey, Object> sessionLocks = new ConcurrentHashMap<>();
-    private final ConcurrentMap<IdempotencyKey, TaskResult> idempotencyResults = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IdempotencyKey, Object> idempotencyResults = new ConcurrentHashMap<>();
     private final Object queueCreationLock = new Object();
 
     public TaskControlService(QueueManager queueManager, EngineDispatchApi engineDispatchApi) {
@@ -50,11 +51,56 @@ public class TaskControlService implements TaskControlClient {
     }
 
     @Override
-    public CompletionStage<TaskResult> runTask(RunTaskCommand command) {
+    public CompletionStage<TaskResult> run(RunCommand command) {
         Objects.requireNonNull(command, "command");
-        TaskResult result = idempotencyKey(command)
-                .map(key -> idempotencyResults.computeIfAbsent(key, ignored -> doRunTask(command)))
-                .orElseGet(() -> doRunTask(command));
+        PreparedTaskResult prepared = prepareRun(command).toCompletableFuture().join();
+        TaskResult result = dispatchPrepared(new DispatchPreparedCommand(
+                prepared.taskId(), command.request(), prepared.dispatchMode())).toCompletableFuture().join();
+        return CompletableFuture.completedStage(result);
+    }
+
+    @Override
+    public CompletionStage<TaskResult> resume(ResumeCommand command) {
+        Objects.requireNonNull(command, "command");
+        PreparedTaskResult prepared = prepareResume(command).toCompletableFuture().join();
+        TaskResult result = dispatchPrepared(new DispatchPreparedCommand(
+                prepared.taskId(), command.request(), prepared.dispatchMode())).toCompletableFuture().join();
+        return CompletableFuture.completedStage(result);
+    }
+
+    @Override
+    public CompletionStage<PreparedTaskResult> prepareRun(RunCommand command) {
+        Objects.requireNonNull(command, "command");
+        PreparedTaskResult result = idempotencyKey("RUN", null, command.request())
+                .map(key -> computePrepared(key, () -> prepare(command.request(), false)))
+                .orElseGet(() -> prepare(command.request(), false));
+        return CompletableFuture.completedStage(result);
+    }
+
+    @Override
+    public CompletionStage<PreparedTaskResult> prepareResume(ResumeCommand command) {
+        Objects.requireNonNull(command, "command");
+        PreparedTaskResult result = idempotencyKey("RESUME_INPUT", command.taskId(), command.request())
+                .map(key -> computePrepared(key, () -> prepare(command.request(), command.taskId(), true)))
+                .orElseGet(() -> prepare(command.request(), command.taskId(), true));
+        return CompletableFuture.completedStage(result);
+    }
+
+    @Override
+    public CompletionStage<TaskResult> dispatchPrepared(DispatchPreparedCommand command) {
+        Objects.requireNonNull(command, "command");
+        boolean resume = command.dispatchMode() == DispatchMode.RESUME;
+        TaskResult result = idempotencyKey(resume ? "RESUME_INPUT_DISPATCH" : "RUN_DISPATCH",
+                command.taskId(), command.request())
+                .map(key -> computeTaskResult(key, () -> dispatchPrepared(command.taskId(), command.request(), resume)))
+                .orElseGet(() -> dispatchPrepared(command.taskId(), command.request(), resume));
+        return CompletableFuture.completedStage(result);
+    }
+
+    @Override
+    public CompletionStage<TaskResult> cancel(CancelCommand command) {
+        Objects.requireNonNull(command, "command");
+        TaskResult result = cancelTask(command);
         return CompletableFuture.completedStage(result);
     }
 
@@ -106,31 +152,40 @@ public class TaskControlService implements TaskControlClient {
         return internalEventQueue(tenantId, sessionId).snapshot();
     }
 
-    private TaskResult doRunTask(RunTaskCommand command) {
-        return switch (command.action()) {
-            case RUN -> runOrCreate(command, false);
-            case RESUME_INPUT -> runOrCreate(command, true);
-            case CANCEL -> cancel(command);
-        };
+    private PreparedTaskResult prepare(AgentRequest request, boolean resumeOnly) {
+        return prepare(request, null, resumeOnly);
     }
 
-    private TaskResult runOrCreate(RunTaskCommand command, boolean resumeOnly) {
+    private PreparedTaskResult prepare(AgentRequest request, String taskId, boolean resumeOnly) {
         Task task;
         boolean resume;
-        synchronized (sessionLock(command.tenantId(), command.sessionId())) {
-            Optional<Task> selected = selectTarget(command, resumeOnly);
+        synchronized (sessionLock(request.tenantId(), request.sessionId())) {
+            Optional<Task> selected = resumeOnly
+                    ? selectTarget(request, taskId, true)
+                    : Optional.empty();
             if (selected.isEmpty() && resumeOnly) {
-                task = createTask(command);
+                task = createTask(request);
                 resume = false;
             } else {
-                task = selected.orElseGet(() -> createTask(command));
-                resume = command.action() == TaskAction.RESUME_INPUT && task.getState() == TaskState.WAITING;
+                task = selected.orElseGet(() -> createTask(request));
+                resume = resumeOnly && task.getState() == TaskState.WAITING;
             }
+            DispatchMode dispatchMode = resume ? DispatchMode.RESUME : DispatchMode.RUN;
+            String message = resume ? "resume prepared" : "execution prepared";
+            return new PreparedTaskResult(result(task, true, message), dispatchMode);
         }
-        return dispatch(task, command, resume);
     }
 
-    private TaskResult cancel(RunTaskCommand command) {
+    private TaskResult dispatchPrepared(String taskId, AgentRequest request, boolean resume) {
+        Task task;
+        synchronized (sessionLock(request.tenantId(), request.sessionId())) {
+            task = findTask(request.tenantId(), request.sessionId(), taskId)
+                    .orElseThrow(() -> new IllegalArgumentException("task not found: " + taskId));
+        }
+        return dispatch(task, request, resume);
+    }
+
+    private TaskResult cancelTask(CancelCommand command) {
         Task task;
         synchronized (sessionLock(command.tenantId(), command.sessionId())) {
             task = findTask(command.tenantId(), command.sessionId(), command.taskId())
@@ -143,18 +198,18 @@ public class TaskControlService implements TaskControlClient {
             }
         }
         EnqueueEngineStatus status = engineDispatchApi().enqueueCancel(
-                new EnqueueEngineCancelRequest(scopeFor(task, userId(command))));
+                new EnqueueEngineCancelRequest(scopeFor(task, userId(command.userId()))));
         if (status == EnqueueEngineStatus.FAILED) {
             return failDispatch(task, TaskFailureCode.ENGINE_DISPATCH_REJECTED, "engine rejected cancel");
         }
         return currentResult(task, true, "cancel enqueued");
     }
 
-    private TaskResult dispatch(Task task, RunTaskCommand command, boolean resume) {
+    private TaskResult dispatch(Task task, AgentRequest request, boolean resume) {
         EnqueueEngineStatus status;
         try {
-            EngineExecutionScope scope = scopeFor(task, userId(command));
-            EngineInput input = engineInput(command.input(), resume ? "RESUME_SIGNAL" : "USER_MESSAGE");
+            EngineExecutionScope scope = scopeFor(task, userId(request.userId()));
+            EngineInput input = engineInput(request.input(), resume ? "RESUME_SIGNAL" : "USER_MESSAGE");
             status = resume
                     ? engineDispatchApi().enqueueResume(new EnqueueEngineResumeRequest(scope, input))
                     : engineDispatchApi().enqueueExecution(new EnqueueEngineExecutionRequest(scope, input));
@@ -198,23 +253,22 @@ public class TaskControlService implements TaskControlClient {
         }
     }
 
-    private Optional<Task> selectTarget(RunTaskCommand command, boolean resumeOnly) {
-        if (command.taskId() != null && !command.taskId().isBlank()) {
-            return findTask(command.tenantId(), command.sessionId(), command.taskId())
+    private Optional<Task> selectTarget(AgentRequest request, String taskId, boolean resumeOnly) {
+        if (taskId != null && !taskId.isBlank()) {
+            return findTask(request.tenantId(), request.sessionId(), taskId)
                     .filter(task -> resumeOnly ? task.getState() == TaskState.WAITING : attachable(task));
         }
         if (resumeOnly) {
-            return latest(internalEventQueue(command.tenantId(), command.sessionId()).snapshot().stream()
+            return latest(internalEventQueue(request.tenantId(), request.sessionId()).snapshot().stream()
                     .filter(task -> task.getState() == TaskState.WAITING));
         }
-        return findCurrentTask(command.tenantId(), command.sessionId());
+        return findCurrentTask(request.tenantId(), request.sessionId());
     }
 
-    private Task createTask(RunTaskCommand command) {
-        Task task = Task.created(command.tenantId(), command.sessionId(),
-                command.taskId(), command.agentId(), clock.instant());
-        task.setDetail(command.input());
-        internalEventQueue(command.tenantId(), command.sessionId()).offer(task);
+    private Task createTask(AgentRequest request) {
+        Task task = Task.created(request.tenantId(), request.sessionId(), request.agentId(), clock.instant());
+        task.setDetail(request.input());
+        internalEventQueue(request.tenantId(), request.sessionId()).offer(task);
         return task;
     }
 
@@ -274,11 +328,6 @@ public class TaskControlService implements TaskControlClient {
         return api;
     }
 
-    private String userId(RunTaskCommand command) {
-        Object userId = command.metadata().get("userId");
-        return userId == null ? null : userId.toString();
-    }
-
     private String userId(String value) {
         return value == null || value.isBlank() ? null : value;
     }
@@ -313,12 +362,20 @@ public class TaskControlService implements TaskControlClient {
                 task.getState(), task.getRevision(), accepted, message);
     }
 
-    private Optional<IdempotencyKey> idempotencyKey(RunTaskCommand command) {
-        if (command.idempotencyKey() == null || command.idempotencyKey().isBlank()) {
+    private Optional<IdempotencyKey> idempotencyKey(String action, String taskId, AgentRequest request) {
+        if (request.idempotencyKey() == null || request.idempotencyKey().isBlank()) {
             return Optional.empty();
         }
-        return Optional.of(new IdempotencyKey(command.tenantId(), command.sessionId(),
-                command.taskId(), command.action(), command.idempotencyKey()));
+        return Optional.of(new IdempotencyKey(request.tenantId(), request.sessionId(),
+                request.agentId(), action, request.idempotencyKey()));
+    }
+
+    private PreparedTaskResult computePrepared(IdempotencyKey key, Supplier<PreparedTaskResult> supplier) {
+        return (PreparedTaskResult) idempotencyResults.computeIfAbsent(key, ignored -> supplier.get());
+    }
+
+    private TaskResult computeTaskResult(IdempotencyKey key, Supplier<TaskResult> supplier) {
+        return (TaskResult) idempotencyResults.computeIfAbsent(key, ignored -> supplier.get());
     }
 
     private static String requireNonBlank(String value, String name) {
@@ -339,8 +396,8 @@ public class TaskControlService implements TaskControlClient {
     private record IdempotencyKey(
             String tenantId,
             String sessionId,
-            String taskId,
-            TaskAction action,
+            String agentId,
+            String action,
             String idempotencyKey) {
     }
 }
