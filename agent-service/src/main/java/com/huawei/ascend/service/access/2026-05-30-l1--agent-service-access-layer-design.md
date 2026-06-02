@@ -1,4 +1,4 @@
-﻿# 06. agent-service L1 Access Layer
+# 06. agent-service L1 Access Layer
 
 ## 1. 职责
 
@@ -148,7 +148,7 @@ public record EgressBinding(
 | `ReplyChannel` | `ASYNC` | 通过外部异步 reply topic/queue 写回。 |
 | `AccessIntent` | `tenantId` | 租户标识。 |
 | `AccessIntent` | `userId` | 用户标识，用于用户隔离、权限判断和下游记忆隔离。 |
-| `AccessIntent` | `agentId` | 目标 Agent 标识，用于下游选择 Agent 或能力。 |
+| `AccessIntent` | `agentId` | 目标 Agent 标识；入口层负责非空校验，并在接入 agent registry / agent card / 鉴权网关后完成可用性判断。 |
 | `AccessIntent` | `sessionId` | 会话标识，可为空。 |
 | `AccessIntent` | `query` | 本轮用户请求文本或规范化查询意图。 |
 | `AccessIntent` | `idempotencyKey` | 幂等键，可为空。 |
@@ -703,4 +703,3 @@ Body：
 ```
 
 预期响应：调用 `/a2a/` 立即返回 HTTP 200 和 `SendMessageResponse` accepted；随后 callback 服务会收到 L1 POST 的 A2A 出站事件，Header 包含 `Content-Type: application/json`，如配置了 `token` 还会包含 `X-A2A-Notification-Token`。
-

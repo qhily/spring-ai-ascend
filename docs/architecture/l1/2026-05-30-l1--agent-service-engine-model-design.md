@@ -1046,11 +1046,11 @@ public final class OpenJiuwenMessageConverter {
 路径：
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/engine/service/TaskControlClient.java
+agent-service/src/main/java/com/huawei/ascend/service/engine/port/TaskControlClient.java
 ```
 
 ```java
-package com.huawei.ascend.service.engine.service;
+package com.huawei.ascend.service.engine.port;
 
 import com.huawei.ascend.service.engine.event.EngineCancelledEvent;
 import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
@@ -1069,8 +1069,6 @@ public interface TaskControlClient {
     void markFailed(EngineExecutionScope scope, EngineFailedEvent event);
 
     void markCancelled(EngineExecutionScope scope, EngineCancelledEvent event);
-
-    EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, String input);
 }
 ```
 
@@ -1087,11 +1085,11 @@ engine 只调用该接口上报状态。
 路径：
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/engine/service/AccessLayerClient.java
+agent-service/src/main/java/com/huawei/ascend/service/engine/port/AccessLayerClient.java
 ```
 
 ```java
-package com.huawei.ascend.service.engine.service;
+package com.huawei.ascend.service.engine.port;
 
 import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
 import com.huawei.ascend.service.engine.event.EngineFailedEvent;
@@ -1142,23 +1140,17 @@ Parent OpenJiuwen Agent
 ### 12.2 CHILD_TASK 模式
 
 ```text
-Parent Agent
-  -> EngineAgentCallEvent(mode=CHILD_TASK)
-  -> EngineDispatcher calls TaskControlClient.createChildTask(...)
-  -> task-centric-control creates child scope
-  -> EngineDispatchSpi.enqueueExecution(child agentId, child input)
-  -> parent task enters WAITING_CHILD_AGENT
-  -> child task completes
-  -> task-centric-control calls EngineDispatchSpi.enqueueResume(parent scope, AGENT_CALL_RESULT)
-  -> parent resumes
+当前实现不暴露 child-task 入口。
+EngineDispatcher 不调用 TaskControlClient 创建子 task。
+CHILD_TASK 模式作为 Phase 2/3 待设计能力保留事件模型，不进入本轮最小实现。
 ```
 
 规则：
 
 ```text
-子 Agent 需要独立 task 生命周期时使用 CHILD_TASK
-父 task 等待子 task 结果
-child task 的状态由 task-centric-control 管理
+本轮仅允许 INLINE 模式进入执行闭环。
+CHILD_TASK 需要重新定义 task-control 与 engine 的协作契约后再实现。
+不得在当前 TaskControlClient 上补 createChildTask 入口。
 ```
 
 ## 13. 状态与输出映射
@@ -1389,9 +1381,7 @@ model/InterruptType.java
 event/EngineAgentCallEvent.java
 model/AgentCallMode.java
 INLINE 模式
-CHILD_TASK 模式
-TaskControlClient.createChildTask(...)
-WAITING_CHILD_AGENT
+CHILD_TASK 模式仅保留模型，不进入当前实现
 ```
 
 ### Phase 4：生产接入

@@ -7,7 +7,7 @@ package com.huawei.ascend.service.engine.api;
  * Implemented by the engine, called by task-centric-control. Only responsible
  * for async enqueuing. Does not directly execute Agents. Does not directly
  * return real execution status. Real execution status is written back through
- * the outbound SPI {@code com.huawei.ascend.service.engine.spi.TaskControlClient}.
+ * the outbound port {@code com.huawei.ascend.service.engine.port.TaskControlClient}.
  *
  * <p>This is an API (provided/inbound interface), not an SPI: the engine
  * implements it and external callers invoke it. See the engine model design

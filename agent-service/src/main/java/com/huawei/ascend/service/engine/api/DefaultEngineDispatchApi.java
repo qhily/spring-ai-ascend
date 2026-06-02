@@ -2,7 +2,7 @@ package com.huawei.ascend.service.engine.api;
 
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
 import com.huawei.ascend.service.engine.queue.EngineCommandEventFactory;
-import com.huawei.ascend.service.engine.spi.EngineQueueGateway;
+import com.huawei.ascend.service.engine.queue.EngineQueueGateway;
 
 /**
  * Default {@link EngineDispatchApi}: the inbound entry point for

@@ -27,7 +27,8 @@
 **engine 新建（agent-service/src/main/java/com/huawei/ascend/service/engine/）:**
 - `model/`: EngineOutput, AgentCallMode, InterruptType
 - `event/`: EngineCommandEvent, EngineExecutionEvent(abstract), EngineStartedEvent, EngineOutputEvent, EngineAgentCallEvent, EngineInterruptedEvent, EngineCompletedEvent, EngineFailedEvent, EngineCancelledEvent
-- `spi/`: EngineQueueGateway, EngineCommandConsumer, AgentHandler, TaskControlClient, AccessLayerClient
+- `spi/`: AgentHandler
+- `port/`: TaskControlClient, AccessLayerClient
 - `handler/`: AgentExecutionContext
 - `dispatch/`: AgentHandlerRegistry(interface), DefaultAgentHandlerRegistry, EngineDispatcher
 - `queue/`: EngineCommandEventFactory, EngineCommandSubscriber, InMemoryEngineQueueGateway
@@ -373,10 +374,10 @@ git add agent-service/src/main/java/com/huawei/ascend/service/engine/event/
 git commit -m "feat(engine): add EngineCommandEvent and EngineExecutionEvent hierarchy"
 ```
 
-### Task 5: SPI 接口 + handler context
+### Task 5: provider SPI、engine port、queue 接口 + handler context
 
 **Files:**
-- Create: `handler/AgentExecutionContext.java`, `spi/AgentHandler.java`, `spi/EngineQueueGateway.java`, `spi/EngineCommandConsumer.java`, `spi/TaskControlClient.java`, `spi/AccessLayerClient.java`
+- Create: `handler/AgentExecutionContext.java`, `spi/AgentHandler.java`, `queue/EngineQueueGateway.java`, `queue/EngineCommandConsumer.java`, `port/TaskControlClient.java`, `port/AccessLayerClient.java`
 
 - [ ] **Step 1: AgentExecutionContext.java**
 
@@ -421,7 +422,7 @@ public interface AgentHandler {
 - [ ] **Step 3: EngineCommandConsumer.java + EngineQueueGateway.java**
 
 ```java
-package com.huawei.ascend.service.engine.spi;
+package com.huawei.ascend.service.engine.queue;
 
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
 
@@ -431,7 +432,7 @@ public interface EngineCommandConsumer {
 }
 ```
 ```java
-package com.huawei.ascend.service.engine.spi;
+package com.huawei.ascend.service.engine.queue;
 
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
 
@@ -444,7 +445,7 @@ public interface EngineQueueGateway {
 - [ ] **Step 4: TaskControlClient.java**
 
 ```java
-package com.huawei.ascend.service.engine.spi;
+package com.huawei.ascend.service.engine.port;
 
 import com.huawei.ascend.service.engine.event.EngineCancelledEvent;
 import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
@@ -458,14 +459,13 @@ public interface TaskControlClient {
     void markSucceeded(EngineExecutionScope scope, EngineCompletedEvent event);
     void markFailed(EngineExecutionScope scope, EngineFailedEvent event);
     void markCancelled(EngineExecutionScope scope, EngineCancelledEvent event);
-    EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, String input);
 }
 ```
 
 - [ ] **Step 5: AccessLayerClient.java**
 
 ```java
-package com.huawei.ascend.service.engine.spi;
+package com.huawei.ascend.service.engine.port;
 
 import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
 import com.huawei.ascend.service.engine.event.EngineFailedEvent;
@@ -487,7 +487,7 @@ Run: `cd /home/x00550472/github.com/spring-ai-ascend && mvn -q -pl agent-service
 Expected: BUILD SUCCESS。
 ```bash
 git add agent-service/src/main/java/com/huawei/ascend/service/engine/handler/ agent-service/src/main/java/com/huawei/ascend/service/engine/spi/
-git commit -m "feat(engine): add AgentHandler, queue and outbound client SPI"
+git commit -m "feat(engine): add AgentHandler, queue and outbound ports"
 ```
 
 ### Task 6: dispatch（registry + dispatcher，TDD）
@@ -750,8 +750,8 @@ public class EngineCommandEventFactory {
 package com.huawei.ascend.service.engine.queue;
 
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
-import com.huawei.ascend.service.engine.spi.EngineCommandConsumer;
-import com.huawei.ascend.service.engine.spi.EngineQueueGateway;
+import com.huawei.ascend.service.engine.queue.EngineCommandConsumer;
+import com.huawei.ascend.service.engine.queue.EngineQueueGateway;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -777,7 +777,7 @@ package com.huawei.ascend.service.engine.queue;
 
 import com.huawei.ascend.service.engine.dispatch.EngineDispatcher;
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
-import com.huawei.ascend.service.engine.spi.EngineQueueGateway;
+import com.huawei.ascend.service.engine.queue.EngineQueueGateway;
 
 public class EngineCommandSubscriber {
     private final EngineQueueGateway queueGateway;
@@ -1128,9 +1128,9 @@ import com.huawei.ascend.service.engine.dispatch.DefaultAgentHandlerRegistry;
 import com.huawei.ascend.service.engine.dispatch.EngineDispatcher;
 import com.huawei.ascend.service.engine.queue.EngineCommandSubscriber;
 import com.huawei.ascend.service.engine.queue.InMemoryEngineQueueGateway;
-import com.huawei.ascend.service.engine.spi.AccessLayerClient;
-import com.huawei.ascend.service.engine.spi.EngineQueueGateway;
-import com.huawei.ascend.service.engine.spi.TaskControlClient;
+import com.huawei.ascend.service.engine.port.AccessLayerClient;
+import com.huawei.ascend.service.engine.queue.EngineQueueGateway;
+import com.huawei.ascend.service.engine.port.TaskControlClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

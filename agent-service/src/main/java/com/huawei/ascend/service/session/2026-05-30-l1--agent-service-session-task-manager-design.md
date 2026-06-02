@@ -1,4 +1,4 @@
-﻿# 07. agent-service L2 Session Manager
+# 07. agent-service L2 Session Manager
 
 ## 1. 职责
 

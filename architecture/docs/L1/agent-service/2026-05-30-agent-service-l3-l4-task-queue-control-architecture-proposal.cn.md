@@ -9,7 +9,7 @@ authoring_mode: architecture_proposal
 
 # Agent Service L3/L4 Taskflow Queue/Control 架构提议
 
-本文收敛 2026-05-30 至 2026-06-01 的架构讨论，并同步当前 taskflow 实现。代码旁审阅入口见 `agent-service/src/main/java/com/huawei/ascend/service/taskflow/README.md`。
+本文收敛 2026-05-30 至 2026-06-01 的架构讨论，并同步当前 taskflow 实现。代码旁审阅入口见 `agent-service/src/main/java/com/huawei/ascend/service/taskcontrol/README.md`。
 
 当前目标已经从“冻结最小接口面”推进到“本地可运行闭环”：IEQ 提供薄队列与弱管理，TCC 维护 Task 状态并通过 engine dispatch API 交付执行意图，runtime/engine 状态回写经 adapter 进入 TCC 裁决。
 
@@ -29,7 +29,7 @@ authoring_mode: architecture_proposal
 12. Task 信号在 L1-L4 内闭环：L1 归一输入，L2 只提供会话绑定，L3 只承载对象，L4 解释信号并维护 Task 状态。
 13. `queued` 是处理过程，不是 Task 主状态。
 14. `WAITING_FOR_TOOL` 与 `EXPIRED` 不进入 Task 主状态集合。
-15. 外部请求携带 `agentId`，L1 只透传；缺失或无效由 Runtime 返回 `AGENT_ID_INVALID`。
+15. 外部请求携带 `agentId`，入口层负责非空、注册表/权限等合法性判断；TCC 信任入口契约，不理解 Agent 注册表，Runtime 只保留防御性兜底。
 
 一句话版本：
 
@@ -39,11 +39,11 @@ L1 用 runTask 提交意图，IEQ 提供薄 Queue 和弱管理，TCC 维护 Task
 
 ## 0.1 本版实现增量
 
-1. 新增代码旁说明：`agent-service/src/main/java/com/huawei/ascend/service/taskflow/README.md`。
-2. IEQ 侧实现 `TaskQueue<T>`、`InMemoryTaskQueue<T>`、`QueueFactory`、`QueueManager`、`QueueRegistration`。
+1. 新增代码旁说明：`agent-service/src/main/java/com/huawei/ascend/service/taskcontrol/README.md`。
+2. IEQ 侧实现 `InternalEventQueue<T>`、`InMemoryInternalEventQueue<T>`、`QueueFactory`、`QueueManager`、`QueueRegistration`。
 3. TCC 侧实现 `TaskControlService`：创建 Task、查找当前 Task、处理 `RUN` / `RESUME_INPUT` / `CANCEL`、执行状态流转、处理幂等键和 revision fencing。
 4. Runtime/engine 桥接实现 `EngineTaskControlAdapter`：把 engine 回调映射到 TCC `markRunning`、`markWaiting`、`markSucceeded`、`markFailed`、`markCancelled`。
-5. 自动配置实现 `TaskflowAutoConfiguration`，并在 engine 自动配置中补齐 `EngineDispatchApi`。
+5. 自动配置实现 `TaskControlAutoConfiguration`，并在 engine 自动配置中补齐 `EngineDispatchApi`。
 6. 白盒测试覆盖 Bean、队列、QueueManager、TCC 服务和 engine bridge。
 
 ## 0.2 与用户流程的关系
@@ -81,7 +81,7 @@ sequenceDiagram
     participant Access as L1 Access
     participant Session as L2 Session
     participant TCC as L4 TaskControlClient
-    participant Queue as L3 TaskQueue
+    participant Queue as L3 InternalEventQueue
     participant Runtime as L5 Runtime Adapter
 
     User->>Access: input(agentId, sessionId?, query)
@@ -117,8 +117,8 @@ flowchart LR
     end
 
     subgraph L3["L3 Queue"]
-        TaskQueue["TaskQueue<T>"]
-        InMemoryQueue["InMemoryTaskQueue<T>"]
+        InternalEventQueue["InternalEventQueue<T>"]
+        InMemoryQueue["InMemoryInternalEventQueue<T>"]
         QueueFactory["QueueFactory.inMemoryQueue"]
     end
 
@@ -138,7 +138,7 @@ flowchart LR
     SessionFactory --> SessionBinding
     SessionBinding --> QueueFactory
     QueueFactory --> InMemoryQueue
-    InMemoryQueue -.implements.-> TaskQueue
+    InMemoryQueue -.implements.-> InternalEventQueue
     AccessClient --> TaskHandler
     TaskHandler --> TaskControlClient
     TaskControlClient --> Task
@@ -151,10 +151,10 @@ flowchart LR
 ### 2.3 开发视图
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/taskflow/
+agent-service/src/main/java/com/huawei/ascend/service/
   queue/
-    TaskQueue.java
-    InMemoryTaskQueue.java
+    InternalEventQueue.java
+    InMemoryInternalEventQueue.java
     QueueFactory.java
     QueueManager.java
     QueueRegistration.java
@@ -169,9 +169,9 @@ agent-service/src/main/java/com/huawei/ascend/service/taskflow/
     api/
       TaskControlClient.java
 
-agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
+agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test/
   TaskBeanWhiteboxTest.java
-  InMemoryTaskQueueWhiteboxTest.java
+  InMemoryInternalEventQueueWhiteboxTest.java
   TaskControlClientApiWhiteboxTest.java
   QueueManagerWhiteboxTest.java
   TaskControlServiceWhiteboxTest.java
@@ -202,7 +202,7 @@ flowchart LR
     end
 
     subgraph Queue["Local Queue"]
-        Q["TaskQueue<Object>"]
+        Q["InternalEventQueue<Object>"]
         M["LinkedBlockingQueue"]
     end
 
@@ -226,7 +226,7 @@ flowchart LR
 flowchart TB
     subgraph W1["W1 本地内存"]
         JVM["agent-service JVM"]
-        Q["InMemoryTaskQueue"]
+        Q["InMemoryInternalEventQueue"]
         JDK["JDK LinkedBlockingQueue"]
         Tests["White-box tests"]
     end
@@ -248,15 +248,15 @@ flowchart TB
     JVM --> Manager
     JVM --> Service
     JVM --> Adapter
-    Future -.保持 TaskQueue API 不变.-> JVM
+    Future -.保持 InternalEventQueue API 不变.-> JVM
 ```
 
 ## 3. 接口定义
 
-### 3.1 TaskQueue
+### 3.1 InternalEventQueue
 
 ```java
-public interface TaskQueue<T> {
+public interface InternalEventQueue<T> {
     String queueId();
     boolean offer(T value);
     Optional<T> poll();
@@ -274,16 +274,16 @@ public final class QueueFactory {
     private QueueFactory() {
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(String queueId) {
-        return new InMemoryTaskQueue<>(queueId);
+    public static <T> InternalEventQueue<T> inMemoryQueue(String queueId) {
+        return new InMemoryInternalEventQueue<>(queueId);
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(
+    public static <T> InternalEventQueue<T> inMemoryQueue(
             String queueId, QueueManager manager, QueueRegistration registration) {
-        return manager.register(new InMemoryTaskQueue<>(queueId), registration);
+        return manager.register(new InMemoryInternalEventQueue<>(queueId), registration);
     }
 
-    public static TaskQueue<Task> inMemorySessionQueue(
+    public static InternalEventQueue<Task> inMemorySessionQueue(
             String tenantId, String sessionId, QueueManager manager) {
         QueueRegistration registration = QueueRegistration.session(tenantId, sessionId);
         return inMemoryQueue(registration.queueId(), manager, registration);
@@ -295,9 +295,9 @@ public final class QueueFactory {
 
 ```java
 public class QueueManager {
-    public <T> TaskQueue<T> register(TaskQueue<T> queue, QueueRegistration registration);
-    public Optional<TaskQueue<?>> findByQueueId(String queueId);
-    public Optional<TaskQueue<?>> findBySession(String tenantId, String sessionId);
+    public <T> InternalEventQueue<T> register(InternalEventQueue<T> queue, QueueRegistration registration);
+    public Optional<InternalEventQueue<?>> findByQueueId(String queueId);
+    public Optional<InternalEventQueue<?>> findBySession(String tenantId, String sessionId);
     public Optional<QueueRegistration> registration(String queueId);
     public List<QueueRegistration> registrations();
     public void unregister(String queueId);
@@ -377,7 +377,7 @@ CANCELLED
 | Queue backend | 新增实现类，例如 Redis/JDBC/Kafka Queue。 | 修改 `TaskControlClient` 或让 Queue 理解 Task。 |
 | Task 动作 | 优先扩展 `TaskAction`。 | 给 `TaskHandler` 继续加多个入口方法。 |
 | Runtime 接入 | Runtime 侧 adapter 调用 `TaskControlClient.mark*`。 | Runtime 直接持有 Queue 或写 Task 字段。 |
-| Queue 管理 | 当前实现弱管理 `QueueManager`。 | 把 admin port 挂到 `TaskQueue` 主接口。 |
+| Queue 管理 | 当前实现弱管理 `QueueManager`。 | 把 admin port 挂到 `InternalEventQueue` 主接口。 |
 | Task 查询 | 当前由 TCC 基于 session 队列查找；后续可增加索引。 | 让 IEQ 理解 Task 状态。 |
 
 ### 5.2 依赖倒置
@@ -386,7 +386,7 @@ CANCELLED
 
 ```text
 L1 Access -> L4 TaskControlClient
-L4 Control -> L3 TaskQueue
+L4 Control -> L3 InternalEventQueue
 L3 Queue -> JDK only
 Runtime adapter -> L4 TaskControlClient.mark*
 ```
@@ -480,7 +480,7 @@ sequenceDiagram
 | OOD 后谁创建新 Task。 | L4 创建，Runtime 只报告 `OUT_OF_DOMAIN` / `NOT_CURRENT_TASK`。 |
 | QueueManager 强管理会带来权限面。 | 采用弱管理，不暴露 admin port。 |
 | 当前 API 仍有 `mark*` 多方法。 | 这些是 Runtime adapter 回写状态意图，不是 L1 handler 入口；L1 仍只有 `runTask`。 |
-| `agentId` 不校验可能导致晚失败。 | 按决议由 Runtime 返回 `AGENT_ID_INVALID`，L1 不做 fallback。 |
+| `agentId` 如果完全放到 Runtime 校验，会导致晚失败。 | 入口层先做非空、注册表/权限等合法性判断；TCC 只信任契约并透传，Runtime 仅兜底返回 `AGENT_ID_INVALID`。 |
 
 ## 10. Wave 计划
 
@@ -488,8 +488,8 @@ sequenceDiagram
 
 交付：
 
-- `TaskQueue`
-- `InMemoryTaskQueue`
+- `InternalEventQueue`
+- `InMemoryInternalEventQueue`
 - `QueueFactory`
 - `Task`
 - `TaskState`
@@ -537,7 +537,7 @@ sequenceDiagram
 交付：
 
 - Redis/JDBC/Kafka 等队列实现。
-- 保持 `TaskQueue` 语义不变。
+- 保持 `InternalEventQueue` 语义不变。
 - 保持 Queue 不理解 Task 状态。
 - 补充 at-least-once / exactly-once 边界说明。
 
@@ -550,5 +550,5 @@ sequenceDiagram
 3. `TaskControlClient` 只有一个 L1 入站入口 `runTask(...)`。
 4. `TaskAction` 包含 `RUN`、`RESUME_INPUT`、`CANCEL`。
 5. `QueueFactory` 是 `final` 类，提供静态 `inMemoryQueue(...)`。
-6. 白盒测试在 `agent-service/src/test/java/com/huawei/ascend/service/taskflow/test`。
+6. 白盒测试在 `agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test`。
 7. 文档位于 `architecture/docs/L1/agent-service/`。

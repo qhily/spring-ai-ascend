@@ -2,7 +2,7 @@ package com.huawei.ascend.service.access.egress;
 
 import com.huawei.ascend.service.access.model.NotificationFrame;
 import com.huawei.ascend.service.access.api.NotificationPort;
-import com.huawei.ascend.service.queue.TaskQueue;
+import com.huawei.ascend.service.queue.InternalEventQueue;
 
 import java.util.Objects;
 
@@ -17,7 +17,7 @@ public final class DefaultNotificationPort implements NotificationPort {
     @Override
     public void notify(NotificationFrame frame) {
         Objects.requireNonNull(frame, "frame");
-        TaskQueue<NotificationFrame> queue = registry.find(frame.tenantId(), frame.sessionId(), frame.taskId())
+        InternalEventQueue<NotificationFrame> queue = registry.find(frame.tenantId(), frame.sessionId(), frame.taskId())
                 .orElseThrow(() -> new EgressDeliveryException(
                         "No egress queue for tenantId=%s, sessionId=%s, taskId=%s"
                                 .formatted(frame.tenantId(), frame.sessionId(), frame.taskId())));

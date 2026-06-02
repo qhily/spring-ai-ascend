@@ -3,7 +3,7 @@ package com.huawei.ascend.service.taskcontrol.test;
 import com.huawei.ascend.service.queue.QueueFactory;
 import com.huawei.ascend.service.queue.QueueManager;
 import com.huawei.ascend.service.queue.QueueRegistration;
-import com.huawei.ascend.service.queue.TaskQueue;
+import com.huawei.ascend.service.queue.InternalEventQueue;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,7 +15,7 @@ class QueueManagerWhiteboxTest {
     void factoryCanRegisterSessionQueueWithManager() {
         QueueManager manager = new QueueManager();
 
-        TaskQueue<Object> queue = QueueFactory.inMemorySessionQueue("tenant", "session", manager);
+        InternalEventQueue<Object> queue = QueueFactory.inMemorySessionQueue("tenant", "session", manager);
 
         assertThat(manager.findBySession("tenant", "session")).containsSame(queue);
         assertThat(manager.registration(queue.queueId()))
@@ -27,7 +27,7 @@ class QueueManagerWhiteboxTest {
     @Test
     void unregisterRemovesQueueAndSessionLookup() {
         QueueManager manager = new QueueManager();
-        TaskQueue<Object> queue = QueueFactory.inMemorySessionQueue("tenant", "session", manager);
+        InternalEventQueue<Object> queue = QueueFactory.inMemorySessionQueue("tenant", "session", manager);
 
         manager.unregister(queue.queueId());
 
