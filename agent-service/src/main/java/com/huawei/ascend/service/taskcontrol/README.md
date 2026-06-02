@@ -1,70 +1,48 @@
-# Agent Service Taskflow 实现说明
+# Agent Service Task-Centric Control 实现说明
 
-本文说明当前 Internal Event Queue（IEQ）与 Task-Centric Control（TCC）
-的代码实现、用户流程、边界和验证方式。完整设计背景见：
+本文说明当前 Internal Event Queue（IEQ）与 Task-Centric Control（TCC）的本地实现、接口边界、用户流程和最小验证方式。
 
-- `architecture/docs/L1/agent-service/2026-05-30-agent-service-l3-l4-task-queue-control-architecture-proposal.cn.md`
-- `architecture/docs/L1/agent-service/2026-05-30-agent-service-l3-l4-task-queue-control-implementation-spec.cn.md`
+## 1. 本版实现范围
 
-## 1. 本版实现了什么
-
-本版从“接口冻结”推进到“本地可运行闭环”：
-
-1. IEQ 提供一个薄队列抽象：`TaskQueue<T>`。
-2. IEQ 当前本地实现为 `InMemoryTaskQueue<T>`，底层使用 JDK
-   `LinkedBlockingQueue`。
-3. `QueueFactory` 仍是静态工厂类，不是 SPI，也不是可被外部替换的
-   provider 接口。
-4. `QueueManager` 是弱管理对象：记录队列注册、按 `queueId` 查询、按
-   `tenantId + sessionId` 查询、注销队列；它不强制所有调用方必须通过
-   manager 创建队列。
-5. TCC 的主实现是 `TaskControlService`，负责创建 Task、选择当前 Task、
-   执行状态流转、处理幂等键和 revision fencing。
-6. `TaskControlClient` 是内部 API，不是 SPI。Access 侧只调用
-   `runTask(RunTaskCommand)`；runtime adapter 只调用 `mark*` 状态入口。
-7. `EngineTaskControlAdapter` 把 engine 侧的任务状态回调转成
-   `TaskControlService.mark*`，避免 runtime/engine 直接读写 IEQ。
-8. Spring 自动配置通过 `TaskflowAutoConfiguration` 创建
-   `QueueManager`、`TaskControlService` 和 `EngineTaskControlAdapter`。
+1. IEQ 提供通用薄队列抽象：`InternalEventQueue<T>`。
+2. IEQ 当前本地实现为 `InMemoryInternalEventQueue<T>`，底层只使用 JDK `LinkedBlockingQueue`。
+3. `QueueFactory` 是静态工厂类，不是 SPI，也不引入第三方队列依赖。
+4. `QueueManager` 是弱管理对象，负责记录队列注册、查询和注销；它不提供对外 admin port。
+5. TCC 主实现为 `TaskControlService`，负责创建 Task、选择当前 Task、状态流转、幂等键和 revision fencing。
+6. `TaskControlClient` 是内部 API，不是 SPI。Access 侧只调用 `runTask(RunTaskCommand)`；runtime/engine 回写侧只调用 `mark*` 状态入口。
+7. `EngineTaskControlAdapter` 把 engine 侧状态回调转换为 `TaskControlService.mark*`，避免 runtime/engine 直接读写 IEQ。
 
 ## 2. 代码结构
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/taskflow/
+agent-service/src/main/java/com/huawei/ascend/service/queue/
+  InternalEventQueue.java
+  InMemoryInternalEventQueue.java
+  QueueFactory.java
+  QueueManager.java
+  QueueRegistration.java
+
+agent-service/src/main/java/com/huawei/ascend/service/taskcontrol/
+  Task.java
+  TaskState.java
+  TaskFailureCode.java
+  WaitingReason.java
+  TaskControlService.java
+  EngineTaskControlAdapter.java
+  api/
+    TaskControlClient.java
   config/
-    TaskflowAutoConfiguration.java
+    TaskControlAutoConfiguration.java
 
-  queue/
-    TaskQueue.java
-    InMemoryTaskQueue.java
-    QueueFactory.java
-    QueueManager.java
-    QueueRegistration.java
-
-  control/
-    Task.java
-    TaskState.java
-    TaskFailureCode.java
-    WaitingReason.java
-    TaskControlService.java
-    EngineTaskControlAdapter.java
-    api/
-      TaskControlClient.java
-
-agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
-  TaskBeanWhiteboxTest.java
-  InMemoryTaskQueueWhiteboxTest.java
-  TaskControlClientApiWhiteboxTest.java
+agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test/
   QueueManagerWhiteboxTest.java
   TaskControlServiceWhiteboxTest.java
   TaskflowEngineBridgeWhiteboxTest.java
 ```
 
-## 3. 关键接口和类
+## 3. IEQ 接口边界
 
-### 3.1 IEQ
-
-`TaskQueue<T>` 只定义队列能力：
+`InternalEventQueue<T>` 只定义队列能力：
 
 - `queueId()`
 - `offer(T value)`
@@ -74,24 +52,20 @@ agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
 - `snapshot()`
 - `size()`
 
-队列不关心队列内容物类型，也不理解 Task 状态。当前实现虽然会存放
-`Task` 对象，但这是 TCC 的使用方式，不是 IEQ 的语义。
+队列不关心内容物类型，也不理解 Task 状态。当前 TCC 会把 `Task` 放进队列，但这是 TCC 的使用方式，不是 IEQ 的语义。
 
-`QueueManager` 管理队列注册关系：
+`QueueManager` 只做弱管理：
 
-- `register(TaskQueue<T>, QueueRegistration)`
+- `register(InternalEventQueue<T>, QueueRegistration)`
 - `findByQueueId(String)`
 - `findBySession(String tenantId, String sessionId)`
 - `registration(String queueId)`
 - `registrations()`
 - `unregister(String queueId)`
 
-`QueueRegistration` 记录队列归属、创建方和创建时间。Session 队列的默认
-`queueId` 由 `QueueRegistration.sessionQueueId(tenantId, sessionId)` 生成。
+## 4. TCC 接口边界
 
-### 3.2 TCC
-
-`TaskControlClient` 是 TCC 对外暴露的内部 API：
+`TaskControlClient` 是 TCC 对其他内部模块暴露的 API：
 
 - `runTask(RunTaskCommand command)`
 - `markRunning(MarkTaskCommand command)`
@@ -100,123 +74,59 @@ agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
 - `markFailed(MarkTaskCommand command)`
 - `markCancelled(MarkTaskCommand command)`
 
-Access 侧只应该使用 `runTask`。`RUN`、`RESUME_INPUT`、`CANCEL` 通过
-`TaskAction` 表达，避免把 TaskHandler 拆成多个入口。
+Access 侧只使用 `runTask`。`RUN`、`RESUME_INPUT`、`CANCEL` 通过 `TaskAction` 表达，避免把 TaskHandler 拆成多个方法。
 
-Runtime/engine 侧不直接操作 IEQ，也不直接改 Task 字段；它通过
-`EngineTaskControlAdapter` 进入 `mark*`，由 TCC 裁决状态转换是否合法。
+Runtime/engine 侧不直接操作 IEQ，也不直接改 Task 字段；它通过 `EngineTaskControlAdapter` 进入 `mark*`，由 TCC 裁决状态转换是否合法。
 
-## 4. 用户流程如何串起来
+## 5. AgentId 与 dispatch 边界
 
-### 4.1 系统启动
+Access/L1 入口负责接收并校验外部传入的 `agentId`。至少要保证 `agentId` 非空；如果入口已经接入 agent registry、鉴权网关或 agent card 发现机制，`agentId` 是否存在、是否可被当前租户/用户调用，也应在入口侧完成判断。
 
-1. Spring 创建 `QueueManager`。
-2. Spring 创建 `TaskControlService`，并注入 `QueueManager` 与
-   `EngineDispatchApi` 的延迟提供者。
-3. Spring 创建 `EngineTaskControlAdapter`，作为 engine 侧状态回写到 TCC 的
-   adapter。
-4. Engine 自动配置创建 `EngineDispatchApi`。TCC 通过该 API 把执行请求入到
-   engine/runtime 侧。
+TCC 的职责是信任入口契约，把 `tenantId`、`sessionId`、`taskId`、`agentId` 和输入封装为 `EngineExecutionScope` / `EngineInput`，然后调用 `EngineDispatchApi`。TCC 不依赖 agent registry，也不负责判断 `agentId` 是否真实存在。
 
-### 4.2 首次用户输入
+Runtime/engine dispatch 仍保留防御性兜底：如果异常路径绕过入口校验，或者 dispatch 时发现目标 Agent 不可用，可以通过失败事件回到 `EngineTaskControlAdapter`，最终进入 `TaskControlService.markFailed`。但这只是兜底，不是正常路径。
+
+## 6. Engine 接口分类
+
+Engine 侧接口按方向分为三类：
+
+1. `engine.api.EngineDispatchApi`：engine 提供的入站 API，TCC 调用它提交执行、恢复、取消请求。
+2. `engine.spi.AgentHandler`：唯一 provider SPI，外部 agent provider 实现它。
+3. `engine.port.*` / `engine.queue.*`：engine 内部端口和内部队列，不属于 SPI。
+
+因此，示例应提供 `AgentHandler` 的示例实现，而不是再新增示例接口。
+
+## 7. 用户流程
 
 1. Access/Session 层拿到或创建 `sessionId`。
-2. Access 把 `tenantId`、`sessionId`、`agentId`、用户输入组装成
-   `RunTaskCommand(action=RUN)`。
-3. `TaskControlService.runTask` 根据 `tenantId + sessionId` 从
-   `QueueManager` 找 session 队列。
-4. 如果 session 队列不存在，TCC 通过 `QueueFactory.inMemorySessionQueue`
-   创建队列，并注册到 `QueueManager`。
-5. 如果当前 session 没有可挂接 Task，TCC 创建一个 `Task`，初始状态为
-   `CREATED`，并写入 session 队列。
-6. TCC 构造 `EngineExecutionScope` 与 `EngineInput`，调用
-   `EngineDispatchApi.enqueueExecution`。
+2. Access 把 `tenantId`、`sessionId`、`agentId` 和用户输入组装为 `RunTaskCommand(action=RUN)`。
+3. `TaskControlService` 通过 `QueueManager` 找到 session 对应 IEQ；不存在时使用 `QueueFactory.inMemorySessionQueue` 创建并注册。
+4. 如果 session 下没有可挂接 Task，TCC 创建 `Task`，初始状态为 `CREATED`，并写入 IEQ。
+5. TCC 调用 `EngineDispatchApi.enqueueExecution`，把执行请求交给 engine/runtime。
+6. Runtime/engine 通过 outbound port 回写 `markRunning`、`markWaiting`、`markSucceeded`、`markFailed` 或 `markCancelled`。
+7. TCC 校验 revision 和状态转换规则后更新 Task。
 
-### 4.3 Runtime 等待用户补充
+## 8. 当前明确保留的风险
 
-1. Runtime/engine 侧产生等待用户输入的信号。
-2. `EngineTaskControlAdapter` 把该信号转换成
-   `TaskControlService.markWaiting`。
-3. TCC 校验 `expectedRevision`，通过后把 Task 更新为 `WAITING`，并记录
-   `WaitingReason.USER_INPUT`、detail 和 revision。
-4. 面向用户的输出仍由 runtime/access 的同步返回路径处理；IEQ 不承担输出流。
+1. OOD / `NOT_CURRENT_TASK` 后是否立即由 TCC 创建新 Task，仍需后续策略确认。
+2. 当前 in-memory IEQ 使用 `snapshot()` / `find()` 扫描对象，W1 可接受；持久化后端需要补索引或 TaskStore。
+3. 现在只做本地内存队列，分布式后端的 at-least-once、幂等重放和 fencing 还需要独立设计。
 
-### 4.4 用户补充输入
+## 9. 最小验证
 
-1. Access 再次调用 `runTask`，这次使用 `TaskAction.RESUME_INPUT`。
-2. TCC 用 `tenantId + sessionId` 找到 session 队列。
-3. 如果没有显式 `taskId`，TCC 选择最新的 `WAITING` Task。
-4. TCC 调用 `EngineDispatchApi.enqueueResume`，把输入继续交给 runtime。
-5. Runtime 继续通过 `EngineTaskControlAdapter` 回写 `markRunning`、
-   `markSucceeded`、`markFailed` 或 `markCancelled`。
-
-### 4.5 取消任务
-
-1. Access 调用 `runTask`，使用 `TaskAction.CANCEL`，并携带 `taskId`。
-2. TCC 把 Task 状态改为 `CANCELLING`。
-3. TCC 调用 `EngineDispatchApi.enqueueCancel`。
-4. Runtime 确认取消后，经 `EngineTaskControlAdapter` 调用
-   `markCancelled`，TCC 将 Task 置为 `CANCELLED`。
-
-## 5. 当前特性
-
-| 特性 | 对应代码 | 说明 |
-|---|---|---|
-| 本地 IEQ | `TaskQueue`、`InMemoryTaskQueue` | 薄队列，只处理对象顺序和读取。 |
-| 队列弱管理 | `QueueManager`、`QueueRegistration` | 记录队列归属和索引，不提供对外 admin port。 |
-| Session 队列创建 | `QueueFactory.inMemorySessionQueue` | 创建时同步注册到 `QueueManager`。 |
-| Task Bean | `Task` | Java Bean，包含状态、revision、detail、时间戳。 |
-| 单入口任务 API | `TaskControlClient.runTask` | Access 侧统一从这里进入。 |
-| 状态回写 API | `TaskControlClient.mark*` | Runtime adapter 回写状态意图。 |
-| 当前 Task 选择 | `TaskControlService.findCurrentTask` | 按 `updatedAt` 再按 `taskId` 选择最新可挂接 Task。 |
-| 幂等 | `RunTaskCommand.idempotencyKey` | 相同 key 返回已记录结果。 |
-| fencing | `MarkTaskCommand.expectedRevision` | 防止旧 runtime 信号覆盖新状态。 |
-| Engine 桥接 | `EngineTaskControlAdapter` | 对齐 engine 回调接口，转换等待原因和失败码。 |
-| 白盒测试 | `taskflow/test/*WhiteboxTest` | 覆盖 Bean、队列、manager、TCC、engine bridge。 |
-
-## 6. 设计边界
-
-这些边界是当前实现需要保持的职责分离：
-
-1. IEQ 不理解 Task 状态；队列只管理对象顺序、读取和快照。
-2. Runtime/engine 不直接读写 IEQ，状态变化必须经 adapter 进入 TCC。
-3. Access 不需要知道 `queueId`，只透传 `tenantId`、`sessionId`、
-   `agentId` 和用户输入。
-4. `QueueManager` 是弱管理对象，不作为对外 admin port 暴露。
-
-## 7. 后续 TODO
-
-1. 接入 Access / Session 的端到端流程：Session 创建时绑定 session 队列，
-   Access 侧统一调用 `runTask`。
-2. 明确 OOD / `NOT_CURRENT_TASK` 后是否立即由 TCC 创建新 Task 的策略，并补
-   对应白盒测试。
-3. 评估是否需要独立 Task 索引或持久化 TaskStore，避免未来持久化后端依赖
-   全量队列扫描。
-4. 增加 Redis/JDBC/Kafka 等持久化 IEQ 后端，同时保持 `TaskQueue` API
-   不变。
-5. 补充分布式后端的 at-least-once / exactly-once、幂等和 fencing 说明。
-
-## 8. 最小验证
-
-推荐先跑 taskflow 白盒测试：
+推荐在 Linux/WSL 环境执行：
 
 ```bash
 ./mvnw -pl agent-service -am \
-  -Dtest=TaskBeanWhiteboxTest,InMemoryTaskQueueWhiteboxTest,TaskControlClientApiWhiteboxTest,QueueManagerWhiteboxTest,TaskControlServiceWhiteboxTest,TaskflowEngineBridgeWhiteboxTest \
+  -Dtest=QueueManagerWhiteboxTest,TaskControlServiceWhiteboxTest,TaskflowEngineBridgeWhiteboxTest \
   -Dsurefire.failIfNoSpecifiedTests=false \
   -Pquality -B -ntp test
 ```
 
-提交前再跑 agent-service 质量验证：
+提交前再执行：
 
 ```bash
 ./mvnw -pl agent-service -am -Pquality -B -ntp verify
 ```
 
-当前白盒验证结果：
-
-```text
-Taskflow targeted white-box tests: passed
-Tests run: 19, Failures: 0, Errors: 0
-agent-service -Pquality verify: passed
-```
+最近一次白盒验证应以本地命令输出为准；若重命名 IEQ 或迁移 engine port 包，需要先跑上述 targeted tests。

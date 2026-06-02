@@ -9,7 +9,7 @@ import com.huawei.ascend.service.engine.event.EngineInterruptedEvent;
 import com.huawei.ascend.service.engine.event.EngineOutputEvent;
 import com.huawei.ascend.service.engine.model.EngineExecutionScope;
 import com.huawei.ascend.service.engine.model.EngineOutput;
-import com.huawei.ascend.service.engine.spi.AccessLayerClient;
+import com.huawei.ascend.service.engine.port.AccessLayerClient;
 
 import java.util.Objects;
 

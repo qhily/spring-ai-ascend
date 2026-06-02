@@ -14,10 +14,17 @@ public record AccessIntent(
 
     public AccessIntent {
         Objects.requireNonNull(operation, "operation");
-        Objects.requireNonNull(tenantId, "tenantId");
-        Objects.requireNonNull(userId, "userId");
-        Objects.requireNonNull(agentId, "agentId");
+        tenantId = requireNonBlank(tenantId, "tenantId");
+        userId = requireNonBlank(userId, "userId");
+        agentId = requireNonBlank(agentId, "agentId");
+    }
+
+    private static String requireNonBlank(String value, String name) {
+        Objects.requireNonNull(value, name);
+        if (value.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
+        }
+        return value;
     }
 }
-
 

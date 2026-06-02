@@ -1,68 +1,72 @@
-# L1 Agent Service Taskflow Queue/Control Design
+# L1 Agent Service IEQ / Task-Control Design
 
 ## 1. Purpose
 
-This wave keeps the taskflow surface intentionally small. It defines:
+This wave keeps the IEQ and task-control surface intentionally small. It defines:
 
 - a local in-memory queue component backed by the JDK;
 - a static queue factory method for the current in-memory backend;
+- a weak queue manager for registration and lookup;
 - a JavaBean-style `Task` model;
-- one compact L4 `TaskControlClient` API with a single L1-facing `runTask` entry and runtime mark* signals.
+- one compact `TaskControlClient` API with a single access-facing `runTask` entry and runtime `mark*` signals.
 
-It does not define any new taskflow SPI in this wave. SPI remains reserved for "this module defines the interface, another provider implements it" extension points. The current taskflow surface is internal API and local component code.
+It does not define any new task-control SPI in this wave. SPI remains reserved for "this module defines the interface, another provider implements it" extension points. The current queue/task-control surface is internal API and local component code.
 
-Morning update, 2026-06-01:
+Current implementation notes:
 
-- L1-facing task control remains a single `runTask(RunTaskCommand)` method.
+- Access-facing task control remains a single `runTask(RunTaskCommand)` method.
 - `RUN`, `RESUME_INPUT`, and `CANCEL` are carried by `TaskAction`, not by separate handler methods.
-- No `RuntimeQueueGateway` is defined. Runtime reports state through the adapter back to L4 `TaskControlClient.mark*`; any runtime detail that must be queued is first returned to L4.
-- The document now lives under the active `architecture/docs/L1/agent-service/` authority root after the repository's architecture-tree migration.
+- No `RuntimeQueueGateway` is defined. Runtime reports state through an adapter back to `TaskControlClient.mark*`.
+- `engine.spi` is provider-only: `AgentHandler` is the only SPI. Engine outbound clients live under `engine.port`, and engine internal command queue types live under `engine.queue`.
 
 ## 2. Package Layout
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/taskflow/
-  control/
+agent-service/src/main/java/com/huawei/ascend/service/
+  queue/
+    InternalEventQueue.java
+    InMemoryInternalEventQueue.java
+    QueueFactory.java
+    QueueManager.java
+    QueueRegistration.java
+  taskcontrol/
     Task.java
     TaskState.java
     WaitingReason.java
     TaskFailureCode.java
+    TaskControlService.java
+    EngineTaskControlAdapter.java
     api/
       TaskControlClient.java
-  queue/
-    TaskQueue.java
-    InMemoryTaskQueue.java
-    QueueFactory.java
 ```
 
 ## 3. Queue Component
 
-`TaskQueue<T>` is a thin local abstraction over queue operations:
+`InternalEventQueue<T>` is a thin local abstraction over queue operations:
 
 ```java
-public interface TaskQueue<T> {
+public interface InternalEventQueue<T> {
     String queueId();
     boolean offer(T value);
     Optional<T> poll();
     Optional<T> peek();
+    Optional<T> find(Predicate<? super T> matcher);
     List<T> snapshot();
     int size();
 }
 ```
 
-The default implementation is `InMemoryTaskQueue<T>`, backed by
-`java.util.concurrent.LinkedBlockingQueue`.
+The default implementation is `InMemoryInternalEventQueue<T>`, backed by `java.util.concurrent.LinkedBlockingQueue`.
 
 `QueueFactory` is a final utility class, not an SPI:
 
 ```java
 public final class QueueFactory {
-    public static <T> TaskQueue<T> inMemoryQueue(String queueId) { ... }
+    public static <T> InternalEventQueue<T> inMemoryQueue(String queueId) { ... }
 }
 ```
 
-The queue does not own task state and does not inspect item payload type.
-The queue also does not expose a runtime gateway. L5 runtime code must not publish to or consume from taskflow queues directly.
+The queue does not own task state and does not inspect item payload type. The queue also does not expose a runtime gateway. Runtime code must not publish to or consume from IEQ directly.
 
 ## 4. Task Model
 
@@ -92,7 +96,7 @@ No `QUEUED`, `WAITING_FOR_TOOL`, or `EXPIRED` state is defined in this wave.
 
 ## 5. Control API
 
-`TaskControlClient` is the internal task-control API in this wave. It is not registered as SPI because the current implementation direction is not "external provider implements the contract"; L4 owns the control service and callers invoke it.
+`TaskControlClient` is the internal task-control API in this wave. It is not registered as SPI because the current implementation direction is not "external provider implements the contract"; task-control owns the control service and callers invoke it.
 
 ```java
 public interface TaskControlClient {
@@ -111,7 +115,7 @@ public interface TaskControlClient {
 RUN, RESUME_INPUT, CANCEL
 ```
 
-This keeps the L1 `TaskHandler` shape to one method. Future control intent can extend the enum and command fields without adding another L1-facing method.
+This keeps the access `TaskHandler` shape to one method. Future control intent can extend the enum and command fields without adding another access-facing method.
 
 Command/result records live inside `TaskControlClient`:
 
@@ -120,28 +124,31 @@ Command/result records live inside `TaskControlClient`:
 - `MarkTaskCommand`
 - `TaskResult`
 
-This keeps the public interface count small while preserving typed command/result semantics for future controller implementation.
+This keeps the public interface count small while preserving typed command/result semantics.
 
 ## 6. Runtime Alignment
 
-PR #100's `EngineDispatchSpi` remains the runtime/engine dispatch reference.
+`EngineDispatchApi` is the runtime/engine dispatch reference. Task-control calls it to enqueue execute/resume/cancel requests.
 
-This wave does not add a second runtime dispatch SPI. Future L5 runtime adapter code can translate `TaskControlClient.runTask` intent plus `TaskAction` into the engine dispatch surface and report state changes back through `TaskControlClient.mark*`.
+This wave does not add a second runtime dispatch SPI. Runtime and engine report state changes back through an engine outbound port implemented by `EngineTaskControlAdapter`, which then calls `TaskControlClient.mark*`.
+
+`agentId` validation is primarily an access/entry responsibility. Access must reject blank `agentId`, and any registry/card/authorization check should happen before task-control. Task-control trusts that entry contract and packages the `agentId` into the engine scope without depending on an agent registry. Engine dispatch may still reject unavailable targets as a defensive fallback, but that is not the normal validation path.
+
+The only engine provider SPI is `AgentHandler`; examples should implement `AgentHandler` instead of introducing another example interface.
 
 ## 7. White-Box Test Scope
 
-The first test wave pins:
+The current test wave pins:
 
-- `Task` behaves as a JavaBean and validates required identifiers;
-- `QueueFactory.inMemoryQueue` returns a FIFO in-memory queue backed by JDK semantics;
-- white-box tests live under `agent-service/src/test/java/com/huawei/ascend/service/taskflow/test`;
-- `TaskControlClient` nested command records validate required fields and defensively copy metadata.
+- queue manager registration and session lookup;
+- task-control task creation, current-task selection, idempotency, fencing, and state transitions;
+- engine bridge conversion from engine events into task-control marks.
+
+White-box tests live under `agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test`.
 
 ## 8. Deferred
 
-- controller implementation;
-- task state transition policy implementation;
 - durable queue backend;
-- queue manager / registry;
-- runtime adapter bridge to `EngineDispatchSpi`;
-- integration tests across access, session, taskflow, and runtime.
+- optional TaskStore or index for durable backends;
+- OOD / `NOT_CURRENT_TASK` policy;
+- broader integration tests across access, session, task-control, and runtime.

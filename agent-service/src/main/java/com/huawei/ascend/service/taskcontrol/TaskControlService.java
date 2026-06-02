@@ -11,7 +11,7 @@ import com.huawei.ascend.service.schema.Message;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient;
 import com.huawei.ascend.service.queue.QueueFactory;
 import com.huawei.ascend.service.queue.QueueManager;
-import com.huawei.ascend.service.queue.TaskQueue;
+import com.huawei.ascend.service.queue.InternalEventQueue;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -94,30 +94,16 @@ public class TaskControlService implements TaskControlClient {
     }
 
     public Optional<Task> findTask(String tenantId, String sessionId, String taskId) {
-        return taskQueue(tenantId, sessionId).find(task -> taskId.equals(task.getTaskId()));
+        return internalEventQueue(tenantId, sessionId).find(task -> taskId.equals(task.getTaskId()));
     }
 
     public Optional<Task> findCurrentTask(String tenantId, String sessionId) {
-        return latest(taskQueue(tenantId, sessionId).snapshot().stream()
+        return latest(internalEventQueue(tenantId, sessionId).snapshot().stream()
                 .filter(this::attachable));
     }
 
     public List<Task> tasks(String tenantId, String sessionId) {
-        return taskQueue(tenantId, sessionId).snapshot();
-    }
-
-    public EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, Object input) {
-        Objects.requireNonNull(parentScope, "parentScope");
-        String tenantId = requireNonBlank(parentScope.tenantId(), "tenantId");
-        String sessionId = requireNonBlank(parentScope.sessionId(), "sessionId");
-        String agentId = requireNonBlank(targetAgentId, "targetAgentId");
-        Task task;
-        synchronized (sessionLock(tenantId, sessionId)) {
-            task = Task.created(tenantId, sessionId, agentId, clock.instant());
-            task.setDetail(input);
-            taskQueue(tenantId, sessionId).offer(task);
-        }
-        return scopeFor(task, userId(parentScope.userId()));
+        return internalEventQueue(tenantId, sessionId).snapshot();
     }
 
     private TaskResult doRunTask(RunTaskCommand command) {
@@ -218,7 +204,7 @@ public class TaskControlService implements TaskControlClient {
                     .filter(task -> resumeOnly ? task.getState() == TaskState.WAITING : attachable(task));
         }
         if (resumeOnly) {
-            return latest(taskQueue(command.tenantId(), command.sessionId()).snapshot().stream()
+            return latest(internalEventQueue(command.tenantId(), command.sessionId()).snapshot().stream()
                     .filter(task -> task.getState() == TaskState.WAITING));
         }
         return findCurrentTask(command.tenantId(), command.sessionId());
@@ -228,7 +214,7 @@ public class TaskControlService implements TaskControlClient {
         Task task = Task.created(command.tenantId(), command.sessionId(),
                 command.taskId(), command.agentId(), clock.instant());
         task.setDetail(command.input());
-        taskQueue(command.tenantId(), command.sessionId()).offer(task);
+        internalEventQueue(command.tenantId(), command.sessionId()).offer(task);
         return task;
     }
 
@@ -260,13 +246,13 @@ public class TaskControlService implements TaskControlClient {
     }
 
     @SuppressWarnings("unchecked")
-    private TaskQueue<Task> taskQueue(String tenantId, String sessionId) {
-        Optional<TaskQueue<?>> existing = queueManager.findBySession(tenantId, sessionId);
+    private InternalEventQueue<Task> internalEventQueue(String tenantId, String sessionId) {
+        Optional<InternalEventQueue<?>> existing = queueManager.findBySession(tenantId, sessionId);
         if (existing.isPresent()) {
-            return (TaskQueue<Task>) existing.get();
+            return (InternalEventQueue<Task>) existing.get();
         }
         synchronized (queueCreationLock) {
-            return (TaskQueue<Task>) queueManager.findBySession(tenantId, sessionId)
+            return (InternalEventQueue<Task>) queueManager.findBySession(tenantId, sessionId)
                     .orElseGet(() -> QueueFactory.inMemorySessionQueue(tenantId, sessionId, queueManager));
         }
     }

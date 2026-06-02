@@ -26,7 +26,7 @@ public class TaskControlAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(com.huawei.ascend.service.engine.spi.TaskControlClient.class)
+    @ConditionalOnMissingBean(com.huawei.ascend.service.engine.port.TaskControlClient.class)
     public EngineTaskControlAdapter engineTaskControlAdapter(TaskControlService taskControlService) {
         return new EngineTaskControlAdapter(taskControlService);
     }

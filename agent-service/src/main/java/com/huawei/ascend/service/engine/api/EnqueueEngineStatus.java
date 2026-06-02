@@ -5,8 +5,8 @@ package com.huawei.ascend.service.engine.api;
  *
  * <p>Indicates whether the engine accepted the enqueue request.
  * Does not represent the real execution status; real execution status
- * is written back through the outbound SPI
- * {@code com.huawei.ascend.service.engine.spi.TaskControlClient}.
+ * is written back through the outbound port
+ * {@code com.huawei.ascend.service.engine.port.TaskControlClient}.
  */
 public enum EnqueueEngineStatus {
     /**

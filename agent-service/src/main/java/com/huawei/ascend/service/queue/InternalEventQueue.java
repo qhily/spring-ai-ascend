@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  * not inspect Task state, runtime signals, or agent semantics; Task-Centric
  * Control (TCC) code interprets the payload.
  */
-public interface TaskQueue<T> {
+public interface InternalEventQueue<T> {
 
     String queueId();
 

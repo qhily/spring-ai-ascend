@@ -11,7 +11,7 @@ import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.MarkTaskComma
 import java.util.Map;
 import java.util.Objects;
 
-public class EngineTaskControlAdapter implements com.huawei.ascend.service.engine.spi.TaskControlClient {
+public class EngineTaskControlAdapter implements com.huawei.ascend.service.engine.port.TaskControlClient {
 
     private final TaskControlService taskControlService;
 
@@ -43,11 +43,6 @@ public class EngineTaskControlAdapter implements com.huawei.ascend.service.engin
     public void markCancelled(EngineExecutionScope scope, EngineCancelledEvent event) {
         taskControlService.markCancelled(command(scope, null, TaskFailureCode.CANCELLED_BY_RUNTIME, event, Map.of()))
                 .toCompletableFuture().join();
-    }
-
-    @Override
-    public EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, String input) {
-        return taskControlService.createChildTask(parentScope, targetAgentId, input);
     }
 
     private MarkTaskCommand command(EngineExecutionScope scope, WaitingReason waitingReason,

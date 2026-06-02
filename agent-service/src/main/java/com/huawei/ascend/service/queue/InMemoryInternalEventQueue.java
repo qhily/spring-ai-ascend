@@ -7,17 +7,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 
 /**
- * Current in-memory TaskQueue implementation backed by JDK primitives.
+ * Current in-memory InternalEventQueue implementation backed by JDK primitives.
  *
- * <p>Future Redis/JDBC/Kafka backends should add another TaskQueue
+ * <p>Future Redis/JDBC/Kafka backends should add another InternalEventQueue
  * implementation instead of teaching this queue about Task state.
  */
-public final class InMemoryTaskQueue<T> implements TaskQueue<T> {
+public final class InMemoryInternalEventQueue<T> implements InternalEventQueue<T> {
 
     private final String queueId;
     private final LinkedBlockingQueue<T> delegate;
 
-    InMemoryTaskQueue(String queueId) {
+    InMemoryInternalEventQueue(String queueId) {
         this.queueId = requireNonBlank(queueId, "queueId");
         this.delegate = new LinkedBlockingQueue<>();
     }

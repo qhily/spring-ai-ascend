@@ -9,17 +9,17 @@ import java.util.concurrent.ConcurrentMap;
 
 public class QueueManager {
 
-    private final ConcurrentMap<String, TaskQueue<?>> queuesById = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, InternalEventQueue<?>> queuesById = new ConcurrentHashMap<>();
     private final ConcurrentMap<SessionKey, String> queueIdsBySession = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, QueueRegistration> registrations = new ConcurrentHashMap<>();
 
-    public <T> TaskQueue<T> register(TaskQueue<T> queue, QueueRegistration registration) {
+    public <T> InternalEventQueue<T> register(InternalEventQueue<T> queue, QueueRegistration registration) {
         Objects.requireNonNull(queue, "queue");
         Objects.requireNonNull(registration, "registration");
         if (!queue.queueId().equals(registration.queueId())) {
             throw new IllegalArgumentException("queueId mismatch");
         }
-        TaskQueue<?> existing = queuesById.putIfAbsent(queue.queueId(), queue);
+        InternalEventQueue<?> existing = queuesById.putIfAbsent(queue.queueId(), queue);
         if (existing != null && existing != queue) {
             throw new IllegalStateException("queue already registered: " + queue.queueId());
         }
@@ -32,12 +32,12 @@ public class QueueManager {
         return queue;
     }
 
-    public Optional<TaskQueue<?>> findByQueueId(String queueId) {
+    public Optional<InternalEventQueue<?>> findByQueueId(String queueId) {
         Objects.requireNonNull(queueId, "queueId");
         return Optional.ofNullable(queuesById.get(queueId));
     }
 
-    public Optional<TaskQueue<?>> findBySession(String tenantId, String sessionId) {
+    public Optional<InternalEventQueue<?>> findBySession(String tenantId, String sessionId) {
         String queueId = queueIdsBySession.get(new SessionKey(tenantId, sessionId));
         return queueId == null ? Optional.empty() : findByQueueId(queueId);
     }

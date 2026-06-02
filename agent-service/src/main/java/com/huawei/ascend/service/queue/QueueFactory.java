@@ -12,19 +12,19 @@ public final class QueueFactory {
     private QueueFactory() {
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(String queueId) {
-        return new InMemoryTaskQueue<>(queueId);
+    public static <T> InternalEventQueue<T> inMemoryQueue(String queueId) {
+        return new InMemoryInternalEventQueue<>(queueId);
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(
+    public static <T> InternalEventQueue<T> inMemoryQueue(
             String queueId,
             QueueManager manager,
             QueueRegistration registration) {
-        TaskQueue<T> queue = inMemoryQueue(queueId);
+        InternalEventQueue<T> queue = inMemoryQueue(queueId);
         return manager.register(queue, registration);
     }
 
-    public static <T> TaskQueue<T> inMemorySessionQueue(
+    public static <T> InternalEventQueue<T> inMemorySessionQueue(
             String tenantId,
             String sessionId,
             QueueManager manager) {

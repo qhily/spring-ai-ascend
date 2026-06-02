@@ -1,4 +1,4 @@
-package com.huawei.ascend.service.engine.spi;
+package com.huawei.ascend.service.engine.port;
 
 import com.huawei.ascend.service.engine.event.EngineCancelledEvent;
 import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
@@ -21,7 +21,4 @@ public interface TaskControlClient {
     void markFailed(EngineExecutionScope scope, EngineFailedEvent event);
 
     void markCancelled(EngineExecutionScope scope, EngineCancelledEvent event);
-
-    /** Create a child task under the given parent scope, returning its scope. */
-    EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, String input);
 }

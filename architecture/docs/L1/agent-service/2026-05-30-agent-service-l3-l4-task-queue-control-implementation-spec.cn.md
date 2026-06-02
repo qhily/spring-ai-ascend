@@ -7,14 +7,14 @@ date: 2026-06-01
 authoring_mode: implementation_spec
 ---
 
-# Agent Service L3/L4 Taskflow Queue/Control 实现规格
+# Agent Service IEQ / Task-Control 实现规格
 
-本文说明当前 taskflow 的实现形态：包结构、接口、数据结构、测试和后续 Wave。本文不重复解释为什么这样设计；原因见同目录架构提议文档。
+本文说明当前 IEQ / Task-Control 的实现形态：包结构、接口、数据结构、测试和后续 Wave。本文不重复解释为什么这样设计；原因见同目录架构提议文档。
 
 代码旁审阅入口见：
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/taskflow/README.md
+agent-service/src/main/java/com/huawei/ascend/service/taskcontrol/README.md
 ```
 
 ## 0. W1 实现范围
@@ -35,10 +35,10 @@ W1 已经从“接口冻结”推进到“本地可运行闭环”：
 ## 1. 包结构
 
 ```text
-agent-service/src/main/java/com/huawei/ascend/service/taskflow/
+agent-service/src/main/java/com/huawei/ascend/service/
   queue/
-    TaskQueue.java
-    InMemoryTaskQueue.java
+    InternalEventQueue.java
+    InMemoryInternalEventQueue.java
     QueueFactory.java
     QueueManager.java
     QueueRegistration.java
@@ -53,9 +53,9 @@ agent-service/src/main/java/com/huawei/ascend/service/taskflow/
     api/
       TaskControlClient.java
 
-agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
+agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test/
   TaskBeanWhiteboxTest.java
-  InMemoryTaskQueueWhiteboxTest.java
+  InMemoryInternalEventQueueWhiteboxTest.java
   TaskControlClientApiWhiteboxTest.java
   QueueManagerWhiteboxTest.java
   TaskControlServiceWhiteboxTest.java
@@ -70,16 +70,16 @@ agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
 
 ## 2. L3 Queue 接口
 
-### 2.1 TaskQueue
+### 2.1 InternalEventQueue
 
 ```java
-package com.huawei.ascend.service.taskflow.queue;
+package com.huawei.ascend.service.queue;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-public interface TaskQueue<T> {
+public interface InternalEventQueue<T> {
     String queueId();
     boolean offer(T value);
     Optional<T> poll();
@@ -98,10 +98,10 @@ public interface TaskQueue<T> {
 4. `snapshot()` 返回只读拷贝，不能 drain 队列。
 5. Queue 不暴露 admin port。
 
-### 2.2 InMemoryTaskQueue
+### 2.2 InMemoryInternalEventQueue
 
 ```java
-public final class InMemoryTaskQueue<T> implements TaskQueue<T> {
+public final class InMemoryInternalEventQueue<T> implements InternalEventQueue<T> {
     // 使用 JDK LinkedBlockingQueue 作为 W1 本地内存实现。
 }
 ```
@@ -111,7 +111,7 @@ public final class InMemoryTaskQueue<T> implements TaskQueue<T> {
 1. `queueId` 必须非空白。
 2. `offer(null)` 必须拒绝。
 3. FIFO 顺序以 JDK 队列语义为准。
-4. 该实现仅用于 W1 本地验证；后续 Redis/JDBC/Kafka 等实现不得改变 `TaskQueue` 基础语义。
+4. 该实现仅用于 W1 本地验证；后续 Redis/JDBC/Kafka 等实现不得改变 `InternalEventQueue` 基础语义。
 
 ### 2.3 QueueFactory
 
@@ -120,16 +120,16 @@ public final class QueueFactory {
     private QueueFactory() {
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(String queueId) {
-        return new InMemoryTaskQueue<>(queueId);
+    public static <T> InternalEventQueue<T> inMemoryQueue(String queueId) {
+        return new InMemoryInternalEventQueue<>(queueId);
     }
 
-    public static <T> TaskQueue<T> inMemoryQueue(
+    public static <T> InternalEventQueue<T> inMemoryQueue(
             String queueId, QueueManager manager, QueueRegistration registration) {
-        return manager.register(new InMemoryTaskQueue<>(queueId), registration);
+        return manager.register(new InMemoryInternalEventQueue<>(queueId), registration);
     }
 
-    public static TaskQueue<Task> inMemorySessionQueue(
+    public static InternalEventQueue<Task> inMemorySessionQueue(
             String tenantId, String sessionId, QueueManager manager) {
         QueueRegistration registration = QueueRegistration.session(tenantId, sessionId);
         return inMemoryQueue(registration.queueId(), manager, registration);
@@ -150,9 +150,9 @@ public final class QueueFactory {
 
 ```java
 public class QueueManager {
-    public <T> TaskQueue<T> register(TaskQueue<T> queue, QueueRegistration registration);
-    public Optional<TaskQueue<?>> findByQueueId(String queueId);
-    public Optional<TaskQueue<?>> findBySession(String tenantId, String sessionId);
+    public <T> InternalEventQueue<T> register(InternalEventQueue<T> queue, QueueRegistration registration);
+    public Optional<InternalEventQueue<?>> findByQueueId(String queueId);
+    public Optional<InternalEventQueue<?>> findBySession(String tenantId, String sessionId);
     public Optional<QueueRegistration> registration(String queueId);
     public List<QueueRegistration> registrations();
     public void unregister(String queueId);
@@ -191,7 +191,7 @@ updatedAt
 实现规则：
 
 1. `tenantId`、`sessionId`、`taskId`、`state`、`revision`、`createdAt`、`updatedAt` 必须有效。
-2. `agentId` 可为空；缺失或无效由 Runtime 返回 `AGENT_ID_INVALID`，L1 不兜底选择 Agent。
+2. `agentId` 来自入口层已校验的请求；TCC 不理解 Agent 注册表，只按契约保存和透传。
 3. `transitionTo(...)` 修改状态并递增 `revision`。
 4. `terminal()` 判断 `COMPLETED`、`FAILED`、`CANCELLED`。
 
@@ -300,7 +300,7 @@ public record RunTaskCommand(
 2. `CANCEL` 必须携带 `taskId`。
 3. 非 `CANCEL` 动作必须携带 `input`。
 4. `metadata` 防御性拷贝。
-5. `agentId` 由外部传入并透传；有效性由 Runtime 判断。
+5. `agentId` 由入口层完成非空、注册表/权限等合法性判断；TCC 不重复理解 Agent 合法性，只信任契约并透传。
 
 ### 4.3 MarkTaskCommand
 
@@ -344,7 +344,7 @@ public record TaskResult(
 
 规则：
 
-1. Runtime 不持有 `TaskQueue`。
+1. Runtime 不持有 `InternalEventQueue`。
 2. Runtime 不实现 `RuntimeQueueGateway`。
 3. Runtime 不直接发布或消费 Queue。
 4. Runtime 面向 Access 的输出按同步返回链路处理。
@@ -361,7 +361,7 @@ sequenceDiagram
     participant Client as Client
     participant Access as L1 Access
     participant TCC as L4 TaskControlClient
-    participant Queue as L3 TaskQueue
+    participant Queue as L3 InternalEventQueue
     participant Runtime as L5 Runtime Adapter
 
     Client->>Access: user input(sessionId, agentId, query)
@@ -398,22 +398,22 @@ stateDiagram-v2
 W1 测试目录：
 
 ```text
-agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
+agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test/
 ```
 
 当前测试：
 
-1. `TaskBeanWhiteboxTest`
-2. `InMemoryTaskQueueWhiteboxTest`
-3. `TaskControlClientApiWhiteboxTest`
-4. `QueueManagerWhiteboxTest`
-5. `TaskControlServiceWhiteboxTest`
-6. `TaskflowEngineBridgeWhiteboxTest`
+1. `QueueManagerWhiteboxTest`
+2. `TaskControlServiceWhiteboxTest`
+3. `TaskflowEngineBridgeWhiteboxTest`
 
 最小验证命令：
 
-```powershell
-.\mvnw.cmd -pl agent-service -am "-Dtest=TaskBeanWhiteboxTest,InMemoryTaskQueueWhiteboxTest,TaskControlClientApiWhiteboxTest,QueueManagerWhiteboxTest,TaskControlServiceWhiteboxTest,TaskflowEngineBridgeWhiteboxTest" "-Dsurefire.failIfNoSpecifiedTests=false" -Pquality -B -ntp test
+```bash
+./mvnw -pl agent-service -am \
+  -Dtest=QueueManagerWhiteboxTest,TaskControlServiceWhiteboxTest,TaskflowEngineBridgeWhiteboxTest \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  -Pquality -B -ntp test
 ```
 
 ## 9. 后续 Wave
@@ -441,7 +441,7 @@ agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
 目标：
 
 - 增加 Redis/JDBC/Kafka 等后端实现。
-- 保持 `TaskQueue` 语义不变。
+- 保持 `InternalEventQueue` 语义不变。
 - 保持 Queue 不理解 Task 状态。
 - 为持久化后端补充 exactly-once / at-least-once 边界说明。
 
@@ -451,5 +451,5 @@ agent-service/src/test/java/com/huawei/ascend/service/taskflow/test/
 2. `QueueFactory` 不再是 interface，W1 是静态工具类。
 3. 当前实现 `QueueManager` 弱管理，不实现强管理或对外 admin port。
 4. 当前不定义 `RuntimeQueueGateway`。
-5. taskflow 当前按内部 API 处理，不注册为新的 SPI 面。
-6. 白盒测试已经放入 `agent-service/src/test/java/com/huawei/ascend/service/taskflow/test`。
+5. IEQ / Task-Control 当前按内部 API 处理，不注册为新的 SPI 面。
+6. 白盒测试已经放入 `agent-service/src/test/java/com/huawei/ascend/service/taskcontrol/test`。

@@ -3,7 +3,7 @@ package com.huawei.ascend.service.access.egress;
 import com.huawei.ascend.service.access.model.EgressBinding;
 import com.huawei.ascend.service.access.model.NotificationFrame;
 import com.huawei.ascend.service.access.model.ReplyChannel;
-import com.huawei.ascend.service.queue.TaskQueue;
+import com.huawei.ascend.service.queue.InternalEventQueue;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -62,7 +62,7 @@ public final class EgressDispatcher {
     private void dispatchLoop(EgressBinding binding, Key key) {
         try {
             while (running.containsKey(key)) {
-                Optional<TaskQueue<NotificationFrame>> queue =
+                Optional<InternalEventQueue<NotificationFrame>> queue =
                         registry.find(binding.tenantId(), binding.sessionId(), binding.taskId());
                 if (queue.isEmpty()) {
                     stop(binding);

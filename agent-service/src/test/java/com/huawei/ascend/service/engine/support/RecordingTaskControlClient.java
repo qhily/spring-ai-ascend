@@ -5,10 +5,9 @@ import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
 import com.huawei.ascend.service.engine.event.EngineFailedEvent;
 import com.huawei.ascend.service.engine.event.EngineInterruptedEvent;
 import com.huawei.ascend.service.engine.model.EngineExecutionScope;
-import com.huawei.ascend.service.engine.spi.TaskControlClient;
+import com.huawei.ascend.service.engine.port.TaskControlClient;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * In-memory {@link TaskControlClient} for tests: records every lifecycle
@@ -22,7 +21,6 @@ public class RecordingTaskControlClient implements TaskControlClient {
     public final List<EngineFailedEvent> failed = new ArrayList<>();
     public final List<EngineInterruptedEvent> waiting = new ArrayList<>();
     public final List<EngineCancelledEvent> cancelled = new ArrayList<>();
-    private final AtomicInteger childSeq = new AtomicInteger();
 
     @Override
     public void markRunning(EngineExecutionScope scope) {
@@ -51,12 +49,5 @@ public class RecordingTaskControlClient implements TaskControlClient {
     public void markCancelled(EngineExecutionScope scope, EngineCancelledEvent event) {
         transitions.add("CANCELLED:" + scope.taskId());
         cancelled.add(event);
-    }
-
-    @Override
-    public EngineExecutionScope createChildTask(EngineExecutionScope parentScope, String targetAgentId, String input) {
-        String childTaskId = parentScope.taskId() + "-child-" + childSeq.incrementAndGet();
-        return new EngineExecutionScope(parentScope.tenantId(), parentScope.userId(),
-                parentScope.sessionId(), childTaskId, targetAgentId);
     }
 }

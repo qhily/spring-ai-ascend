@@ -1,8 +1,8 @@
 package com.huawei.ascend.service.engine.queue;
 
 import com.huawei.ascend.service.engine.event.EngineCommandEvent;
-import com.huawei.ascend.service.engine.spi.EngineCommandConsumer;
-import com.huawei.ascend.service.engine.spi.EngineQueueGateway;
+import com.huawei.ascend.service.engine.queue.EngineCommandConsumer;
+import com.huawei.ascend.service.engine.queue.EngineQueueGateway;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 

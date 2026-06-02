@@ -2,7 +2,7 @@ package com.huawei.ascend.service.access.egress;
 
 import com.huawei.ascend.service.access.model.EgressBinding;
 import com.huawei.ascend.service.access.model.NotificationFrame;
-import com.huawei.ascend.service.queue.TaskQueue;
+import com.huawei.ascend.service.queue.InternalEventQueue;
 
 import java.util.Optional;
 
@@ -17,9 +17,9 @@ import java.util.Optional;
  */
 public interface EgressQueueRegistry {
 
-    TaskQueue<NotificationFrame> getOrCreate(EgressBinding binding);
+    InternalEventQueue<NotificationFrame> getOrCreate(EgressBinding binding);
 
-    Optional<TaskQueue<NotificationFrame>> find(String tenantId, String sessionId, String taskId);
+    Optional<InternalEventQueue<NotificationFrame>> find(String tenantId, String sessionId, String taskId);
 
     Optional<EgressBinding> findBinding(String tenantId, String sessionId, String taskId);
 
