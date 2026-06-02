@@ -17,6 +17,7 @@ import com.huawei.ascend.service.engine.handler.AgentExecutionContext;
 import com.huawei.ascend.service.engine.model.EngineOutput;
 import com.huawei.ascend.service.engine.spi.AgentHandler;
 import com.huawei.ascend.service.queue.config.QueueAutoConfiguration;
+import com.huawei.ascend.service.session.api.SessionManager;
 import com.huawei.ascend.service.session.config.SessionManageConfiguration;
 import com.huawei.ascend.service.taskcontrol.config.TaskControlAutoConfiguration;
 
@@ -60,6 +61,9 @@ class AgentServiceEndToEndIT {
     @Autowired
     private EgressQueueRegistry egressQueueRegistry;
 
+    @Autowired
+    private SessionManager sessionManager;
+
     @Test
     void a2aRequestRunsThroughTheStackAndRepliesBack() {
         A2aEnvelope envelope = envelope("session-1", "hello world");
@@ -79,6 +83,8 @@ class AgentServiceEndToEndIT {
         assertThat(outputs).anyMatch(o -> "Message".equals(o.kind()));
         assertThat(outputs.get(outputs.size() - 1).terminal()).isTrue();
         assertThat(outputs).anyMatch(o -> String.valueOf(o.body()).contains("hello world"));
+        assertThat(sessionManager.get(TENANT, "session-1")).hasValueSatisfying(session ->
+                assertThat(session.currentUserInput()).anyMatch(message -> "hello world".equals(message.text())));
 
         // The reply channel must be torn down after the terminal frame — no leak.
         awaitEgressCleanup("session-1");

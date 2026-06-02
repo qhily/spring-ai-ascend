@@ -96,13 +96,24 @@ Engine 侧接口按方向分为三类：
 
 ## 7. 用户流程
 
-1. Access/Session 层拿到或创建 `sessionId`。
-2. Access 把 `tenantId`、`sessionId`、`agentId` 和用户输入组装为 `RunTaskCommand(action=RUN)`。
-3. `TaskControlService` 通过 `TaskQueueRegistry` 获取 session 对应的 task 索引和 IEQ；registry 内部通过 `QueueManager.getOrCreate("task:<tenantId>:<sessionId>", Task.class)` 初始化队列。
-4. 如果 session 下没有可挂接 Task，TCC 创建 `Task`，初始状态为 `CREATED`，写入 task 索引并 `offer` 到 IEQ。
-5. TCC 调用 `EngineDispatchApi.enqueueExecution`，把执行请求交给 engine/runtime。
-6. Runtime/engine 通过 outbound port 回写 `markRunning`、`markWaiting`、`markSucceeded`、`markFailed` 或 `markCancelled`。
-7. TCC 校验 revision 和状态转换规则后更新 Task。
+1. Access 把 A2A / async 协议输入转换为统一 `AgentRequest`。此时 `sessionId` 可以为空，表示客户端没有传入会话标识。
+2. `AccessSubmissionService` 先调用 `SessionManager.loadOrCreate(..., currentUserInput)`，由 Session 层查找或创建 Session，并记录本次用户输入；`currentUserInput` 只包含 `USER` 角色消息。
+3. `AccessSubmissionService` 使用 resolved `sessionId` 重新构造 `AgentRequest`，再绑定 egress，并把 resolved request 交给 `TaskControlClient.runTask(RunTaskCommand)`。
+4. TaskControl 只接受 resolved request；进入 `TaskControlService` 后，`sessionId` 必须非空。
+5. `TaskControlService` 通过 `TaskQueueRegistry` 获取 session 对应的 task 索引和 IEQ；registry 内部通过 `QueueManager.getOrCreate("task:<tenantId>:<sessionId>", Task.class)` 初始化队列。
+6. 如果 session 下没有可挂接 Task，TCC 创建 `Task`，初始状态为 `CREATED`，写入 task 索引并 `offer` 到 IEQ。
+7. TCC 调用 `EngineDispatchApi.enqueueExecution`，把执行请求交给 engine/runtime。
+8. Runtime/engine 通过 outbound port 回写 `markRunning`、`markWaiting`、`markSucceeded`、`markFailed` 或 `markCancelled`。
+9. TCC 校验 revision 和状态转换规则后更新 Task。
+
+## 7.1 AgentRequest 阶段语义
+
+`AgentRequest` 是统一入参 DTO，不保证已经绑定 Session。它有两个阶段：
+
+1. Access 阶段：`sessionId` 可以为空；`input` 表示本次用户输入。
+2. TaskControl 阶段：`sessionId` 必须已经由 `AccessSubmissionService` 通过 `SessionManager` resolved。
+
+因此，任何模块如果绕过 `AccessSubmissionService` 直接调用 `TaskControlClient`，必须自行保证传入的是 resolved `AgentRequest`。正常路径不允许未解析 Session 的请求直接进入 TaskControl。
 
 ## 8. 当前明确保留的风险
 

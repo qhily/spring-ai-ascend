@@ -1,5 +1,6 @@
 package com.huawei.ascend.service.session.core;
 
+import com.huawei.ascend.service.schema.Message;
 import com.huawei.ascend.service.session.api.SessionManager;
 import com.huawei.ascend.service.session.model.Session;
 import com.huawei.ascend.service.session.model.SessionKey;
@@ -8,6 +9,7 @@ import com.huawei.ascend.service.session.store.SessionStore;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,17 +27,23 @@ public final class SessionManagerImpl implements SessionManager {
     }
 
     @Override
-    public Session loadOrCreate(String tenantId, String userId, String agentId, String sessionId) {
+    public Session loadOrCreate(
+            String tenantId,
+            String userId,
+            String agentId,
+            String sessionId,
+            List<Message> currentUserInput) {
         Objects.requireNonNull(tenantId, "tenantId");
-        Objects.requireNonNull(userId, "userId");
         Objects.requireNonNull(agentId, "agentId");
+        List<Message> safeCurrentUserInput =
+                currentUserInput == null ? List.of() : List.copyOf(currentUserInput);
         String resolvedSessionId = sessionId == null || sessionId.isBlank()
                 ? UUID.randomUUID().toString()
                 : sessionId;
         SessionKey key = new SessionKey(tenantId, resolvedSessionId);
         Optional<Session> existing = sessionStore.find(key);
         if (existing.isPresent()) {
-            return touch(key);
+            return touch(key, safeCurrentUserInput);
         }
         Instant now = clock.instant();
         Instant expiresAt = ttl == null ? null : now.plus(ttl);
@@ -44,6 +52,7 @@ public final class SessionManagerImpl implements SessionManager {
                 userId,
                 agentId,
                 resolvedSessionId,
+                safeCurrentUserInput,
                 now,
                 now,
                 now,
@@ -65,21 +74,22 @@ public final class SessionManagerImpl implements SessionManager {
         sessionStore.remove(new SessionKey(tenantId, sessionId));
     }
 
-    private Session touch(SessionKey key) {
+    private Session touch(SessionKey key, List<Message> currentUserInput) {
         Session session = sessionStore.find(key)
                 .orElseThrow(() -> new IllegalStateException("Session not found: " + key));
-        return sessionStore.save(withTimestamps(session, session.updatedAt()));
+        return sessionStore.save(withTimestamps(session, currentUserInput));
     }
 
-    private Session withTimestamps(Session session, Instant updatedAt) {
+    private Session withTimestamps(Session session, List<Message> currentUserInput) {
         Instant now = clock.instant();
         return new Session(
                 session.tenantId(),
                 session.userId(),
                 session.agentId(),
                 session.sessionId(),
+                currentUserInput,
                 session.createdAt(),
-                updatedAt,
+                now,
                 now,
                 expiresAt(now));
     }

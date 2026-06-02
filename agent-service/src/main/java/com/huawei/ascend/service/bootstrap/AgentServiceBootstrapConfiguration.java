@@ -5,6 +5,7 @@ import com.huawei.ascend.service.access.core.AccessSubmissionService;
 import com.huawei.ascend.service.access.egress.EgressDispatcher;
 import com.huawei.ascend.service.access.egress.EgressQueueRegistry;
 import com.huawei.ascend.service.engine.port.AccessLayerClient;
+import com.huawei.ascend.service.session.api.SessionManager;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -36,9 +37,10 @@ public class AgentServiceBootstrapConfiguration {
     @ConditionalOnMissingBean(AccessSubmissionService.class)
     public AccessSubmissionService accessSubmissionService(
             TaskControlClient taskControlClient,
+            SessionManager sessionManager,
             EgressQueueRegistry egressQueueRegistry,
             EgressDispatcher egressDispatcher) {
-        return new AccessSubmissionService(taskControlClient, egressQueueRegistry, egressDispatcher);
+        return new AccessSubmissionService(taskControlClient, sessionManager, egressQueueRegistry, egressDispatcher);
     }
 
     /**

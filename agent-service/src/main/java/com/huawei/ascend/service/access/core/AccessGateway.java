@@ -66,7 +66,7 @@ public final class AccessGateway {
                 context.tenantId(),
                 context.userId(),
                 context.agentId(),
-                normalizeSessionId(context.sessionId(), context.contextId()),
+                optionalSessionId(context.sessionId()),
                 List.of(Message.user(message == null || message.text() == null ? "" : message.text())),
                 context.idempotencyKey(),
                 metadata);
@@ -81,7 +81,7 @@ public final class AccessGateway {
                 envelope.headers().tenantId(),
                 envelope.headers().userId(),
                 envelope.headers().agentId(),
-                normalizeSessionId(envelope.headers().sessionId(), envelope.headers().correlationId()),
+                optionalSessionId(envelope.headers().sessionId()),
                 List.of(Message.user(envelope.body().query() == null ? "" : envelope.body().query())),
                 envelope.headers().idempotencyKey(),
                 metadata);
@@ -119,6 +119,13 @@ public final class AccessGateway {
         }
         Object taskId = envelope.message().metadata().get("taskId");
         return taskId == null ? null : taskId.toString();
+    }
+
+    private static String optionalSessionId(String sessionId) {
+        if (sessionId != null && !sessionId.isBlank()) {
+            return sessionId;
+        }
+        return null;
     }
 
     private static String normalizeSessionId(String sessionId, String fallback) {

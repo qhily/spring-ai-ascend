@@ -1,6 +1,9 @@
 package com.huawei.ascend.service.session.model;
 
+import com.huawei.ascend.service.schema.Message;
+
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 public record Session(
@@ -8,6 +11,7 @@ public record Session(
         String userId,
         String agentId,
         String sessionId,
+        List<Message> currentUserInput,
         Instant createdAt,
         Instant updatedAt,
         Instant lastAccessedAt,
@@ -15,9 +19,9 @@ public record Session(
 
     public Session {
         Objects.requireNonNull(tenantId, "tenantId");
-        Objects.requireNonNull(userId, "userId");
         Objects.requireNonNull(agentId, "agentId");
         Objects.requireNonNull(sessionId, "sessionId");
+        currentUserInput = currentUserInput == null ? List.of() : List.copyOf(currentUserInput);
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");
         Objects.requireNonNull(lastAccessedAt, "lastAccessedAt");

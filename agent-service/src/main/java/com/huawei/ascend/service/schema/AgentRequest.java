@@ -17,7 +17,8 @@ import java.util.Objects;
  * @param tenantId       owning tenant; never blank.
  * @param userId         end user id; may be {@code null} when anonymous.
  * @param agentId        target agent id; never blank.
- * @param sessionId      conversation/session id; never blank.
+ * @param sessionId      conversation/session id; may be {@code null} before
+ *                       access resolves the request through SessionManager.
  * @param input          ordered input messages; never {@code null}, may be empty.
  * @param idempotencyKey optional client-supplied dedup key; may be {@code null}.
  * @param metadata       protocol/routing attributes (e.g. correlationId,
@@ -35,7 +36,7 @@ public record AgentRequest(
     public AgentRequest {
         tenantId = requireNonBlank(tenantId, "tenantId");
         agentId = requireNonBlank(agentId, "agentId");
-        sessionId = requireNonBlank(sessionId, "sessionId");
+        sessionId = blankToNull(sessionId);
         input = input == null ? List.of() : List.copyOf(input);
         metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
     }
@@ -57,5 +58,9 @@ public record AgentRequest(
             throw new IllegalArgumentException(name + " must not be blank");
         }
         return value;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

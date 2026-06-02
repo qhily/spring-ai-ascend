@@ -49,13 +49,26 @@ L1 用 runTask 提交意图，IEQ 提供薄 Queue 和弱管理，TCC 维护 Task
 ## 0.2 与用户流程的关系
 
 1. 系统启动时，Spring 创建 `QueueManager`、`TaskControlService`、`EngineTaskControlAdapter` 和 `EngineDispatchApi`。
-2. 首次用户输入时，Access/Session 取得 `sessionId` 后调用 `TaskControlClient.runTask(action=RUN)`。
-3. TCC 根据 `tenantId + sessionId` 从 `QueueManager` 查找 session 队列；没有则通过 `QueueFactory.inMemorySessionQueue` 创建并注册。
-4. TCC 在 session 队列内创建或选择 Task，然后通过 `EngineDispatchApi.enqueueExecution` 交给 runtime/engine。
-5. Runtime/engine 需要等待用户时，经 `EngineTaskControlAdapter` 回写 `markWaiting`，TCC 把 Task 置为 `WAITING`。
-6. 用户补充输入时，Access 再调用 `runTask(action=RESUME_INPUT)`，TCC 默认选择最新 `WAITING` Task 并调用 `enqueueResume`。
-7. 用户取消时，Access 调用 `runTask(action=CANCEL)`，TCC 先置为 `CANCELLING`，再调用 `enqueueCancel`，最终由 adapter 回写 `markCancelled`。
-8. Runtime/engine 面向用户的输出仍走同步返回到 Access 的链路；IEQ 不承担输出流。
+2. Access 把协议输入转换成统一的 `AgentRequest(tenantId, userId, agentId, sessionId?, input, idempotencyKey, metadata)`。这个对象在 Access 阶段可以还没有 resolved `sessionId`。
+3. `AccessSubmissionService` 是 Session 解析边界：它调用 `SessionManager.loadOrCreate(..., currentUserInput)`，创建或加载 Session，并把本次用户输入写入 `currentUserInput`；`currentUserInput` 只包含 `USER` 角色消息。
+4. `AccessSubmissionService` 使用 resolved `sessionId` 重新构造 `AgentRequest`，再绑定 egress 并调用 `TaskControlClient.runTask(action=RUN)`。
+5. TCC 只接收 resolved request；也就是说，进入 TaskControl 的 `sessionId` 必须非空。
+6. TCC 根据 `tenantId + sessionId` 从 `QueueManager` 查找 session 队列；没有则通过 `QueueFactory.inMemorySessionQueue` 创建并注册。
+7. TCC 在 session 队列内创建或选择 Task，然后通过 `EngineDispatchApi.enqueueExecution` 交给 runtime/engine。
+8. Runtime/engine 需要等待用户时，经 `EngineTaskControlAdapter` 回写 `markWaiting`，TCC 把 Task 置为 `WAITING`。
+9. 用户补充输入时，Access 再经 `AccessSubmissionService` 刷新 Session 的 `currentUserInput`，然后调用 `runTask(action=RESUME_INPUT)`；TCC 默认选择最新 `WAITING` Task 并调用 `enqueueResume`。
+10. 用户取消时，Access 调用 `runTask(action=CANCEL)`，TCC 先置为 `CANCELLING`，再调用 `enqueueCancel`，最终由 adapter 回写 `markCancelled`。
+11. Runtime/engine 面向用户的输出仍走同步返回到 Access 的链路；IEQ 不承担输出流。
+
+### 0.3 AgentRequest 与 Session 解析边界
+
+`AgentRequest` 是统一入参 DTO，不等同于“已经存在 Session 的请求”。当前约定如下：
+
+1. 在 Access 协议转换阶段，`AgentRequest.sessionId` 可以为空；这表示客户端没有显式传入会话标识。
+2. `AccessSubmissionService` 必须先调用 `SessionManager.loadOrCreate`，让 Session 层负责查找或创建会话。
+3. `SessionManager` 返回 resolved `sessionId`，并只记录本次 `currentUserInput`；该字段只保存本次 `USER` 角色消息，Service 层不做 compact、budget 或完整上下文组装。
+4. 只有 resolved `AgentRequest` 可以进入 TaskControl、Queue 和 Engine dispatch 相关路径。
+5. 如果其它模块直接构造 `AgentRequest` 并绕过 `AccessSubmissionService` 调用 TaskControl，那么它必须自己保证 `sessionId` 已经 resolved；否则属于越过 Session-first 边界。
 
 ## 1. 与旧设计的冲突解决
 

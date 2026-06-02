@@ -8,12 +8,17 @@ import com.huawei.ascend.service.access.model.AccessCancelCommand;
 import com.huawei.ascend.service.access.model.EgressBinding;
 import com.huawei.ascend.service.access.model.ReplyContext;
 import com.huawei.ascend.service.schema.AgentRequest;
+import com.huawei.ascend.service.schema.Message;
+import com.huawei.ascend.service.schema.Role;
+import com.huawei.ascend.service.session.api.SessionManager;
+import com.huawei.ascend.service.session.model.Session;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.CancelCommand;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.ResumeCommand;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.RunCommand;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.TaskResult;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
@@ -24,14 +29,17 @@ import java.util.concurrent.CompletionStage;
 public final class AccessSubmissionService {
 
     private final TaskControlClient taskControlClient;
+    private final SessionManager sessionManager;
     private final EgressQueueRegistry egressQueueRegistry;
     private final EgressDispatcher egressDispatcher;
 
     public AccessSubmissionService(
             TaskControlClient taskControlClient,
+            SessionManager sessionManager,
             EgressQueueRegistry egressQueueRegistry,
             EgressDispatcher egressDispatcher) {
         this.taskControlClient = Objects.requireNonNull(taskControlClient, "taskControlClient");
+        this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager");
         this.egressQueueRegistry = Objects.requireNonNull(egressQueueRegistry, "egressQueueRegistry");
         this.egressDispatcher = Objects.requireNonNull(egressDispatcher, "egressDispatcher");
     }
@@ -39,17 +47,19 @@ public final class AccessSubmissionService {
     public CompletionStage<AccessAcceptedResponse> run(AgentRequest request, ReplyContext reply) {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(reply, "reply");
-        bindEgress(request, reply);
-        return taskControlClient.run(new RunCommand(request))
-                .thenApply(result -> toAccepted(request, result));
+        AgentRequest resolved = resolveSession(request);
+        bindEgress(resolved, reply);
+        return taskControlClient.run(new RunCommand(resolved))
+                .thenApply(result -> toAccepted(resolved, result));
     }
 
     public CompletionStage<AccessAcceptedResponse> resume(AgentRequest request, ReplyContext reply) {
         Objects.requireNonNull(request, "request");
         Objects.requireNonNull(reply, "reply");
-        bindEgress(request, reply);
-        return taskControlClient.resume(new ResumeCommand(null, request))
-                .thenApply(result -> toAccepted(request, result));
+        AgentRequest resolved = resolveSession(request);
+        bindEgress(resolved, reply);
+        return taskControlClient.resume(new ResumeCommand(null, resolved))
+                .thenApply(result -> toAccepted(resolved, result));
     }
 
     public CompletionStage<AccessAcceptedResponse> cancel(AccessCancelCommand command) {
@@ -69,6 +79,29 @@ public final class AccessSubmissionService {
         EgressBinding binding = EgressBindingFactory.from(request, reply);
         egressQueueRegistry.getOrCreate(binding);
         egressDispatcher.start(binding);
+    }
+
+    private AgentRequest resolveSession(AgentRequest request) {
+        Session session = sessionManager.loadOrCreate(
+                request.tenantId(),
+                request.userId(),
+                request.agentId(),
+                request.sessionId(),
+                currentUserInput(request));
+        return new AgentRequest(
+                request.tenantId(),
+                request.userId(),
+                request.agentId(),
+                session.sessionId(),
+                request.input(),
+                request.idempotencyKey(),
+                request.metadata());
+    }
+
+    private List<Message> currentUserInput(AgentRequest request) {
+        return request.input().stream()
+                .filter(message -> message.role() == Role.USER)
+                .toList();
     }
 
     private AccessAcceptedResponse toAccepted(AgentRequest request, TaskResult result) {

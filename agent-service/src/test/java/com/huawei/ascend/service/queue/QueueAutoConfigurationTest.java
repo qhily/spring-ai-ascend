@@ -7,6 +7,7 @@ import com.huawei.ascend.service.engine.command.EngineCommandGateway;
 import com.huawei.ascend.service.engine.command.EngineCommandProcessor;
 import com.huawei.ascend.service.engine.config.EngineAutoConfiguration;
 import com.huawei.ascend.service.queue.config.QueueAutoConfiguration;
+import com.huawei.ascend.service.session.config.SessionManageConfiguration;
 import com.huawei.ascend.service.taskcontrol.TaskControlService;
 import com.huawei.ascend.service.taskcontrol.config.TaskControlAutoConfiguration;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ class QueueAutoConfigurationTest {
                     QueueAutoConfiguration.class,
                     TaskControlAutoConfiguration.class,
                     AccessLayerConfiguration.class,
+                    SessionManageConfiguration.class,
                     AgentServiceBootstrapConfiguration.class,
                     EngineAutoConfiguration.class);
 
