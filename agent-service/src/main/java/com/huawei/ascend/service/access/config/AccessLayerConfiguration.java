@@ -2,6 +2,10 @@ package com.huawei.ascend.service.access.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.huawei.ascend.service.access.api.NotificationPort;
+import com.huawei.ascend.service.access.core.AccessSubmissionService;
+import com.huawei.ascend.service.access.protocol.a2a.A2aAccessProperties;
+import com.huawei.ascend.service.access.protocol.a2a.A2aWellKnownAgentCardController;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputMapper;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputRegistry;
 import com.huawei.ascend.service.access.protocol.a2a.egress.DefaultNotificationPort;
@@ -10,8 +14,6 @@ import com.huawei.ascend.service.access.protocol.async.AsyncQueueIngressAdapter;
 import com.huawei.ascend.service.access.protocol.async.AsyncQueueIngressPort;
 import com.huawei.ascend.service.access.protocol.async.AsyncQueueReplySink;
 import com.huawei.ascend.service.access.protocol.async.DefaultAsyncQueueReplySink;
-import com.huawei.ascend.service.access.core.AccessSubmissionService;
-import com.huawei.ascend.service.access.api.NotificationPort;
 import com.huawei.ascend.service.queue.QueueManager;
 import java.util.List;
 import java.util.Optional;
@@ -22,10 +24,12 @@ import org.a2aproject.sdk.spec.AgentProvider;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(A2aAccessProperties.class)
 public class AccessLayerConfiguration {
 
     @Bean
@@ -45,16 +49,22 @@ public class AccessLayerConfiguration {
         return AgentCard.builder()
                 .name("spring-ai-ascend-agent")
                 .description("A2A access layer for spring-ai-ascend agent service.")
-                .url("/a2a/")
+                .url("/a2a")
                 .version("0.1.0")
                 .provider(new AgentProvider("spring-ai-ascend", "http://localhost:8080"))
                 .capabilities(capabilities)
                 .defaultInputModes(List.of("text"))
                 .defaultOutputModes(List.of("text", "artifact"))
                 .skills(List.of())
-                .supportedInterfaces(List.of(new AgentInterface(TransportProtocol.JSONRPC.asString(), "/a2a/")))
+                .supportedInterfaces(List.of(new AgentInterface(TransportProtocol.JSONRPC.asString(), "/a2a")))
                 .preferredTransport(TransportProtocol.JSONRPC.asString())
                 .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    A2aWellKnownAgentCardController a2aWellKnownAgentCardController(AgentCard agentCard) {
+        return new A2aWellKnownAgentCardController(agentCard);
     }
 
     @Bean
@@ -81,8 +91,9 @@ public class AccessLayerConfiguration {
     A2aJsonRpcHandler a2aJsonRpcHandler(
             AccessSubmissionService submissionService,
             A2aOutputRegistry outputRegistry,
-            ObjectMapper objectMapper) {
-        return new A2aJsonRpcHandler(submissionService, outputRegistry, objectMapper);
+            ObjectMapper objectMapper,
+            A2aAccessProperties properties) {
+        return new A2aJsonRpcHandler(submissionService, outputRegistry, objectMapper, properties);
     }
 
     @Bean
@@ -100,5 +111,4 @@ public class AccessLayerConfiguration {
     AsyncQueueReplySink asyncQueueReplySink(QueueManager queueManager) {
         return new DefaultAsyncQueueReplySink(queueManager);
     }
-
 }

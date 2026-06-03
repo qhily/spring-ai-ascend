@@ -12,15 +12,18 @@ import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.CancelCommand
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.ResumeCommand;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.RunCommand;
 import com.huawei.ascend.service.taskcontrol.api.TaskControlClient.TaskResult;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resolves access sessions before submitting normalized requests into task control.
  */
 public final class AccessSubmissionService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccessSubmissionService.class);
 
     private final TaskControlClient taskControlClient;
     private final SessionManager sessionManager;
@@ -35,6 +38,12 @@ public final class AccessSubmissionService {
     public CompletionStage<AccessAcceptedResponse> run(AgentRequest request) {
         Objects.requireNonNull(request, "request");
         AgentRequest resolved = resolveSession(request);
+        LOGGER.info("access resolved session tenantId={} userId={} agentId={} requestedSessionId={} resolvedSessionId={}",
+                request.tenantId(),
+                request.userId(),
+                request.agentId(),
+                request.sessionId(),
+                resolved.sessionId());
         return taskControlClient.run(new RunCommand(resolved))
                 .thenApply(result -> toAccepted(resolved, result));
     }

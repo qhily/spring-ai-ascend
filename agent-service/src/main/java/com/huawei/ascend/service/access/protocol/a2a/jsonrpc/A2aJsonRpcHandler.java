@@ -3,9 +3,13 @@ package com.huawei.ascend.service.access.protocol.a2a.jsonrpc;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.huawei.ascend.service.access.core.AccessSubmissionService;
 import com.huawei.ascend.service.access.model.AccessAcceptedResponse;
 import com.huawei.ascend.service.access.model.AccessCancelCommand;
+import com.huawei.ascend.service.access.protocol.a2a.A2aAccessProperties;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutput;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputHandle;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputRegistry;
@@ -15,9 +19,11 @@ import com.huawei.ascend.service.access.protocol.a2a.model.A2aTaskQueryParams;
 import com.huawei.ascend.service.schema.AgentRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.a2aproject.sdk.grpc.utils.ProtoUtils;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AErrorResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskRequest;
@@ -26,11 +32,13 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageResponse;
 import org.a2aproject.sdk.spec.InternalError;
 import org.a2aproject.sdk.spec.InvalidRequestError;
 import org.a2aproject.sdk.spec.JSONParseError;
 import org.a2aproject.sdk.spec.Message;
+import org.a2aproject.sdk.spec.StreamingEventKind;
 
 public final class A2aJsonRpcHandler {
 
@@ -38,18 +46,25 @@ public final class A2aJsonRpcHandler {
     private static final String METHOD_SEND_STREAMING_MESSAGE = "SendStreamingMessage";
     private static final String METHOD_GET_TASK = "GetTask";
     private static final String METHOD_CANCEL_TASK = "CancelTask";
+    private static final String METHOD_MESSAGE_SEND = "message/send";
+    private static final String METHOD_MESSAGE_STREAM = "message/stream";
+    private static final String METHOD_TASKS_GET = "tasks/get";
+    private static final String METHOD_TASKS_CANCEL = "tasks/cancel";
 
     private final AccessSubmissionService submissionService;
     private final A2aOutputRegistry outputRegistry;
     private final ObjectMapper objectMapper;
+    private final A2aAccessProperties properties;
 
     public A2aJsonRpcHandler(
             AccessSubmissionService submissionService,
             A2aOutputRegistry outputRegistry,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            A2aAccessProperties properties) {
         this.submissionService = Objects.requireNonNull(submissionService, "submissionService");
         this.outputRegistry = Objects.requireNonNull(outputRegistry, "outputRegistry");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
+        this.properties = Objects.requireNonNull(properties, "properties");
     }
 
     public Object handle(String body) {
@@ -66,19 +81,19 @@ public final class A2aJsonRpcHandler {
             return new A2AErrorResponse(id, new InvalidRequestError("JSON-RPC version must be 2.0"));
         }
         try {
-            if (METHOD_SEND_MESSAGE.equals(methodName)) {
-                JsonUtil.fromJson(body, SendMessageRequest.class);
+            if (METHOD_SEND_MESSAGE.equals(methodName) || METHOD_MESSAGE_SEND.equals(methodName)) {
+                validateCanonicalMethod(body, methodName, METHOD_SEND_MESSAGE, SendMessageRequest.class);
                 return handleSend(id, root.get("params"));
             }
-            if (METHOD_GET_TASK.equals(methodName)) {
-                JsonUtil.fromJson(body, GetTaskRequest.class);
+            if (METHOD_GET_TASK.equals(methodName) || METHOD_TASKS_GET.equals(methodName)) {
+                validateCanonicalMethod(body, methodName, METHOD_GET_TASK, GetTaskRequest.class);
                 return handleGetTask(id, root.get("params"));
             }
-            if (METHOD_CANCEL_TASK.equals(methodName)) {
-                JsonUtil.fromJson(body, CancelTaskRequest.class);
+            if (METHOD_CANCEL_TASK.equals(methodName) || METHOD_TASKS_CANCEL.equals(methodName)) {
+                validateCanonicalMethod(body, methodName, METHOD_CANCEL_TASK, CancelTaskRequest.class);
                 return handleCancel(id, root.get("params"));
             }
-            if (METHOD_SEND_STREAMING_MESSAGE.equals(methodName)) {
+            if (METHOD_SEND_STREAMING_MESSAGE.equals(methodName) || METHOD_MESSAGE_STREAM.equals(methodName)) {
                 return new A2AErrorResponse(
                         id, new InvalidRequestError("SendStreamingMessage is only supported by HTTP/SSE transport"));
             }
@@ -99,13 +114,13 @@ public final class A2aJsonRpcHandler {
         }
         Object id = jsonRpcId(root);
         String methodName = text(root.get("method"));
-        if (!METHOD_SEND_STREAMING_MESSAGE.equals(methodName)) {
+        if (!METHOD_SEND_STREAMING_MESSAGE.equals(methodName) && !METHOD_MESSAGE_STREAM.equals(methodName)) {
             throw new IllegalArgumentException("JSON-RPC method must be SendStreamingMessage");
         }
         if (!"2.0".equals(text(root.get("jsonrpc")))) {
             throw new IllegalArgumentException("JSON-RPC version must be 2.0");
         }
-        validateStreamingRequest(body);
+        validateStreamingRequest(body, methodName);
         A2aAcceptedResponse accepted = submit(toAgentRequest(root.get("params")));
         return new A2aJsonRpcStreamExchange(
                 id,
@@ -115,8 +130,14 @@ public final class A2aJsonRpcHandler {
 
     public String toJson(Object response) {
         try {
-            return objectMapper.writeValueAsString(response);
-        } catch (JsonProcessingException ex) {
+            JsonNode json = objectMapper.valueToTree(response);
+            if (normalizeStreamingResponseResult(response, json)) {
+                removeNullFields(json);
+            } else {
+                normalizeA2aWireValues(json);
+            }
+            return objectMapper.writeValueAsString(json);
+        } catch (JsonProcessingException | InvalidProtocolBufferException ex) {
             throw new IllegalStateException("Failed to serialize A2A JSON-RPC response", ex);
         }
     }
@@ -143,9 +164,19 @@ public final class A2aJsonRpcHandler {
         return id.asText();
     }
 
-    private void validateStreamingRequest(String body) {
+    private void validateCanonicalMethod(String body, String methodName, String canonicalMethod, Class<?> requestType)
+            throws org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException {
+        if (canonicalMethod.equals(methodName)) {
+            JsonUtil.fromJson(body, requestType);
+        }
+    }
+
+    private void validateStreamingRequest(String body, String methodName) {
+        if (!METHOD_SEND_STREAMING_MESSAGE.equals(methodName)) {
+            return;
+        }
         try {
-            JsonUtil.fromJson(body, org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest.class);
+            JsonUtil.fromJson(body, SendStreamingMessageRequest.class);
         } catch (org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
@@ -242,13 +273,18 @@ public final class A2aJsonRpcHandler {
         requestMetadata.put("paramsMetadata", paramsMetadataMap);
         requestMetadata.put("messageMetadata", messageMetadataMap);
         requestMetadata.put("metadata", mergedMetadata);
-        requestMetadata.put("contextId", contextId);
-        requestMetadata.put("correlationId", text(metadata.get("correlationId")));
+        putIfPresent(requestMetadata, "contextId", contextId);
+        putIfPresent(requestMetadata, "correlationId", text(metadata.get("correlationId")));
         requestMetadata.putAll(mergedMetadata);
         return new AgentRequest(
-                requiredText(params, metadata, "tenant", "tenantId"),
+                requiredTextOrDefault(
+                        firstText(params.get("tenant"), metadata.get("tenantId")),
+                        properties.getDefaultTenantId(),
+                        "A2A params.tenant"),
                 requiredText(metadata, "userId"),
-                requiredText(metadata, "agentId"),
+                requiredTextOrDefault(text(metadata.get("agentId")),
+                        properties.getDefaultAgentId(),
+                        "A2A metadata.agentId"),
                 optionalSessionId(sessionId),
                 List.of(com.huawei.ascend.service.schema.Message.user(messageText(message))),
                 text(metadata.get("idempotencyKey")),
@@ -262,9 +298,15 @@ public final class A2aJsonRpcHandler {
         JsonNode metadata = object(params.get("metadata"));
         String taskId = firstText(params.get("id"), params.get("taskId"));
         return new AccessCancelCommand(
-                requiredText(metadata, "tenantId"),
+                requiredTextOrDefault(
+                        text(metadata.get("tenantId")),
+                        properties.getDefaultTenantId(),
+                        "A2A metadata.tenantId"),
                 requiredText(metadata, "userId"),
-                requiredText(metadata, "agentId"),
+                requiredTextOrDefault(
+                        text(metadata.get("agentId")),
+                        properties.getDefaultAgentId(),
+                        "A2A metadata.agentId"),
                 normalizeSessionId(firstText(metadata.get("sessionId"), metadata.get("contextId")),
                         text(metadata.get("contextId"))),
                 taskId,
@@ -289,7 +331,10 @@ public final class A2aJsonRpcHandler {
         }
         JsonNode metadata = object(params.get("metadata"));
         return new A2aTaskQueryParams(
-                requiredText(metadata, "tenantId"),
+                requiredTextOrDefault(
+                        text(metadata.get("tenantId")),
+                        properties.getDefaultTenantId(),
+                        "A2A metadata.tenantId"),
                 requiredText(metadata, "sessionId"),
                 firstText(params.get("id"), params.get("taskId")));
     }
@@ -316,10 +361,12 @@ public final class A2aJsonRpcHandler {
         return value;
     }
 
-    private String requiredText(JsonNode firstNode, JsonNode secondNode, String firstField, String secondField) {
-        String value = firstText(firstNode.get(firstField), secondNode.get(secondField));
+    private String requiredTextOrDefault(String value, String defaultValue, String field) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Missing A2A params." + firstField);
+            value = defaultValue;
+        }
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Missing " + field);
         }
         return value;
     }
@@ -379,5 +426,115 @@ public final class A2aJsonRpcHandler {
     @SuppressWarnings("unchecked")
     private Map<String, Object> metadataMap(JsonNode metadata) {
         return objectMapper.convertValue(metadata, Map.class);
+    }
+
+    private static void putIfPresent(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
+    }
+
+    private boolean normalizeStreamingResponseResult(Object response, JsonNode json)
+            throws JsonProcessingException, InvalidProtocolBufferException {
+        if (!(response instanceof SendStreamingMessageResponse streamingResponse)
+                || !(json instanceof ObjectNode object)
+                || !(streamingResponse.getResult() instanceof StreamingEventKind streamingEvent)) {
+            return false;
+        }
+        String streamResponseJson = com.google.protobuf.util.JsonFormat.printer()
+                .omittingInsignificantWhitespace()
+                .print(ProtoUtils.ToProto.streamResponse(streamingEvent));
+        object.set("result", objectMapper.readTree(streamResponseJson));
+        return true;
+    }
+
+    private void normalizeA2aWireValues(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+        if (node instanceof ArrayNode array) {
+            array.forEach(this::normalizeA2aWireValues);
+            return;
+        }
+        if (!(node instanceof ObjectNode object)) {
+            return;
+        }
+        normalizeTaskState(object);
+        normalizeMessageRole(object);
+        normalizePartKind(object);
+        object.elements().forEachRemaining(this::normalizeA2aWireValues);
+        removeNullFields(object);
+    }
+
+    private void removeNullFields(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return;
+        }
+        if (node instanceof ArrayNode array) {
+            array.forEach(this::removeNullFields);
+            return;
+        }
+        if (!(node instanceof ObjectNode object)) {
+            return;
+        }
+        object.elements().forEachRemaining(this::removeNullFields);
+        List<String> nullFields = new ArrayList<>();
+        Iterator<Map.Entry<String, JsonNode>> fields = object.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (field.getValue() == null || field.getValue().isNull()) {
+                nullFields.add(field.getKey());
+            }
+        }
+        nullFields.forEach(object::remove);
+    }
+
+    private void normalizeTaskState(ObjectNode object) {
+        JsonNode state = object.get("state");
+        if (state == null || !state.isTextual()) {
+            return;
+        }
+        String value = switch (state.asText()) {
+            case "TASK_STATE_SUBMITTED" -> "submitted";
+            case "TASK_STATE_WORKING" -> "working";
+            case "TASK_STATE_INPUT_REQUIRED" -> "input-required";
+            case "TASK_STATE_AUTH_REQUIRED" -> "auth-required";
+            case "TASK_STATE_COMPLETED" -> "completed";
+            case "TASK_STATE_CANCELED" -> "canceled";
+            case "TASK_STATE_FAILED" -> "failed";
+            case "TASK_STATE_REJECTED" -> "rejected";
+            default -> null;
+        };
+        if (value != null) {
+            object.put("state", value);
+        }
+    }
+
+    private void normalizeMessageRole(ObjectNode object) {
+        JsonNode role = object.get("role");
+        if (role == null || !role.isTextual()) {
+            return;
+        }
+        String value = switch (role.asText()) {
+            case "ROLE_AGENT" -> "agent";
+            case "ROLE_USER" -> "user";
+            default -> null;
+        };
+        if (value != null) {
+            object.put("role", value);
+        }
+    }
+
+    private void normalizePartKind(ObjectNode object) {
+        if (object.has("kind")) {
+            return;
+        }
+        if (object.has("text")) {
+            object.put("kind", "text");
+        } else if (object.has("file")) {
+            object.put("kind", "file");
+        } else if (object.has("data")) {
+            object.put("kind", "data");
+        }
     }
 }

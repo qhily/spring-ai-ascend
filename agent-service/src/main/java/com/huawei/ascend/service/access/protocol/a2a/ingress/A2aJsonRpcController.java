@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
-@RequestMapping("/a2a")
+@RequestMapping({"/a2a", "/a2a/"})
 public final class A2aJsonRpcController {
 
     private final A2aJsonRpcHandler handler;
@@ -30,7 +30,6 @@ public final class A2aJsonRpcController {
     }
 
     @PostMapping(
-            value = "/",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE})
     public Object handle(@RequestBody String body) {

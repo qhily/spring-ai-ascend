@@ -1,49 +1,37 @@
 package com.huawei.ascend.service.bootstrap;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.ascend.service.access.config.AccessLayerConfiguration;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutput;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputHandle;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputRegistry;
 import com.huawei.ascend.service.access.protocol.a2a.jsonrpc.A2aJsonRpcHandler;
 import com.huawei.ascend.service.engine.config.EngineAutoConfiguration;
-import com.huawei.ascend.service.engine.event.EngineCompletedEvent;
-import com.huawei.ascend.service.engine.event.EngineExecutionEvent;
-import com.huawei.ascend.service.engine.event.EngineOutputEvent;
-import com.huawei.ascend.service.engine.event.EngineStartedEvent;
 import com.huawei.ascend.service.engine.handler.AgentExecutionContext;
-import com.huawei.ascend.service.engine.model.EngineOutput;
+import com.huawei.ascend.service.engine.spi.AgentExecutionResult;
 import com.huawei.ascend.service.engine.spi.AgentHandler;
+import com.huawei.ascend.service.engine.spi.AgentResultAdapter;
 import com.huawei.ascend.service.queue.config.QueueAutoConfiguration;
 import com.huawei.ascend.service.session.api.SessionManager;
 import com.huawei.ascend.service.session.config.SessionManageConfiguration;
 import com.huawei.ascend.service.taskcontrol.config.TaskControlAutoConfiguration;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * End-to-end test from the access layer's perspective: an A2A request enters,
- * flows access → task-centric-control → engine → fake agent, and the reply
+ * flows access -> task-centric-control -> engine -> fake agent, and the reply
  * comes back out through the access layer's A2A output channel.
- *
- * <p>This is the test the human review asked for — it exercises the whole
- * five-layer stack as a single wired runtime (not one module in isolation),
- * proving the glue closes the loop. The agent framework is faked with a small
- * echo {@link AgentHandler} so no external runtime is needed.
  */
 @SpringBootTest(classes = AgentServiceEndToEndIT.TestRuntime.class)
 class AgentServiceEndToEndIT {
@@ -72,8 +60,6 @@ class AgentServiceEndToEndIT {
         assertThat(accepted.path("taskId").asText()).isNotBlank();
         assertThat(accepted.path("metadata").path("tenantId").asText()).isEqualTo(TENANT);
 
-        // task-control dispatch and egress delivery run on their own threads, so
-        // poll briefly for the reply to surface on the A2A output channel.
         A2aOutputHandle handle = new A2aOutputHandle(TENANT, "session-1");
         List<A2aOutput> outputs = awaitOutputs(handle);
 
@@ -83,8 +69,6 @@ class AgentServiceEndToEndIT {
         assertThat(outputs).anyMatch(o -> String.valueOf(o.body()).contains("hello world"));
         assertThat(sessionManager.get(TENANT, "session-1")).hasValueSatisfying(session ->
                 assertThat(session.currentUserInput()).anyMatch(message -> "hello world".equals(message.text())));
-
-        // The reply channel must be torn down after the terminal frame — no leak.
     }
 
     @Test
@@ -95,7 +79,6 @@ class AgentServiceEndToEndIT {
         A2aOutputHandle handle = new A2aOutputHandle(TENANT, "session-err");
         List<A2aOutput> outputs = awaitOutputs(handle);
 
-        // A handler that throws must still yield a terminal reply — no hang, no leak.
         assertThat(outputs).isNotEmpty();
         assertThat(outputs.get(outputs.size() - 1).terminal()).isTrue();
         assertThat(outputs).anyMatch(o -> "error".equals(o.kind()));
@@ -242,12 +225,6 @@ class AgentServiceEndToEndIT {
                 text);
     }
 
-    /**
-     * Minimal runtime: the five module configurations plus the bootstrap glue
-     * and a fake echo agent. Deliberately avoids the full
-     * {@code @SpringBootApplication} so the test does not pull in datasource,
-     * Flyway and security auto-configuration it does not need.
-     */
     @SpringBootConfiguration
     @Import({
             QueueAutoConfiguration.class,
@@ -270,7 +247,6 @@ class AgentServiceEndToEndIT {
         }
     }
 
-    /** Fake agent framework: echoes the latest user text back as final output. */
     static final class EchoAgentHandler implements AgentHandler {
 
         @Override
@@ -284,24 +260,20 @@ class AgentServiceEndToEndIT {
         }
 
         @Override
-        public Stream<EngineExecutionEvent> execute(AgentExecutionContext context) {
+        public Stream<?> execute(AgentExecutionContext context) {
             String userText = context.getInput() == null || context.getInput().messages().isEmpty()
                     ? "" : context.getInput().messages().get(0).text();
-            EngineStartedEvent started =
-                    new EngineStartedEvent(id(), context.getScope(), Instant.now());
-            EngineOutputEvent output = new EngineOutputEvent(
-                    id(), context.getScope(), Instant.now(), new EngineOutput("echo: " + userText, false));
-            EngineCompletedEvent completed = new EngineCompletedEvent(
-                    id(), context.getScope(), Instant.now(), new EngineOutput("echo: " + userText, true));
-            return Stream.of(started, output, completed);
+            return Stream.of(
+                    java.util.Map.of("result_type", "output", "output", "echo: " + userText),
+                    java.util.Map.of("result_type", "answer", "output", "echo: " + userText));
         }
 
-        private static String id() {
-            return UUID.randomUUID().toString();
+        @Override
+        public AgentResultAdapter resultAdapter() {
+            return AgentServiceEndToEndIT::adaptRawResults;
         }
     }
 
-    /** Fake agent that throws, to prove a failure still yields a terminal reply. */
     static final class ThrowingAgentHandler implements AgentHandler {
 
         @Override
@@ -315,8 +287,25 @@ class AgentServiceEndToEndIT {
         }
 
         @Override
-        public Stream<EngineExecutionEvent> execute(AgentExecutionContext context) {
+        public Stream<?> execute(AgentExecutionContext context) {
             throw new IllegalStateException("boom");
         }
+
+        @Override
+        public AgentResultAdapter resultAdapter() {
+            return AgentServiceEndToEndIT::adaptRawResults;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Stream<AgentExecutionResult> adaptRawResults(Stream<?> rawResults) {
+        return rawResults.map(rawResult -> {
+            java.util.Map<String, Object> result = (java.util.Map<String, Object>) rawResult;
+            String output = String.valueOf(result.get("output"));
+            if ("answer".equals(result.get("result_type"))) {
+                return AgentExecutionResult.completed(output);
+            }
+            return AgentExecutionResult.output(output);
+        });
     }
 }
