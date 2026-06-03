@@ -9,6 +9,7 @@ import com.huawei.ascend.service.access.protocol.a2a.A2aWellKnownAgentCardContro
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputMapper;
 import com.huawei.ascend.service.access.protocol.a2a.egress.A2aOutputRegistry;
 import com.huawei.ascend.service.access.protocol.a2a.egress.DefaultNotificationPort;
+import com.huawei.ascend.service.access.protocol.a2a.ingress.A2aJsonRpcController;
 import com.huawei.ascend.service.access.protocol.a2a.jsonrpc.A2aJsonRpcHandler;
 import com.huawei.ascend.service.access.protocol.async.AsyncQueueIngressAdapter;
 import com.huawei.ascend.service.access.protocol.async.AsyncQueueIngressPort;
@@ -86,7 +87,6 @@ public class AccessLayerConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(AccessSubmissionService.class)
     @ConditionalOnMissingBean
     A2aJsonRpcHandler a2aJsonRpcHandler(
             AccessSubmissionService submissionService,
@@ -97,7 +97,14 @@ public class AccessLayerConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(A2aJsonRpcHandler.class)
+    @ConditionalOnMissingBean
+    A2aJsonRpcController a2aJsonRpcController(
+            A2aJsonRpcHandler handler,
+            A2aOutputRegistry outputRegistry) {
+        return new A2aJsonRpcController(handler, outputRegistry);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(AsyncQueueIngressPort.class)
     AsyncQueueIngressPort asyncQueueIngressPort(
             A2aJsonRpcHandler handler,
