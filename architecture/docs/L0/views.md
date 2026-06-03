@@ -2,7 +2,7 @@
 level: L0
 view: scenarios
 status: draft
-authority: "Consolidated L0 4+1 view map from ARCHITECTURE.md, architecture/views/, and docs/architecture/l0/architecture-views/"
+authority: "Consolidated L0 4+1 view map from archived L0 corpus, architecture/views/, and docs/architecture/l0/architecture-views/"
 source_of_truth: true
 ---
 
@@ -33,7 +33,9 @@ when they rely on architecture constraints.
 The system is an agent runtime platform with the following L0 logical concepts:
 
 - Tenant and actor identity.
-- Runtime intent, Run/Task execution control, and lifecycle state.
+- Runtime intent, Task execution control, Task hierarchy, and lifecycle state.
+- Engine-internal execution state such as workflow node state and ReAct loop
+  state.
 - Session, context package, memory, retrieval, and knowledge boundaries.
 - Agent definition, planner, model gateway, skill, hook, and middleware surfaces.
 - S2C callback, A2A control, federation, data-reference path, and rhythm signals.
@@ -50,24 +52,22 @@ Cross-cutting verticals are defined in `constraints.md`:
 
 ## Development View
 
-The L0 development view separates generated module facts from core architecture
-responsibility.
+The L0 development view starts from six logical modules and then lets L1/L2
+development views decide source modules, package layout, BoMs, starters,
+adapters, generated facts, and build governance.
 
-The current generated module set contains:
+The six L0 logical modules are:
 
 - `agent-client`.
-- `agent-bus`.
 - `agent-service`.
 - `agent-execution-engine`.
+- `agent-bus`.
 - `agent-middleware`.
 - `agent-evolve`.
-- `spring-ai-ascend-dependencies`.
-- `spring-ai-ascend-graphmemory-starter`.
 
-The six domain modules form the core runtime architecture. The BoM and starter
-are valid reactor/module-metadata artifacts, but their L0 responsibilities are
-build/version governance and adapter/starter packaging, not primary runtime
-control ownership.
+Generated reactor facts, dependency BoMs, and Java starters are development or
+deployment artifacts. They must be assigned under the relevant logical module or
+build/deployment governance view; they are not additional L0 logical modules.
 
 L1 architecture lives under `architecture/docs/L1/`. L2 technical design lives
 under `architecture/docs/L2/`.
@@ -78,8 +78,8 @@ The top-level runtime process is:
 
 1. A client submits an intent or request.
 2. Entry processing binds tenant, actor, idempotency, posture, and trace context.
-3. The service-side runtime owner creates or locates the execution control
-   aggregate according to the accepted Run/Task vocabulary.
+3. The service-side runtime owner creates or locates the Task execution control
+   aggregate.
 4. Execution is dispatched through engine/orchestration surfaces.
 5. Model, tool, memory, retrieval, prompt, and advisor work enters through
    middleware and hook surfaces.
@@ -102,15 +102,20 @@ The physical view is governed by deployment mode and trust boundary.
 | Compute control | Platform or business-hosted service | `agent-service`, execution control, engine realization, middleware binding. |
 | Bus and state hub | Platform by default | Ingress, S2C, A2A, federation, rhythm, data-reference envelopes. |
 | Middleware / adapters | Platform or configured provider | Model, skill, memory, retrieval, prompt, advisor and hook surfaces. |
+| Sandbox execution | Platform or trusted isolation provider | Untrusted generated code and unverified third-party tools run in isolated sandbox capacity, not in the normal compute-control process. |
 | Evolution | Platform | Governed export and future evolution pipeline integration. |
 | External data path | Customer, object store, provider, or third-party system | Large payloads and business data stay outside bus control messages. |
+
+This refines the five-plane deployment proposal from the 2026-05-14 L0 review:
+edge access, compute/control, bus/state hub, sandbox execution, and evolution are
+separate physical concerns even when early delivery co-locates some of them.
 
 Trust boundaries include:
 
 - HTTP edge to runtime.
 - C-Side to S-Side.
 - Parent to child execution boundary.
-- Run/Task to skill permission boundary.
+- Task to skill permission boundary.
 - Cross-workflow or cross-service handoff.
 - Tenant-scoped storage and telemetry replay boundary.
 
@@ -123,13 +128,13 @@ draft candidates from `docs/architecture/l0/02-scenarios/` are:
 |---|---|---|
 | BA-001 Agent Handles Business Request | End-to-end request, context, tool, model, observability, and developer evidence. | candidate_promote |
 | BA-002 Human Approval Tool Call | Suspend/resume, S2C callback, approval, audit, and tool governance. | candidate_promote |
-| BA-003 Multi-Agent Delegation | Parent/child execution, same-service coordination, A2A/federation boundary, task/run tree. | candidate_promote |
-| S1 Create Run/Task | Entry, idempotency, tenant, initial lifecycle state. | candidate_promote |
+| BA-003 Multi-Agent Delegation | Parent/child execution, same-service coordination, A2A/federation boundary, and Task tree. | candidate_promote |
+| S1 Create Task | Entry, idempotency, tenant, initial lifecycle state. | candidate_promote |
 | S2 Execute Agent Step | Engine dispatch and terminal or intermediate execution result. | candidate_promote |
 | S3 Build Context Package | Session, memory, retrieval, and context projection. | candidate_promote |
 | S4 Tool Call With Governance | Tool authorization, capacity, audit, policy, and idempotency. | candidate_promote |
 | S5 Suspend / Resume | Long wait, checkpoint, callback, resume, timeout, and cancellation. | candidate_promote |
-| S6 Child Run/Task / Federation | Multi-agent collaboration, federation, join, and cross-boundary control. | candidate_promote |
+| S6 Child Task / Federation | Multi-agent collaboration, federation, join, and cross-boundary control. | candidate_promote |
 
 These scenarios should not be treated as accepted runtime authority until
 conflicts in `governance.md` are resolved and the scenarios are promoted through

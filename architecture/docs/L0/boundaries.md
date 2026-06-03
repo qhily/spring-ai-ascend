@@ -2,7 +2,7 @@
 level: L0
 view: development
 status: draft
-authority: "Consolidated from ARCHITECTURE.md module layout, generated modules DSL, and docs/architecture/l0 module/state drafts"
+authority: "Consolidated from archived L0 module layout, generated modules DSL, and docs/architecture/l0 module/state drafts"
 source_of_truth: true
 ---
 
@@ -10,38 +10,44 @@ source_of_truth: true
 
 ## Purpose
 
-This document defines L0 module admission, module responsibility boundaries,
-runtime component boundaries, artifact treatment, and state ownership rules.
+This document defines L0 logical module admission, logical module responsibility
+boundaries, downstream artifact treatment, and state ownership rules.
 
 It intentionally combines module boundaries and state ownership because most
 high-risk architecture conflicts are writer-boundary conflicts.
 
 ## Module Admission Rules
 
-L0 distinguishes three categories:
+L0 admits only top-level logical modules. These modules correspond to future L1
+architecture domains and must not be inferred from reactor artifacts, Java
+packaging, starter mechanics, or individual runtime process boundaries.
 
-| Category | Meaning |
+L0 distinguishes three concerns:
+
+| Concern | Meaning |
 |---|---|
-| Core runtime architecture module | A domain module that owns runtime behavior, state, control, extension, or cross-boundary interaction. |
-| Runtime component boundary | A runtime-facing module or component that participates in architecture but may not be in the primary execution path for all deployments. |
-| Build/starter artifact | A valid reactor artifact that supports dependency governance, packaging, or adapter bootstrap but does not own primary runtime control. |
+| L0 logical module | A top-level domain boundary that groups responsibilities by architecture meaning and becomes a future L1 domain. |
+| Runtime unit | A service, adapter, gateway, registry, bus, sandbox, memory service, skill service, or other deployable/operational unit inside a logical module. |
+| Development/deployment artifact | A BoM, starter, adapter scaffold, generated module fact, or packaging unit owned by the appropriate L1/L2 development or deployment view. |
 
 Generated module facts remain authoritative for reactor identity and module
-metadata. L0 boundary admission decides how those artifacts participate in the
-runtime architecture.
+metadata. They do not decide L0 logical module admission.
 
-## Current Module Classification
+## L0 Logical Module Classification
 
-| Module / Artifact | Classification | L0 Boundary Treatment |
-|---|---|---|
-| `agent-service` | Core runtime architecture module | Primary service runtime boundary and state owner. |
-| `agent-execution-engine` | Core runtime architecture module | Engine adapter and execution/orchestration realization boundary as assigned by accepted ADRs. |
-| `agent-middleware` | Core runtime architecture module | Model, skill, memory, retrieval, prompt, advisor, runtime middleware, hook, and governance SPI boundary. |
-| `agent-bus` | Core runtime architecture module | Bus/state hub plane, ingress, S2C, neutral engine port, A2A/federation, and three-track channel boundary. |
-| `agent-client` | Runtime component boundary | SDK, edge access, local capability endpoint, cursor/callback/SSE consumption. |
-| `agent-evolve` | Runtime component boundary | Evolution plane, governed export, future ML pipeline adapter. |
-| `spring-ai-ascend-dependencies` | Build artifact | BoM and dependency/version governance; not a primary runtime module. |
-| `spring-ai-ascend-graphmemory-starter` | Starter artifact | Adapter/starter packaging for GraphMemory; not a primary runtime control owner. |
+| Logical Module | L0 Boundary Treatment |
+|---|---|
+| `agent-client` | Client-side integration and local capability boundary. |
+| `agent-service` | Server-side agent service boundary and Task lifecycle owner. |
+| `agent-execution-engine` | Execution engine domain and finer-grained execution state owner below Task. |
+| `agent-bus` | Access and interaction domain, including platform-centralized control and governance surfaces. |
+| `agent-middleware` | Agent middleware foundation domain for selectable and integrable intelligent middleware services. |
+| `agent-evolve` | Evolution-plane domain for governed learning, evaluation, optimization, and export loops. |
+
+`spring-ai-ascend-dependencies`, `spring-ai-ascend-graphmemory-starter`, and
+similar artifacts are not L0 logical modules. Dependency BoMs belong in the
+development view of the owning domain or build governance. Starters belong in
+the deployment/integration view of the domain they package or adapt.
 
 ## Responsibility Cards
 
@@ -51,7 +57,7 @@ Owns:
 
 - HTTP-facing service boundary.
 - Tenant, auth, idempotency, and trace entry behavior.
-- Runtime control aggregate according to the accepted Run/Task vocabulary.
+- Task execution lifecycle and Task hierarchy state.
 - Service-side reference adapters.
 - Query and external realtime stream surfaces such as SSE.
 - Same-service parent/child execution relationship and join behavior.
@@ -70,6 +76,8 @@ Owns:
 - Engine adapter SPI and engine registry/envelope surfaces where accepted.
 - Execution dispatch, planner, and orchestration behavior assigned to the engine
   boundary.
+- Finer-grained execution state below the Task boundary, such as workflow node
+  execution state and ReAct loop state.
 - Conversion of execution results into state-transition intent, tool intent,
   context request, suspend request, child-work intent, or terminal result.
 
@@ -84,10 +92,11 @@ Does not own:
 
 Owns:
 
-- Runtime middleware and hook dispatch.
-- Model gateway, skill, memory, vector, retriever, embedding, prompt, and advisor
-  SPI boundaries.
-- Tool/model/memory policy, capacity, audit, and trace evidence shapes.
+- The agent middleware foundation domain.
+- Selectable and integrable services such as memory, knowledge, sandbox, skill,
+  tool, model, retrieval, prompt, advisor, and hook services.
+- Middleware SPI boundaries and the policy, capacity, audit, and trace evidence
+  shapes around those services.
 
 Does not own:
 
@@ -100,10 +109,12 @@ Does not own:
 
 Owns:
 
-- Ingress gateway and S2C callback surfaces.
-- Neutral EnginePort and orchestration SPI placement where ADR-0158 applies.
-- Cross-boundary A2A, federation, data-reference envelope, control channel, and
-  rhythm channel contracts.
+- The access and interaction domain.
+- Runtime units such as registry, event bus, access gateway, permission center,
+  S2C callback, A2A/federation, control channel, data-reference envelope, and
+  rhythm channel surfaces when assigned by lower-level design.
+- Platform-centralized control, permission, interaction, and governance surfaces
+  for cross-boundary collaboration.
 
 Does not own:
 
@@ -155,7 +166,21 @@ they are not accepted as independent reactor modules by L0:
 - Capability Placement.
 - A2A / Federation.
 
-Each aggregate must map to real modules and contracts before implementation.
+Each aggregate must map to one or more L0 logical modules plus concrete L1/L2
+runtime units and contracts before implementation.
+
+## Downstream Artifact Rule
+
+L0 logical modules are not inferred from build or framework mechanics.
+
+- A dependency BoM such as `spring-ai-ascend-dependencies` is a development-view
+  or build-governance artifact for version alignment. It does not become a
+  logical module.
+- A Java starter such as `spring-ai-ascend-graphmemory-starter` is an
+  integration/deployment packaging mechanism for auto-configuration or adapter
+  bootstrap. It belongs under the logical module whose capability it packages.
+- A runtime unit may be split, merged, or packaged differently across deployment
+  variants without changing the L0 logical module boundary.
 
 ## State Ownership Rules
 
@@ -171,11 +196,12 @@ Any new writer or second lifecycle owner is an L0 architecture change.
 
 ## Core State Matrix
 
-| State | Current / Proposed Owner | Allowed Writers | Forbidden Writers | Status |
+| State | Owner | Allowed Writers | Forbidden Writers | Status |
 |---|---|---|---|---|
-| Run execution state | `agent-service` runtime Run owner in current canonical material | Sanctioned service/runtime repository path | Gateway, bus, middleware, client, provider adapters | accepted_current |
-| Task execution state | `agent-service` TaskStateStore in draft delivery material | `agent-service` controlled lifecycle entry | Gateway, bus, engine adapter direct writes, middleware, client | pending_decision |
-| Client invocation reference | `agent-client` local handle plus `agent-service` query/reference surface | `agent-service` creates authoritative mapping; client stores local reference | Any writer treating it as independent server lifecycle state | candidate_promote |
+| Task execution state | `agent-service` Task lifecycle owner | `agent-service` controlled lifecycle entry | Gateway, bus, engine adapter direct writes, middleware, client, provider adapters | accepted |
+| Task hierarchy | `agent-service` relationship owner plus observability | Service parent/child creation or accepted federation result | Bus, engine adapter, remote service direct lifecycle mutation | accepted |
+| Engine-internal execution state | `agent-execution-engine` | Engine execution loop, workflow node executor, ReAct loop executor, or sanctioned engine adapter path | Gateway, bus, middleware, client, provider adapters, direct service lifecycle writers | accepted |
+| Client invocation reference | `agent-client` local handle plus `agent-service` query/reference surface | `agent-service` creates authoritative mapping; client stores local reference | Any writer treating it as independent server lifecycle state | accepted |
 | Session state | `agent-service` session/context shell | Session owner and approved context projection paths | Memory owner, tool gateway, business agent direct platform mutation | candidate_promote |
 | Memory / knowledge state | `agent-middleware` memory SPI and external memory provider boundary | Memory store writer or configured adapter | Runtime lifecycle state owner; hidden engine context builder | accepted_direction |
 | Workflow checkpoint | Checkpointer SPI implementation under runtime governance | Orchestrator/checkpointer sanctioned path | Gateway, tool gateway, client | accepted_direction |
@@ -186,22 +212,23 @@ Any new writer or second lifecycle owner is an L0 architecture change.
 | Audit record | Platform audit writer | Append-only audit writer | Business code overwriting platform records | accepted_direction |
 | Business state | External business system | Business system owner | Agent runtime platform | accepted_direction |
 | Tenant / policy state | Runtime governance / identity and policy owner | Auth/policy owner | Skill implementation bypass | accepted_direction |
-| Task or Run tree | `agent-service` relationship owner plus observability | Service parent/child creation or accepted federation result | Bus, engine adapter, remote service direct lifecycle mutation | pending_vocabulary |
 
-## Run / Task Vocabulary Guard
+## Task Vocabulary Rule
 
-Current accepted L0 and shipped evidence still use Run, RunContext,
-RunRepository, RunStatus, and RunStateMachine. Draft delivery material proposes
-that Task should become the server-side canonical execution state and Run should
-be limited to client invocation or implementation compatibility.
+For V1, Task is the unified server-side authoritative execution lifecycle state.
+This Task aligns with the A2A protocol task semantics: it can be created or
+bound by a client-to-server request, or by an `agent-service` request to another
+`agent-service` through an A2A client.
 
-Until this is resolved by ADR:
+`agent-service` owns Task-level lifecycle state, Task hierarchy, parent/child
+relationships, joins, terminal states, and query surfaces. `agent-execution-engine`
+owns finer-grained execution state below the Task boundary, including workflow
+node execution state and ReAct loop state.
 
-- Do not replace all Run terms with Task terms mechanically.
-- Do not introduce a second server-side lifecycle state owner.
-- Treat Task-canonical material as a candidate promotion item.
-- Treat Run-based shipped material as current authority unless an accepted ADR
-  changes it.
+Historical Run-based terms such as Run, RunRepository, RunStatus, RunContext, or
+run tree may appear in archived documents or implementation-history references.
+They are not L0 canonical lifecycle vocabulary and must not introduce a second
+server-side state owner.
 
 ## Boundary Conflict Escalation
 

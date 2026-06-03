@@ -2,7 +2,7 @@
 level: L0
 view: logical
 status: draft
-authority: "Consolidated from architecture/docs/L0/ARCHITECTURE.md and docs/architecture/l0/00-overview/"
+authority: "Consolidated from archived L0 corpus, docs/architecture/l0/00-overview/, and reviewed L0 proposals"
 source_of_truth: true
 ---
 
@@ -26,10 +26,21 @@ middleware through SPI, configuration, and contracts while the platform retains
 runtime control, tenant isolation, observability, auditability, capacity
 governance, and change governance.
 
+It is also an open-source Agent development and runtime foundation aligned with
+the Kunpeng and Ascend ecosystem. The platform is intentionally compatible with
+heterogeneous agent frameworks: rigid workflow-style execution and flexible
+agent-loop execution can be integrated through governed engine, middleware, and
+adapter surfaces instead of a closed single-framework runtime.
+
 The target architecture accepts authenticated tenant requests, drives LLM and
 tool-calling execution with audit-grade evidence, supports long-horizon
 suspend/resume behavior, and separates business-owned facts from platform-owned
 runtime trajectory.
+
+The intended business outcome is to help enterprise developers build digital
+employee and agent-collaboration applications without making the platform the
+owner of business facts, business approval rules, or long-running business
+process semantics.
 
 ## Audience Boundary
 
@@ -49,8 +60,9 @@ The platform has to solve several long-lived architecture problems:
 
 - Agent execution crosses HTTP ingress, lifecycle state, orchestration,
   model/tool/memory interaction, bus, observability, governance, and verification.
-- State types such as Run, Task, Session, Memory, Checkpoint, Tool Call, Audit,
-  Trace, and Policy can conflict unless each has a clear owner and writer rule.
+- State types such as Task, Session, Memory, Checkpoint, Tool Call, Audit,
+  Trace, Policy, and engine-internal execution state can conflict unless each
+  has a clear owner and writer rule.
 - Long-running work must not hold physical threads, sockets, or client
   connections while waiting for external input.
 - Business facts and customer permission models must not become hidden platform
@@ -70,6 +82,8 @@ The platform has to solve several long-lived architecture problems:
 | Explicit capability placement | Each tool, context, memory, retriever, approval UI, and A2A action declares where it executes and which data boundary it crosses. |
 | Boundary-mediated A2A | Same-service multi-agent collaboration is closed by `agent-service`; cross-boundary A2A control flows through `agent-bus`. |
 | Control/data/stream separation | Gateway, service SSE, bus control, and object-reference data paths are separate mechanisms. |
+| Heterogeneous framework compatibility | Engines and adapters are loaded through governed SPI and contract surfaces rather than through a closed runtime monopoly. |
+| Developer lifecycle support | Development, debugging, observability, operations evidence, and verification harnesses are first-class architecture concerns. |
 | Harness-first development | Core scenarios and invariants should produce mocks, stubs, assertions, and tests before runtime binding is called complete. |
 
 ## Top-Level Runtime Path
@@ -86,10 +100,13 @@ External Client
   -> observability, audit, cost attribution, and verification evidence
 ```
 
-Current authority still contains Run-based shipped behavior. Draft delivery
-material proposes a Task-canonical interpretation. That difference is recorded
-as a pending decision in `governance.md` and must not be silently resolved by
-word substitution.
+For V1, `Task` is the unified server-side authoritative execution lifecycle
+state. It has the same semantic level as an A2A protocol task: it can be created
+or bound by a client-to-server request, or by an `agent-service` request to
+another `agent-service` through an A2A client. `agent-service` owns Task-level
+lifecycle and parent/child state. `agent-execution-engine` owns finer-grained
+execution state below the Task boundary, such as workflow node state or ReAct
+loop state.
 
 ## Deployment Variants
 
@@ -99,23 +116,34 @@ word substitution.
 | Weak department / PaaS tenant | Runtime fully hosted by platform; business provides configuration, data-source authorization references, release acceptance, and operations input. | Platform provides hosted runtime and tenant isolation without owning business facts. |
 | Protected local capability | Sensitive tools, local context, local memory/retrieval, or approval UI remain on C-Side. | Platform issues S2C/Yield instructions and receives controlled results. |
 | Business-centric / federated | Client, service, and engine may run in business side; bus and middleware can remain platform services. | Local low-latency execution is allowed; cross-boundary A2A still uses platform bus contracts. |
-| Hybrid enterprise individual | Local personal tools and platform public services participate in one activity. | Capability placement may vary inside one task or run. |
+| Hybrid enterprise individual | Local personal tools and platform public services participate in one activity. | Capability placement may vary inside one Task. |
 
 ## Module Boundary Summary
 
-The reactor currently has eight generated module facts: six substantive domain
-modules plus the BoM and graphmemory starter. The L0 architecture distinguishes
-between reactor/module-metadata identity and core runtime architecture modules.
-The detailed policy is in `boundaries.md`.
+L0 defines six top-level logical modules. These modules are logical domains and
+future L1 architecture domains, not a one-to-one list of runtime processes,
+reactor artifacts, or Java packaging units. A logical module may contain several
+runtime units, adapters, services, deployable components, or development
+artifacts below L0.
 
-| Runtime Boundary | Summary |
+| L0 Logical Module | Summary |
 |---|---|
-| `agent-service` | HTTP ingress, tenant/auth/idempotency/trace entry, runtime state owner, service-side adapters, SSE, and runtime query surfaces. |
-| `agent-execution-engine` | Engine adapter, engine registry/envelope, execution SPI realization, planner and orchestration behavior as assigned by accepted ADRs. |
-| `agent-middleware` | Runtime middleware, hooks, model/skill/memory/vector/retriever/prompt/advisor SPI and governance surfaces. |
-| `agent-bus` | Bus and state hub plane: ingress, S2C, neutral engine port per ADR-0158, cross-boundary A2A, federation, three-track channels. |
-| `agent-client` | SDK, edge access, local capability endpoint, cursor/callback/SSE consumption. |
-| `agent-evolve` | Evolution-plane boundary and future Java-side adapter for governed export into ML pipelines. |
+| `agent-client` | Client-side integration, SDK, local capability endpoint, cursor/callback/SSE consumption, and business-side capability boundary. |
+| `agent-service` | Server-side agent service boundary, Task lifecycle and hierarchy owner, service-side adapters, external realtime stream surfaces, and runtime query surfaces. |
+| `agent-execution-engine` | Execution engine domain for workflow, ReAct, planner, engine adapter, engine registry/envelope, and finer-grained execution state below Task. |
+| `agent-bus` | Access and interaction domain for ingress, S2C, A2A/federation, event/control/rhythm interaction, platform-centralized control, permission, and governance surfaces. |
+| `agent-middleware` | Agent middleware foundation domain for selectable and integrable memory, knowledge, sandbox, skill, tool, model, retrieval, prompt, advisor, and hook services. |
+| `agent-evolve` | Evolution-plane domain for governed export, learning/evaluation loops, optimization, and future ML pipeline integration. |
+
+Build artifacts, starters, dependency BoMs, adapters, and deployable units are
+not promoted into L0 logical modules. They are determined in the appropriate
+development or deployment view under the relevant L1/L2 domain.
+
+Evolution-plane work consumes governed runtime evidence through export or bus
+contracts and must not synchronously block the main execution path. Heavy
+analysis, scoring, prompt optimization, knowledge graph construction, or
+fine-tuning pipelines remain off the primary request path unless a future ADR
+changes that boundary.
 
 ## Quality Attributes
 
@@ -133,7 +161,7 @@ The detailed policy is in `boundaries.md`.
 
 | ID | Risk |
 |---|---|
-| L0-RISK-001 | Run/Task canonical state vocabulary is not settled across all architecture material. |
+| L0-RISK-001 | Some historical material still uses Run-based names; V1 L0 treats those as compatibility or implementation-history terms, not canonical lifecycle vocabulary. |
 | L0-RISK-002 | Some L1 agent-service files contain unresolved merge markers and can taint downstream boundary interpretation. |
 | L0-RISK-003 | Draft capability placement and harness material is useful but not yet promoted into accepted architecture or scope planning. |
 | L0-RISK-004 | Some older trustworthy/DFX material has SPI ownership drift and must be aligned before promotion. |

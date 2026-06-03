@@ -2,7 +2,7 @@
 level: L0
 view: scenarios
 status: draft
-authority: "Consolidated from ARCHITECTURE.md constraints and docs/architecture/l0 principles/invariants"
+authority: "Consolidated from archived L0 constraints, docs/architecture/l0 principles/invariants, and reviewed L0 proposals"
 source_of_truth: true
 ---
 
@@ -11,8 +11,9 @@ source_of_truth: true
 ## Purpose
 
 This document summarizes L0 architectural constraints and invariants. The
-existing `ARCHITECTURE.md` remains the raw 65-constraint source during
-consolidation; this document groups those constraints into a reviewable shape.
+archived `docs/archive/ARCHITECTURE.md` remains historical source material
+during consolidation; this document groups promoted constraints into a
+reviewable shape.
 
 ## Cross-Cutting Verticals
 
@@ -48,6 +49,19 @@ Long-running work is admitted through bounded runtime resource claims. Resource
 pressure is represented as admission decisions, backpressure signals, suspension,
 or yield, not unbounded sockets, threads, or in-flight work.
 
+External I/O that may wait for LLM generation, vector retrieval, sandbox
+execution, or third-party services must release scarce compute resources through
+reactive, virtual-thread, suspend/resume, or equivalent non-holding execution
+patterns. The L0 rule is resource release; specific libraries or timeout values
+belong below L0.
+
+### Developer Lifecycle Vertical
+
+Developer experience is an architecture concern, not only documentation. Core
+runtime behavior should expose enough trace, debug timeline, harness fixture,
+operations evidence, and failure explanation for external Spring developers and
+module contributors to integrate agents without platform-team intervention.
+
 ## Core Invariants
 
 | Invariant | Constraint |
@@ -55,6 +69,7 @@ or yield, not unbounded sockets, threads, or in-flight work.
 | Platform/business decoupling | Business code extends via SPI and configuration; it does not patch platform internals. |
 | Single lifecycle writer | Runtime execution lifecycle state has one owner and one sanctioned writer path. |
 | Governed tool calls | Tool/skill calls pass through authorization, capacity, idempotency, audit, and observability boundaries. |
+| Governed interruption | User, agent, approval, cancellation, and direction-change interrupts must enter through sanctioned suspend/resume, callback, or control-command paths. |
 | Context through context boundary | Context packages are produced through service/middleware context and memory/retrieval surfaces, not hidden engine logic. |
 | Business state externality | Business systems own business facts; platform records references, traces, and controlled results. |
 | Suspend instead of hold | Long waits use suspend/resume, cursor, or callback rather than retained physical resources. |
@@ -81,6 +96,9 @@ or yield, not unbounded sockets, threads, or in-flight work.
 - Generated architecture fragments are not hand-edited.
 - Capability aggregates do not become modules without module admission and ADR
   support.
+- Heterogeneous execution frameworks are integrated through engine adapters,
+  neutral SPI placement, middleware hooks, and contracts; they do not redefine
+  lifecycle state ownership or bypass platform governance.
 
 ## Runtime Control Constraints
 
@@ -104,6 +122,9 @@ or yield, not unbounded sockets, threads, or in-flight work.
   runtime concerns.
 - Large payloads and multimodal artifacts use data-reference paths rather than
   bus payloads.
+- Untrusted generated code and unverified third-party tools must route through
+  sandbox-governed capacity before stricter postures can treat them as allowed
+  execution.
 - Raw prompt, completion, tool input, or tool output must not appear as span
   attributes in stricter postures.
 

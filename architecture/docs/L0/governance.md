@@ -34,6 +34,7 @@ that authority plus promoted content from draft material.
 | Generated fragments | Emitted by architecture tooling and not hand-edited. |
 | Draft docs under `docs/architecture/` | Proposal material only until promoted. |
 | Contract/interface docs | Not owned by L0; accepted contracts live in the contract system. |
+| Review proposals under `docs/logs/reviews/` | Source material for promotion only after conflict review. |
 
 ## Promotion States
 
@@ -100,19 +101,18 @@ call it fully accepted.
 
 | ID | Conflict | Sources | Required Decision |
 |---|---|---|---|
-| L0-CONFLICT-001 | Run vs Task canonical execution state. Current authority uses Run/RunRepository/RunStateMachine; draft delivery material proposes Task/TaskStateStore as server-side canonical and Run as compatibility/client invocation. | `ARCHITECTURE.md`, `docs/architecture/l0/00-overview/architecture-overview.md`, `docs/architecture/l0/06-state/state-ownership-matrix.md`, agent-service L1 docs. | Decide whether to keep Run canonical, promote Task canonical, or define a staged Run-to-Task compatibility model. |
-| L0-CONFLICT-002 | Eight generated modules vs six core runtime architecture modules plus BoM/starter as artifacts. | `architecture/generated/modules.dsl`, `ARCHITECTURE.md`, old module responsibility cards. | Keep generated eight-module reactor truth while documenting six core runtime modules and two artifact roles. |
 | L0-CONFLICT-003 | Neutral orchestration/engine SPI ownership drift. ADR-0158 places neutral SPI in `agent-bus`; some draft/trustworthy material assigns more to `agent-execution-engine`. | `architecture/workspace.dsl`, generated module facts, `docs/architecture/TRIAGE.md`, trustworthy decomposition. | Align all promoted text with ADR-0158. |
-| L0-CONFLICT-004 | Same-service multi-agent collaboration vs bus-mediated A2A boundary. Draft material says same-service collaboration is service-owned and cross-boundary A2A is bus-owned; older text may overgeneralize bus responsibility. | old overview, module cards, `ARCHITECTURE.md` bus constraints. | Preserve service-owned same-service coordination and bus-owned cross-boundary control, or record ADR exception. |
-| L0-CONFLICT-005 | Bus payload/stream role. Draft material forbids bus as large payload or token stream; older material may not consistently separate service SSE, bus control, and data-reference paths. | old overview, BA/S6 scenarios, `ARCHITECTURE.md` channel constraints. | Decide exact L0 wording and downstream L1/L2 stream contract implications. |
+| L0-CONFLICT-004 | Same-service multi-agent collaboration vs bus-mediated A2A boundary. Draft material says same-service collaboration is service-owned and cross-boundary A2A is bus-owned; older text may overgeneralize bus responsibility. | old overview, module cards, `docs/archive/ARCHITECTURE.md` bus constraints. | Preserve service-owned same-service coordination and bus-owned cross-boundary control, or record ADR exception. |
+| L0-CONFLICT-005 | Bus payload/stream role. Draft material forbids bus as large payload or token stream; older material may not consistently separate service SSE, bus control, and data-reference paths. | old overview, BA/S6 scenarios, `docs/archive/ARCHITECTURE.md` channel constraints. | Decide exact L0 wording and downstream L1/L2 stream contract implications. |
 | L0-CONFLICT-006 | L1 agent-service canonical files contain unresolved merge markers. | `architecture/docs/L1/agent-service/*.md`, `docs/architecture/TRIAGE.md`. | Resolve L1 conflicts before treating agent-service L1 as stable downstream authority. |
 | L0-CONFLICT-007 | Contract/interface draft location. Old L0 has ICD/YAML sketches, but this L0 package intentionally excludes contract ownership. | `docs/architecture/l0/05-contracts/`, user direction for this consolidation. | Promote useful contract semantics into accepted contract system, not L0 docs. |
+| L0-CONFLICT-008 | 2026-05-14 proposal names `Agent Runtime` and `Agent Core` style repository boundaries, while current authority uses `agent-service`, `agent-execution-engine`, and ADR-0158 neutral EnginePort ownership. | `docs/logs/reviews/2026-05-14-L0Architecture-LucioIT-wave-1-request.en.md`, `architecture/generated/modules.dsl`, `architecture/workspace.dsl`, `boundaries.md`. | Decide whether these names remain historical conceptual labels or require an ADR-backed module/repository split. |
+| L0-CONFLICT-009 | 2026-05-14 proposal gives `Agent Bus` broad client-to-server access and workflow intermediary duties; current L0 separates Gateway/service SSE, bus control/data-reference/rhythm, same-service coordination, and cross-boundary A2A. | 2026-05-14 proposal, `boundaries.md`, `views.md`, `constraints.md`. | Keep current separated wording unless a future ADR expands bus ownership. |
 
 ## Missing Point Register
 
 | ID | Missing Point | Impact | Proposed Next Action |
 |---|---|---|---|
-| L0-GAP-001 | Accepted Run/Task vocabulary ADR. | Blocks stable state ownership, glossary, L1 agent-service cleanup, and harness naming. | Create or update ADR resolving canonical lifecycle vocabulary and compatibility path. |
 | L0-GAP-002 | Formal version scope system location and skeleton. | BA scenarios, feature use cases, function points, harnesses, and delivery slices remain mixed with architecture facts. | Create separate version scope document tree and move scope-facing drafts there. |
 | L0-GAP-003 | Promotion decision for BA-001/BA-002/BA-003 and S1-S6. | Scenarios are useful but not accepted architecture or version scope yet. | Classify each as architecture stress scenario, version scope scenario, or archive. |
 | L0-GAP-004 | Capability Placement accepted contract and verification chain. | C-Side/S-Side, local capability, weak department, and federated modes remain under-specified. | Promote CAP-12 semantics into architecture features plus accepted contract docs and tests. |
@@ -122,12 +122,17 @@ call it fully accepted.
 | L0-GAP-008 | Regenerated visual views. | Draft PlantUML/SVG/PNG views may not reflect canonical workspace facts. | Regenerate views from accepted DSL after conflicts settle. |
 | L0-GAP-009 | L0 verification status for each consolidated constraint. | Some constraints remain manual-review only or unverified. | Add verification rows or explicit unverified statuses. |
 | L0-GAP-010 | L1 downstream impact list for this L0 split. | New L0 package may leave old references pointing to `ARCHITECTURE.md`. | Add follow-up L1/doc reference update after user approves skeleton. |
+| L0-GAP-011 | Interrupt and rollback semantics. | The proposal calls for user/agent interrupts at trajectory or context granularity, including abort and safe rollback, but current L0 only has suspend/resume, cancellation, callback, and governed control-command language. | Decide the accepted granularity and whether rollback is checkpoint restore, compensation, cancellation, or a separate L1/L2 mechanism. |
+| L0-GAP-012 | Skill topology scheduler and capability bidding detail. | The proposal describes tenant x global skill capacity arbitration and permission alignment; current L0 has capacity/backpressure and sandbox constraints but not a full scheduler contract. | Promote only after capability placement, skill capacity, and sandbox contract ownership are settled. |
+| L0-GAP-013 | Evolution data-flywheel contract. | The proposal describes offline scoring, reinforcement learning, knowledge graph construction, and prompt optimization; current L0 only accepts a governed evolution-plane boundary. | Define export contract, privacy controls, and whether any online feedback path is allowed. |
+| L0-GAP-014 | Developer lifecycle tooling scope. | The proposal asks for development/debugging tools, operations observability, and visualization; current L0 promotes evidence/harness but not tool inventory. | Decide which tooling belongs in L0, version scope, or product roadmap. |
 
 ## Current Non-Goals
 
-- This consolidation does not delete or rewrite `ARCHITECTURE.md`.
+- This consolidation archives the legacy `ARCHITECTURE.md`; it does not treat
+  the archived file as current authority.
 - This consolidation does not promote contract schemas.
-- This consolidation does not resolve Run/Task or L1 merge conflicts.
+- This consolidation does not resolve L1 merge conflicts.
 - This consolidation does not create the version scope system yet.
 
 ## Review Checklist

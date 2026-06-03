@@ -2,17 +2,17 @@
 level: L0
 view: governance
 status: draft
-authority: "draft/proposal area only; canonical L0 is architecture/docs/L0/ARCHITECTURE.md"
+authority: "draft/proposal area only; canonical L0 is architecture/docs/L0/"
 document_role: proposal_collection
 source_of_truth: false
-canonical_l0: ../../../architecture/docs/L0/ARCHITECTURE.md
+canonical_l0: ../../../architecture/docs/L0/
 ---
 
 # Draft L0 Delivery Views
 
 This directory contains draft delivery views and proposal material. It is not
-the canonical L0 root. The accepted L0 architecture is
-[`../../../architecture/docs/L0/ARCHITECTURE.md`](../../../architecture/docs/L0/ARCHITECTURE.md).
+the canonical L0 root. The accepted L0 architecture package is
+[`../../../architecture/docs/L0/`](../../../architecture/docs/L0/).
 
 ## Directory Roles
 
