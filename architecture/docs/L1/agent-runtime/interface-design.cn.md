@@ -187,6 +187,106 @@ OpenJiuwen 自身通过 `conversation_id` 与原生 checkpointer 完成 session 
 
 A2A 层只处理转换后的 `AgentExecutionResult`，不直接理解 OpenJiuwen 原始结果。
 
+### 4.5 构建一个 OpenJiuwen Runtime Handler 时发生什么
+
+业务侧通常在 Spring configuration 中声明一个 `OpenJiuwenAgentRuntimeHandler` Bean：
+
+```java
+@Bean
+OpenJiuwenAgentRuntimeHandler openJiuwenReactAgentHandler(...) {
+    return new SampleOpenJiuwenReactAgentHandler(...);
+}
+```
+
+`SampleOpenJiuwenReactAgentHandler` 继承 `OpenJiuwenAgentRuntimeHandler`，只实现具体 Agent 的创建逻辑：
+
+```java
+@Override
+protected BaseAgent createOpenJiuwenAgent(AgentExecutionContext context) {
+    ReActAgent agent = new ReActAgent(card);
+    agent.configure(config);
+    return agent;
+}
+```
+
+因此，业务侧只负责“如何创建和配置 OpenJiuwen 的 `BaseAgent`”。执行、输入转换、状态 key 传递、rail 安装和结果转换都由 runtime adapter 统一处理。
+
+完整链路如下：
+
+```text
+Spring Configuration
+  -> new SampleOpenJiuwenReactAgentHandler(...)
+  -> OpenJiuwenAgentRuntimeHandler(agentId)
+  -> A2A runtime wiring 注册为 AgentRuntimeHandler Bean
+  -> A2aAgentExecutor.execute(...)
+  -> handler.execute(context)
+  -> createOpenJiuwenAgent(context)
+  -> registerRail(...)
+  -> Runner.runAgent(...)
+```
+
+#### execute 注入
+
+`A2aAgentExecutor` 收到 A2A 请求后，会构造 `AgentExecutionContext`，然后直接调用：
+
+```java
+handler.execute(context);
+```
+
+对 OpenJiuwen 来说，`execute(context)` 在 `OpenJiuwenAgentRuntimeHandler` 中是固定流程：
+
+```text
+createOpenJiuwenAgent(context)
+  -> runtimeRails(context)
+  -> agent.registerRail(rail)
+  -> toOpenJiuwenInput(context)
+  -> runOpenJiuwenAgent(agent, input, openJiuwenConversationId(context))
+  -> Runner.runAgent(agent, input, conversationId, null)
+```
+
+这保证 A2A bridge 不需要知道 OpenJiuwen 的 `Runner`、`Rail` 或 checkpointer。
+
+#### state 注入
+
+OpenJiuwen 当前不通过 runtime 自己的 `AgentStateStore` 手工搬运状态，而是走 OpenJiuwen 原生 checkpointer：
+
+```text
+AgentExecutionContext.getAgentStateKey()
+  -> OpenJiuwenMessageAdapter 写入 input["conversation_id"]
+  -> OpenJiuwenAgentRuntimeHandler 传给 Runner.runAgent(..., conversationId, ...)
+  -> OpenJiuwen Runner / Checkpointer 自行恢复和保存
+```
+
+`agentStateKey` 的解析顺序是：
+
+```text
+variables["agentStateKey"]
+  -> variables["stateKey"]
+  -> fallback taskId
+```
+
+如果业务需要跨多轮复用状态，应显式传入稳定 `agentStateKey`。如果用户跳出原任务并创建新 task，fallback 到新 `taskId` 会自然隔离状态。
+
+#### mem 注入
+
+当前 OpenJiuwen adapter 还没有强制接入 Mem。`MemoryProvider` 只是 runtime 预留的窄 SPI：
+
+```java
+public interface MemoryProvider {
+    default void init(AgentExecutionContext context) {
+    }
+
+    List<MemoryHit> search(AgentExecutionContext context, String query, int limit);
+}
+```
+
+后续如果要把 Mem 接入 OpenJiuwen，推荐两种方式：
+
+1. 在 OpenJiuwen adapter 内部的 `runtimeRails(context)` 中注册一个带 Mem 能力的 Rail。
+2. 在具体 `createOpenJiuwenAgent(context)` 中，把 Mem 检索结果注入 OpenJiuwen Agent 的 prompt、tool 或 context 配置。
+
+Mem 不应放进 `A2aAgentExecutor`，也不应恢复成全局 provider chain。它应该作为 OpenJiuwen adapter 或具体业务 Agent 创建逻辑的一部分组合进去。
+
 ## 5. 状态与记忆接口的使用原则
 
 当前状态设计分成两类：
