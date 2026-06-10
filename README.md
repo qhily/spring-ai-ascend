@@ -58,8 +58,12 @@ Measured baselines: [`docs/governance/competitive-baselines.yaml`](docs/governan
 Use `verify`, not `test` — `test` skips the `*IT.java` integration enforcers.
 `-T 1C` builds the reactor modules in parallel. Posture is selected by the
 `APP_POSTURE` environment variable (`dev` / `research` / `prod`); `dev` allows
-in-memory backends and only WARNs on missing config. The full
-boot-and-first-run walkthrough is in [docs/quickstart.md](docs/quickstart.md).
+in-memory backends and only WARNs on missing config.
+
+To run your first agent, follow [docs/quickstart.md](docs/quickstart.md): a
+10-line echo `AgentRuntimeHandler`, booted with
+`RuntimeApp.create(handler).run(LocalA2aRuntimeHost.port(8080))` and verified
+with two `curl` calls against the A2A surface — no database, no LLM key.
 
 ## Architecture at a glance
 

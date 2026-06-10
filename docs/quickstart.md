@@ -1,277 +1,248 @@
 # Quickstart — First Agent on `spring-ai-ascend`
 
-> Goal: reach your first authenticated agent invocation without modifying any
-> platform source file. Required by `CLAUDE.md` Rule R-A (Business/Platform
-> Decoupling + Developer Self-Service).
+> Goal: reach your first agent invocation over A2A without modifying any
+> platform source file (constraint: ARCHITECTURE.md §4 #60, Business/Platform
+> decoupling — developers build agents against the platform, not into it).
 
-This document is referenced from the root [`README.md`](../README.md) and is
-gated by gate-rule `quickstart_present`.
+This document is referenced from the root [`README.md`](../README.md).
+
+You will: implement a tiny echo agent against the framework-neutral
+`AgentRuntimeHandler` SPI, boot it with the pure-Java entry point
+`RuntimeApp.create(handler).run(LocalA2aRuntimeHost.port(8080))`, and verify it
+with two `curl` calls.
 
 ---
 
 ## 1. Prerequisites
 
 - JDK 21 (any vendor; tested with Temurin and OpenJDK).
-- Maven 3.9+ (or use the bundled wrapper `./mvnw`).
-- Optional for `prod` / `research` posture: Vault, Postgres 16, an LLM provider.
+- Maven 3.9+ (or the bundled wrapper `./mvnw`).
+- Nothing else. No database, no LLM key — the runtime ships in-memory
+  reference implementations and the echo agent below calls no model.
 
-`dev` posture (the default) needs nothing else; in-memory backends are wired
-automatically. Set posture via the `APP_POSTURE` env var.
-
-## 2. Build the reactor
-
-```bash
-./mvnw -T 1C -q clean install
-```
-
-The build runs unit + ArchUnit tests for every reactor module. `-T 1C` builds
-independent modules in parallel; surefire runs JUnit classes concurrently within
-each fork. Add `-DjunitParallel=false` to debug intermittent test failures.
-
-For a fast inner loop, build just one module and its dependencies:
-`./mvnw -pl agent-runtime -am test -q` (see §7 for why this module is
-especially quick).
-
-## 3. Boot `agent-service`
+The artifacts are not yet published to Maven Central, so install the reactor
+into your local repository first:
 
 ```bash
-./mvnw -pl agent-service spring-boot:run
+./mvnw -q -DskipTests install
 ```
 
-The HTTP edge starts on port 8080.
+(For the full build with unit + integration tests + the quality gate, use
+`./mvnw -T 1C -Pquality verify` — the canonical command from the README.)
 
-Smoke check:
+## 2. Add the dependency
 
-```bash
-curl -s http://localhost:8080/v1/health
-# {"status":"UP","sha":"...","db_ping_ns":0,"ts":"..."}
+The run-owning runtime SDK is a single module:
+
+```xml
+<dependency>
+  <groupId>com.huawei.ascend</groupId>
+  <artifactId>agent-runtime</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+</dependency>
 ```
 
-## 4. Drive your first Run (in-process)
+To pin versions across a larger application, import the
+`com.huawei.ascend:spring-ai-ascend-dependencies` BoM instead and omit the
+version above.
 
-In `dev` posture, the orchestration stack is fully in-memory. Drop a
-`@Configuration` class into your own application that wires a custom
-`GraphExecutor` and submit a `Run`:
+## 3. Implement an echo agent
+
+`AgentRuntimeHandler` (package `com.huawei.ascend.runtime.engine.spi`) is the
+seam between the engine and a concrete agent framework: four methods, no
+Spring, no A2A types in your business logic.
 
 ```java
-@Configuration
-public class MyFirstAgent {
+import com.huawei.ascend.runtime.engine.AgentExecutionContext;
+import com.huawei.ascend.runtime.engine.a2a.Messages;
+import com.huawei.ascend.runtime.engine.spi.AgentExecutionResult;
+import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
+import com.huawei.ascend.runtime.engine.spi.StreamAdapter;
+import java.util.List;
+import java.util.stream.Stream;
 
-  @Bean
-  GraphExecutor myGraphExecutor() {
-    return new SequentialGraphExecutor();   // reference impl shipped at W0
-  }
-
-  @Bean
-  CommandLineRunner driver(Orchestrator orchestrator) {
-    return args -> {
-      // Orchestrator.run(runId, tenantId, executorDefinition, initialPayload)
-      // is the canonical entry point (see
-      // com.huawei.ascend.bus.spi.engine.Orchestrator#run).
-      // It synchronously creates the Run if absent, marks it RUNNING, and
-      // recursively drives the suspend/resume loop until SUCCEEDED / FAILED.
-      UUID runId = UUID.randomUUID();
-      var def = new ExecutorDefinition.GraphDefinition(
-              Map.of("start", (ctx, payload) -> "hello-" + payload),
-              Map.of(),
-              "start");
-      Object result = orchestrator.run(runId, "tenant-demo", def, "world");
-      System.out.println("Result: " + result);
-    };
-  }
+public final class EchoAgentHandler implements AgentRuntimeHandler {
+    @Override public String agentId() { return "echo-agent"; }
+    @Override public boolean isHealthy() { return true; }
+    @Override public Stream<?> execute(AgentExecutionContext context) {
+        List<org.a2aproject.sdk.spec.Message> messages = context.getMessages();
+        String text = messages.isEmpty() ? "" : Messages.text(messages.get(messages.size() - 1));
+        return Stream.of("echo: " + text);
+    }
+    @Override public StreamAdapter resultAdapter() {
+        return raw -> raw.map(line -> AgentExecutionResult.completed(String.valueOf(line)));
+    }
 }
 ```
 
-No platform-team intervention required. The patterns this exercises:
+`execute` returns a `Stream<?>` of framework-specific results;
+`resultAdapter()` maps them to engine-neutral `AgentExecutionResult`s
+(`output`, `completed`, `failed`, `interrupted`). The engine owns the Run
+lifecycle, task state, and A2A event mapping — you never touch them.
 
-- Extension via **SPI** (`GraphExecutor`, `Orchestrator`, `RunRepository`) —
-  not by patching `*.impl.*` or `com.huawei.ascend.service.platform.**`.
-- Configuration via `@Bean` and `@ConfigurationProperties` — never by source
-  patches into the platform module.
+## 4. Boot it
 
-## 4.5 L0 Agentic Contract Surface preview (rc43+)
-
-Wave rc43 of the L0 Agentic Contract Surface remediation (ADR-0120
-through ADR-0128) lands the contract shapes for **Agent / ModelGateway
-/ Skill / Memory / Vector / Retriever / EmbeddingModel / Planner**.
-The shapes are `status: design_only` at L0 — Java SPI interfaces and
-contract YAMLs exist; functional implementations of `Agent.invoke(...)`,
-`ModelGateway.invoke(...)`, etc. land across W2 (LLM gateway, skill
-registry), W3 (RAG vertical, SDK GA), and W4 (planner runtime). The
-Spring AI reference adapters under `service.integration.springai` are
-design-only shells today (throw `UnsupportedOperationException`); they
-prove the boundary compiles and the
-[`LlmGatewayHookChainOnlyTest`](../agent-service/src/test/java/com/huawei/ascend/service/runtime/architecture/LlmGatewayHookChainOnlyTest.java)
-ArchUnit guard asserts the current `ChatModel` shell stays design-only
-until the W2 hook-bound LLM implementation lands.
-
-Customer-side registration pattern (the shape Audience B implements
-against — runtime functional W2+):
+`RuntimeApp` / `RuntimeHost` are framework-neutral; Spring Boot is confined to
+the host implementation (`LocalA2aRuntimeHost`), which assembles the runtime
+layers and serves A2A over HTTP:
 
 ```java
-@Configuration
-public class MyFirstAgent {
+import com.huawei.ascend.runtime.app.LocalA2aRuntimeHost;
+import com.huawei.ascend.runtime.app.RunningRuntime;
+import com.huawei.ascend.runtime.app.RuntimeApp;
 
-  @Bean
-  ModelGateway myModelGateway(ChatModel springAiChatModel) {
-    // Spring AI is the canonical Model abstraction per ADR-0125.
-    // Wave C1 SpringAiChatModelGateway is a design-only shell at L0;
-    // W2 LLM gateway wires real Spring AI invocation behind the
-    // platform's hook + capacity machinery.
-    return new SpringAiChatModelGateway(springAiChatModel, "openai-gpt-4o-mini");
-  }
-
-  @Bean
-  AgentDefinition myFirstAgent() {
-    return new AgentDefinition(
-        "support-agent",
-        "tenant-demo",
-        "Support Agent",
-        "Answers customer support questions using RAG over docs/.",
-        new ModelRef("openai-gpt-4o-mini"),
-        Set.of(/* SkillRef("get_order_status"), SkillRef("escalate_to_human") */),
-        Map.of(/* MemoryCategory.M5_KNOWLEDGE, new MemoryRef("docs-corpus", M5_KNOWLEDGE) */),
-        Optional.empty(),                         // plannerBinding
-        List.of(new AdvisorBinding(
-            "pii-redaction",
-            AdvisorBinding.Mode.BOTH,
-            Optional.of(100),
-            Map.of())),                           // advisorBindings
-        "You are a helpful support agent.",
-        SafetyPolicy.permissive(),
-        Map.of());
-  }
+public final class EchoAgentApp {
+    public static void main(String[] args) {
+        RunningRuntime runtime = RuntimeApp.create(new EchoAgentHandler())
+                .run(LocalA2aRuntimeHost.port(8080));
+        System.out.println("A2A serving on port " + runtime.port());
+        // runtime is AutoCloseable — close() stops the server.
+    }
 }
 ```
 
-The same `Orchestrator.run(...)` entry point used in §4 above continues
-to be the runtime contract for long-running agent work; the `AgentDefinition`
-is the *declarative* shape and the W3 SDK GA wave wires
-`Agent.invoke(...)` end-to-end via `AgentExecutorDefinitionFactory`.
+`LocalA2aRuntimeHost.port(0)` binds an ephemeral port, readable afterwards via
+`RunningRuntime.port()` — handy in integration tests.
 
-See:
-- [`docs/contracts/agent-definition.v1.yaml`](contracts/agent-definition.v1.yaml)
-- [`docs/contracts/model-invocation.v1.yaml`](contracts/model-invocation.v1.yaml) (includes the rc51 `tool_call_loop:` section per ADR-0134)
-- [`docs/contracts/skill-definition.v1.yaml`](contracts/skill-definition.v1.yaml)
-- [`docs/contracts/memory-store.v1.yaml`](contracts/memory-store.v1.yaml) (includes the rc51 `conversation_memory:` section per ADR-0133)
-- [`docs/contracts/vector-store.v1.yaml`](contracts/vector-store.v1.yaml)
-- [`docs/contracts/planning-request.v1.yaml`](contracts/planning-request.v1.yaml)
-- ADR-0120 through ADR-0128 under `docs/adr/`.
+### Booting without Postgres
 
-## 4.6 L0 Agentic-Completeness Surface preview (rc51+)
+The `agent-runtime` jar ships an `application.yml` whose
+`spring.datasource.url` defaults to a local Postgres and which enables Flyway.
+Two cases:
 
-Wave rc51 of the L0 Agentic-Completeness program (ADR-0129 through
-ADR-0135) adds the developer-ergonomics extension surface so Audience B
-never needs to import Spring AI types directly: **streaming** on
-`ModelGateway`, **`StructuredOutputConverter<T>`** for typed-bean
-extraction, **`PromptTemplate`** for variable-substituted prompts,
-**`ChatAdvisor`** for interceptor chains around model calls, and
-**`ConversationMemory`** for windowed FIFO + token-budget pruning. Like
-rc43, every shape is `status: design_only` at L0; functional
-implementations land in W2 (LLM gateway, prompt rendering, advisor
-binding, chat memory) and W3 (RAG cache strategy per ADR-0135).
+- **Minimal classpath (just the dependency above):** nothing to do. The
+  JDBC / Flyway / pgvector dependencies are declared `<optional>` in
+  `agent-runtime`, so they are not on your classpath and the corresponding
+  auto-configurations never activate; the datasource keys are inert.
+- **Your application adds a JDBC stack** (e.g. `spring-boot-starter-data-jdbc`
+  or Flyway) for its own use: exclude the auto-configurations so boot does not
+  try to reach Postgres. This is the exact list `agent-runtime`'s own
+  `RuntimeAppTest` uses:
 
-Customer-side wiring (the shape Audience B implements — functional W2+):
-
-```java
-@Configuration
-public class MyAgentExtensions {
-
-  /** rc51 — typed-bean extraction wraps Spring AI BeanOutputConverter. */
-  @Bean
-  <T> StructuredOutputConverter<T> orderResponseConverter(
-      ObjectMapper jackson, Class<T> targetType) {
-    // SpringAiBeanOutputConverterAdapter is design-only shell at L0;
-    // W2 LLM gateway wires it through ModelGateway.invoke decoration.
-    return new SpringAiBeanOutputConverterAdapter<>(
-        /* org.springframework.ai.converter.BeanOutputConverter */ jackson, targetType);
-  }
-
-  /** rc51 — variable-substituted prompts wrap Spring AI PromptTemplate. */
-  @Bean
-  PromptTemplate supportSystemPromptTemplate() {
-    return new SpringAiPromptTemplateAdapter(
-        /* org.springframework.ai.chat.prompt.PromptTemplate */ new Object(),
-        "support-agent.system-prompt.v1",
-        new PromptTemplateSource.InlineString(
-            "You help {tenant} with orders placed via {channel}.",
-            PromptTemplateSource.PlaceholderSyntax.MUSTACHE_SINGLE_BRACE));
-  }
-
-  /** rc51 — interceptor chain around ModelGateway.invoke; binds via
-   *  HookDispatcher internally at W2 (Telemetry Vertical co-arrival). */
-  @Bean
-  ChatAdvisor piiRedactionAdvisor() {
-    return new ChatAdvisor() {
-      @Override public String advisorName() { return "pii-redaction"; }
-      @Override public int order() { return 100; }
-      @Override public AdvisedResponse aroundCall(AdvisedRequest req, AdvisorChain chain) {
-        // Inbound: inspect or replace req.modelRequest().messages() before chain.next.
-        AdvisedResponse response = chain.next(req);
-        // Outbound: inspect or replace response.modelResponse().content() before return.
-        return response; // L0 contract shape; W2 wires real binding.
-      }
-    };
-  }
-
-  /** rc51 — windowed FIFO + token-budget pruning over M2_EPISODIC. */
-  @Bean
-  ConversationMemory chatMemory() {
-    // First production ConversationMemory impl lands in W2 chat-memory
-    // wave; for now customers compose against the SPI shape.
-    return null; // placeholder — Audience B impl lands here in W2.
-  }
-}
+```bash
+java -Dspring.autoconfigure.exclude=\
+org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,\
+org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration,\
+org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration,\
+io.github.resilience4j.springboot3.verifier.autoconfigure.SpringBoot3VerifierAutoConfiguration \
+  -cp ... EchoAgentApp
 ```
 
-The same `AgentDefinition` shape from §4.5 binds these extensions via
-`toolBindings`, `memoryBindings`, and `advisorBindings`. Advisors are
-bound by `AdvisorBinding.advisorName()` so the agent contract stays pure
-and never imports `ChatAdvisor` directly.
+Note: setting `spring.autoconfigure.exclude` yourself **replaces** the list the
+library's `application.yml` already carries, which is why the Resilience4j
+verifier exclusion is repeated above — keep it in your list. Application-level
+keys (like the tenant settings in §6) go in your own `application.yaml`, the
+same pattern the e2e example uses.
 
-See:
-- [`docs/contracts/model-streaming.v1.yaml`](contracts/model-streaming.v1.yaml) (ADR-0129)
-- [`docs/contracts/structured-output.v1.yaml`](contracts/structured-output.v1.yaml) (ADR-0130)
-- [`docs/contracts/prompt-template.v1.yaml`](contracts/prompt-template.v1.yaml) (ADR-0131)
-- [`docs/contracts/chat-advisor.v1.yaml`](contracts/chat-advisor.v1.yaml) (ADR-0132)
-- ADR-0129 through ADR-0135 under `docs/adr/`.
+## 5. Verify with curl
 
-## 5. Switch posture
+Fetch the agent card (a legacy alias is served at `/.well-known/agent.json`):
 
-Set `APP_POSTURE=research` or `prod` and re-run. Now:
+```bash
+curl http://localhost:8080/.well-known/agent-card.json
+```
 
-- `IdempotencyStore` must be a durable bean (otherwise startup throws).
-- `IdempotencyHeaderFilter` rejects missing `Idempotency-Key` headers on
-  POST/PUT/PATCH.
-- The in-memory `SyncOrchestrator` refuses to construct (use a durable
-  alternative wired by your own `@Configuration`).
+You get the auto-generated card for `echo-agent` (override it by declaring an
+`AgentCardProvider` or `AgentCard` bean).
 
-See [`docs/governance/posture-coverage.md`](governance/posture-coverage.md)
-for the full matrix.
+Send a blocking JSON-RPC `SendMessage` to `/a2a`:
 
-## 6. Where to go next
+```bash
+curl http://localhost:8080/a2a \
+  -H 'Content-Type: application/json' \
+  -H 'X-Tenant-Id: bank-7' \
+  -d '{"jsonrpc":"2.0","id":"request-1","method":"SendMessage","params":{"message":{"role":"ROLE_USER","parts":[{"text":"ping"}],"messageId":"message-1"}}}'
+```
 
-- Architecture and SPI surface: [`ARCHITECTURE.md`](../architecture/docs/L0/ARCHITECTURE.md).
-- HTTP contract surface: [`docs/contracts/`](contracts/).
+The response is a JSON-RPC `result` carrying the completed task:
+`result.task.status.state` is `TASK_STATE_COMPLETED` and
+`result.task.status.message.parts[0].text` is `echo: ping`.
+
+`message/send` is idempotent per `(tenant, messageId)`: a retry with the same
+`messageId` replays the already-created task instead of running the agent
+twice.
+
+For token-by-token streaming, change the method to `SendStreamingMessage` and
+ask for SSE:
+
+```bash
+curl -N http://localhost:8080/a2a \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream' \
+  -H 'X-Tenant-Id: bank-7' \
+  -d '{"jsonrpc":"2.0","id":"request-2","method":"SendStreamingMessage","params":{"message":{"role":"ROLE_USER","parts":[{"text":"ping"}],"messageId":"message-2"}}}'
+```
+
+Each SSE frame is a JSON-RPC response event; a mid-stream agent failure ends
+the stream with a JSON-RPC error frame rather than a bare transport drop.
+
+## 6. Multi-tenant knobs
+
+Every request is attributed to a tenant. Precedence: JWT-authenticated tenant
+(when the auth filter is enabled) > `X-Tenant-Id` header > configured default.
+
+| Property | Default | Meaning |
+|---|---|---|
+| `agent-runtime.access.a2a.default-tenant-id` | `default` | Tenant attributed to requests without an `X-Tenant-Id` header — single-tenant deployments set it once instead of sending the header. |
+| `agent-runtime.access.a2a.jwt.enabled` | `false` | Enables tenant authentication at the A2A ingress. |
+| `agent-runtime.access.a2a.jwt.hmac-secret` | — | Shared HS256 secret used to verify bearer tokens. |
+| `agent-runtime.access.a2a.jwt.clock-skew-seconds` | `30` | Tolerated clock skew for `exp`/`nbf` validation. |
+
+With `jwt.enabled=true`, every `/a2a` request must carry
+`Authorization: Bearer <jwt>` whose HS256 signature verifies and whose
+`tenant_id` claim, when an `X-Tenant-Id` header is also present, must match it
+(401 for missing/invalid tokens, 403 on a cross-check mismatch).
+
+### Hosting AgentScope / LangGraph agents
+
+Remote agents served by their native runtimes plug in behind the same SPI — no
+echo-style handler to write, just construct the shipped client handler as a
+bean (or pass it to `RuntimeApp.create`):
+
+- **AgentScope Runtime:** `AgentScopeRuntimeClientHandler(agentId, new
+  AgentScopeRuntimeClient(new AgentScopeRuntimeClientProperties(baseUrl)))`
+  (package `com.huawei.ascend.runtime.engine.agentscope`).
+- **LangGraph Platform / `langgraph-api` dev server:**
+  `LangGraphRuntimeClientHandler(agentId, new LangGraphRuntimeClient(new
+  LangGraphRuntimeClientProperties(baseUrl, assistantId)))`
+  (package `com.huawei.ascend.runtime.engine.langgraph`).
+
+Working Spring wiring for both lives in the e2e example (e.g.
+[`LangGraphE2eConfiguration`](../examples/agent-runtime-a2a-llm-e2e/src/main/java/com/huawei/ascend/examples/a2a/LangGraphE2eConfiguration.java)).
+
+### Declaring agents in YAML
+
+The `agent-sdk` module builds handlers from a declarative `ascend-agent/v1`
+spec: `AgentHandlerFactory.fromYaml(Path)` (package
+`com.huawei.ascend.agentsdk.factory`) loads the YAML — schema, framework,
+model, prompt, tools, skills, with `${ENV_VAR}` resolution — and returns a
+ready `AgentRuntimeHandler`. Sample specs live under
+[`examples/agent-sdk-example/openjiuwen/`](../examples/agent-sdk-example/openjiuwen/).
+
+## 7. Where to go next
+
+- **End-to-end example:**
+  [`examples/agent-runtime-a2a-llm-e2e`](../examples/agent-runtime-a2a-llm-e2e/README.md)
+  — a full Spring Boot application hosting openJiuwen / AgentScope / LangGraph
+  agents behind the same A2A surface, plus a console A2A client and a
+  multi-runtime gateway. Sibling examples cover return modes
+  (`agent-runtime-a2a-return-modes-e2e`) and the YAML SDK
+  (`agent-sdk-example`).
+- Architecture of record:
+  [`architecture/docs/L0/ARCHITECTURE.md`](../architecture/docs/L0/ARCHITECTURE.md).
+- Runtime contract surface: [`docs/contracts/`](contracts/).
 - Engineering rules you must honour: [`CLAUDE.md`](../CLAUDE.md).
-- DFX coverage per module: [`docs/dfx/`](dfx/).
-- Module metadata (kind / version / semver): each module's
-  `module-metadata.yaml`.
 
-## 7. When a test fails
+## 8. When a test fails
 
-Before you start reasoning about the failure, run the six-step **Evidence-First
-Debug Sequence** in [`docs/harness/debug-first-evidence.md`](harness/debug-first-evidence.md).
-Authority: CLAUDE.md Rule D-3 (Evidence-First Debug). The runbook tells you what to capture (failing
-FQN → trace ID → MDC slice → raw error → transition history) BEFORE you open
-`ARCHITECTURE.md`. Spec reading is allowed in step 6, after evidence is recorded.
+Before reasoning about a failure, run the **Evidence-First Debug Sequence** in
+[`docs/harness/debug-first-evidence.md`](harness/debug-first-evidence.md)
+(authority: CLAUDE.md Rule D-3): capture the failing FQN, trace ID, MDC slice,
+and raw error BEFORE opening `ARCHITECTURE.md`.
 
-For library-mode pure-JUnit tests (`./mvnw -pl agent-runtime test`),
-the engine SPI module runs in under 2 seconds. Use this loop when you
-want sub-second feedback on the SPI value-type algebra. The engine SPI
-lives in `agent-runtime`; the run + idempotency entities (a design target) live in
-`agent-runtime`; the server-to-client transport SPI lives in `agent-bus`.
+For a fast inner loop, `./mvnw -pl agent-runtime -am test -q` builds and tests
+just the runtime module and its dependencies.
 
 If anything in this quickstart requires modifying platform source to make it
-work — file an issue tagged `decoupling-defect`. Rule R-A says: developers
-build agents against the platform, not into the platform.
+work — file an issue tagged `decoupling-defect`. Developers build agents
+against the platform, not into the platform.
