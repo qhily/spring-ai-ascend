@@ -12,9 +12,9 @@ public final class JavaFileToolResolver implements ToolResolver {
     public ResolvedTool resolve(ToolSpec spec) {
         Map<String, Object> attributes = spec.ref().attributes();
         return new WrappableTool(
-                ToolRefAttributes.descriptor(spec),
+                HttpToolResolver.descriptor(spec),
                 new JavaExecutionHandle(
-                        ToolRefAttributes.required(attributes, "class"),
-                        ToolRefAttributes.required(attributes, "method")));
+                        HttpToolResolver.required(attributes, "class"),
+                        HttpToolResolver.required(attributes, "method")));
     }
 }

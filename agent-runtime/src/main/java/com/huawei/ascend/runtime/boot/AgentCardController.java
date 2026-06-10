@@ -32,8 +32,6 @@ public class AgentCardController {
     }
 
     private AgentCard resolveUrls(AgentCard card, HttpServletRequest request) {
-        // Honors X-Forwarded-* when a ForwardedHeaderFilter is registered (it rewrites
-        // the request facade); raw scheme/host otherwise.
         final String base = request.getScheme() + "://" + request.getServerName()
                 + (request.getServerPort() != 80 && request.getServerPort() != 443
                         ? ":" + request.getServerPort() : "");
@@ -50,14 +48,7 @@ public class AgentCardController {
     }
 
     private static String resolveUrl(String base, String path) {
-        if (path == null || path.isBlank()) {
-            return base;
-        }
-        // A provider-supplied absolute URL is already resolvable — prefixing the
-        // local base would yield http://host/http://other-host/a2a.
-        if (path.startsWith("http://") || path.startsWith("https://")) {
-            return path;
-        }
+        if (path == null || path.isBlank()) return base;
         return base + (path.startsWith("/") ? path : "/" + path);
     }
 }
