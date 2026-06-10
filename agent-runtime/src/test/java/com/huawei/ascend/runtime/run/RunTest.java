@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 class RunTest {
 
@@ -50,6 +51,31 @@ class RunTest {
         Run retried = failed.withStatus(RunStatus.RUNNING);
 
         assertThat(retried.attemptId()).isEqualTo(2);
+    }
+
+    /** create() captures the edge-filter trace id from the MDC when present. */
+    @Test
+    void createCapturesMdcTraceIdAndCopiesPreserveIt() {
+        MDC.put("trace_id", "0af7651916cd43dd8448eb211c80319c");
+        try {
+            Run run = Run.create("tenant-1", "session-1", "task-1", "agent-1");
+
+            assertThat(run.traceId()).isEqualTo("0af7651916cd43dd8448eb211c80319c");
+            assertThat(run.withStatus(RunStatus.RUNNING).traceId())
+                    .isEqualTo("0af7651916cd43dd8448eb211c80319c");
+        } finally {
+            MDC.remove("trace_id");
+        }
+    }
+
+    /** Outside an instrumented request the trace id is simply absent (nullable at L1.x). */
+    @Test
+    void createWithoutMdcTraceIdLeavesItNull() {
+        MDC.remove("trace_id");
+
+        Run run = Run.create("tenant-1", "session-1", "task-1", "agent-1");
+
+        assertThat(run.traceId()).isNull();
     }
 
     @Test

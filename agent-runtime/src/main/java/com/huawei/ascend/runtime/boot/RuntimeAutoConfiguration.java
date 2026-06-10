@@ -93,6 +93,16 @@ public class RuntimeAutoConfiguration {
     public InMemoryRunRepository runRepository() { return new InMemoryRunRepository(); }
 
     @Bean
+    public FilterRegistrationBean<TraceParentFilter> traceParentFilter() {
+        FilterRegistrationBean<TraceParentFilter> registration =
+                new FilterRegistrationBean<>(new TraceParentFilter());
+        // Ahead of tenant auth (order 10) so even auth rejections carry a
+        // correlatable trace_id in the MDC and a traceresponse header.
+        registration.setOrder(5);
+        return registration;
+    }
+
+    @Bean
     @ConditionalOnProperty(prefix = "agent-runtime.access.a2a.jwt", name = "enabled", havingValue = "true")
     public FilterRegistrationBean<A2aTenantAuthFilter> a2aTenantAuthFilter(RuntimeAccessProperties access) {
         FilterRegistrationBean<A2aTenantAuthFilter> registration =

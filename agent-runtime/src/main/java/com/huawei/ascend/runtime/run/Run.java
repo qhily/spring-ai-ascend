@@ -3,6 +3,7 @@ package com.huawei.ascend.runtime.run;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import org.slf4j.MDC;
 
 /**
  * Execution record — the contract spine of the runtime (Rule R-C.2). One Run
@@ -20,6 +21,8 @@ import java.util.UUID;
  * @param sessionId   conversation the run belongs to, never null/blank
  * @param taskId      transport-level task correlation (A2A taskId), never null/blank
  * @param agentId     agent that executes the run, never null/blank
+ * @param traceId     W3C trace id captured from the MDC at creation; nullable
+ *                    until the durable tier arms the NOT NULL constraint
  * @param status      current DFA state, never null
  * @param attemptId   1-based attempt counter; a FAILED→RUNNING retry creates attempt N+1
  * @param version     optimistic-lock counter maintained by the repository
@@ -32,6 +35,7 @@ public record Run(
         String sessionId,
         String taskId,
         String agentId,
+        String traceId,
         RunStatus status,
         int attemptId,
         long version,
@@ -55,11 +59,15 @@ public record Run(
         Objects.requireNonNull(updatedAt, "updatedAt");
     }
 
-    /** A fresh PENDING run, attempt 1, version 0. */
+    /**
+     * A fresh PENDING run, attempt 1, version 0. The trace id is captured
+     * from the MDC populated by the HTTP-edge traceparent filter, so a Run
+     * created outside an instrumented request simply carries none.
+     */
     public static Run create(String tenantId, String sessionId, String taskId, String agentId) {
         Instant now = Instant.now();
         return new Run(UUID.randomUUID(), tenantId, sessionId, taskId, agentId,
-                RunStatus.PENDING, 1, 0, now, now);
+                MDC.get("trace_id"), RunStatus.PENDING, 1, 0, now, now);
     }
 
     /**
@@ -71,13 +79,13 @@ public record Run(
         RunStateMachine.validate(status, newStatus);
         int nextAttempt = status == RunStatus.FAILED && newStatus == RunStatus.RUNNING
                 ? attemptId + 1 : attemptId;
-        return new Run(id, tenantId, sessionId, taskId, agentId,
+        return new Run(id, tenantId, sessionId, taskId, agentId, traceId,
                 newStatus, nextAttempt, version, createdAt, Instant.now());
     }
 
     /** Repository-internal copy with the bumped optimistic-lock version. */
     Run withVersion(long newVersion) {
-        return new Run(id, tenantId, sessionId, taskId, agentId,
+        return new Run(id, tenantId, sessionId, taskId, agentId, traceId,
                 status, attemptId, newVersion, createdAt, updatedAt);
     }
 
