@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 /**
  * Real boot of the pure-Java {@link RuntimeApp} entry through {@link LocalA2aRuntimeHost} on an
@@ -25,7 +26,12 @@ import org.junit.jupiter.api.Test;
  * the example uses. Lives in the example module: its classpath is DB-free, so the host boots without
  * external infrastructure. (The execution path itself is covered by the real-LLM
  * {@code OpenJiuwenReactAgentA2aE2eTest}.)
+ *
+ * <p>{@code @Isolated}: Spring Boot's logging re-initialization resets the JVM-global logback
+ * LoggerContext, whose listener list is not thread-safe — booting concurrently with other
+ * context-starting tests intermittently crashes in LoggerContext.addListener.
  */
+@Isolated
 class RuntimeAppBootTest {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(30);

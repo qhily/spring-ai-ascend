@@ -403,10 +403,10 @@ curl http://localhost:8080/a2a \
   -d '{
     "jsonrpc": "2.0",
     "id": "manual-1",
-    "method": "message/stream",
+    "method": "SendStreamingMessage",
     "params": {
       "message": {
-        "role": "user",
+        "role": "ROLE_USER",
         "messageId": "manual-message-1",
         "contextId": "manual-session-1",
         "metadata": {
@@ -416,7 +416,6 @@ curl http://localhost:8080/a2a \
         },
         "parts": [
           {
-            "kind": "text",
             "text": "ping"
           }
         ]
