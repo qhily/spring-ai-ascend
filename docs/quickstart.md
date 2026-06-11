@@ -219,7 +219,124 @@ model, prompt, tools, skills, with `${ENV_VAR}` resolution — and returns a
 ready `AgentRuntimeHandler`. Sample specs live under
 [`examples/agent-sdk-example/openjiuwen/`](../examples/agent-sdk-example/openjiuwen/).
 
-## 7. Where to go next
+## 7. Front the runtime with the service facade
+
+A fleet of single-agent runtimes is fronted by the `agent-service` edge:
+runtimes self-register, clients discover agents and resolve routes, and
+east-west calls carry signed route grants. The Spring Boot starter
+auto-configures the whole HTTP edge with in-memory reference implementations:
+
+```xml
+<dependency>
+  <groupId>com.huawei.ascend</groupId>
+  <artifactId>agent-service-starter</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+Add it to any Spring Boot web application and the edge is live —
+`agent-service.enabled` defaults to `true` (set it to `false` to switch the
+whole auto-configuration off). Minimal yaml:
+
+```yaml
+agent-service:
+  # Signs HMAC route grants; the built-in default only serves local development.
+  route-grant-secret: ${AGENT_SERVICE_ROUTE_GRANT_SECRET}
+  # Optional: rewrite served agent-card endpoints onto this gateway-fronted
+  # base URL so cards never leak back-end runtime topology (empty = verbatim).
+  # public-base-url: https://agents.example.com
+  # Optional: JWT tenant cross-check at the service ingress (same shape as
+  # agent-runtime.access.a2a.jwt; disabled until the secret is provisioned).
+  # access:
+  #   jwt:
+  #     enabled: true
+  #     hmac-secret: ${AGENT_SERVICE_JWT_SECRET}
+  #     clock-skew-seconds: 30
+```
+
+Three controller surfaces are served:
+
+| Controller | Endpoints |
+|---|---|
+| `RuntimeRegistryController` — registration + discovery | `POST /v1/runtime-registrations`, `PUT /v1/runtime-registrations/{runtimeInstanceId}/lease`, `DELETE /v1/runtime-registrations/{runtimeInstanceId}`, `GET /v1/agents?tenantId=...`, `GET /v1/agents/{agentId}/card?tenantId=...`, `POST /v1/agents/{agentId}/routes/resolve?tenantId=...` |
+| `RouteGrantController` — signed east-west route grants | `POST /v1/route-grants/resolve`, `POST /v1/route-grants/validate` |
+| `A2aGatewayController` — northbound A2A forwarding | `POST /v1/agents/{agentId}/a2a?tenantId=...` (JSON or SSE, per the forwarded method) |
+
+Verify the edge is up (an empty tenant returns `[]`):
+
+```bash
+curl 'http://localhost:8080/v1/agents?tenantId=bank-7'
+```
+
+Every implementation behind the controllers sits behind a
+`@ConditionalOnMissingBean` seam — contribute your own `RuntimeRegistry`,
+`AgentDirectory`, or `RouteGrantService` bean to replace the in-memory
+reference. Runtimes register themselves with the Spring-free
+`RuntimeRegistrationClient` (module `agent-service`, package
+`com.huawei.ascend.service.client`): `register` announces the instance,
+`startHeartbeat` keeps its lease alive, `close()` deregisters. A complete
+runnable flow lives in the e2e example's
+[`RuntimeSelfRegistrationE2eTest`](../examples/agent-runtime-a2a-llm-e2e/src/test/java/com/huawei/ascend/examples/a2a/gateway/RuntimeSelfRegistrationE2eTest.java)
+and is documented in that example's
+[README](../examples/agent-runtime-a2a-llm-e2e/README.md).
+
+## 8. Route agent LLM traffic through the egress gateway
+
+Agents never hold provider keys: they call the runtime's OpenAI-compatible
+egress gateway with a minted, agent-scoped token and a model alias; only the
+gateway's routing table knows the real upstream URL, credential, and model.
+
+Enable the gateway in the runtime application's yaml:
+
+```yaml
+agent-runtime:
+  llm:
+    gateway:
+      enabled: true
+      aliases:
+        team-default:                              # the model name callers send
+          base-url: https://api.example.com/v1     # real upstream, incl. /v1
+          api-key: ${UPSTREAM_API_KEY}             # real provider credential
+          upstream-model: gpt-5.4-mini             # omit to forward the alias
+      tokens:
+        team-default-minted-token:                 # opaque token the agent sends
+          tenant-id: bank-7
+          agent-id: echo-agent
+```
+
+The runtime now serves `POST /v1/chat/completions`; a call must carry
+`Authorization: Bearer team-default-minted-token` and `"model":
+"team-default"`. The gateway resolves the token to its provisioned
+(tenant, agent) identity from server-side config only, then forwards to the
+alias's upstream with the real key and model name.
+
+On the agent side, the YAML SDK's `model.alias` form delegates all routing to
+the gateway — it is mutually exclusive with `provider` / `name` / `baseUrl` /
+`apiKey` (a leftover explicit key is rejected by name):
+
+```yaml
+model:
+  alias: team-default
+```
+
+The factory resolves the alias against gateway settings provided on the
+builder:
+
+```java
+AgentRuntimeHandler handler = AgentHandlerFactory.builder()
+        .gateway("http://localhost:8080", "team-default-minted-token")
+        .fromYaml(Path.of("agent.yaml"));
+```
+
+Values left unset on the builder fall back to the `SAA_GATEWAY_BASE_URL` /
+`SAA_GATEWAY_TOKEN` environment variables. The effective spec points the
+framework's OpenAI-compatible client at the gateway's `/v1` surface (the
+version segment is appended when missing) with the minted token riding the
+existing `apiKey` field — the framework needs no code change. The e2e example
+flips both of its framework samples onto this path with one switch; see
+[its README](../examples/agent-runtime-a2a-llm-e2e/README.md).
+
+## 9. Where to go next
 
 - **End-to-end example:**
   [`examples/agent-runtime-a2a-llm-e2e`](../examples/agent-runtime-a2a-llm-e2e/README.md)
@@ -233,7 +350,7 @@ ready `AgentRuntimeHandler`. Sample specs live under
 - Runtime contract surface: [`docs/contracts/`](contracts/).
 - Engineering rules you must honour: [`CLAUDE.md`](../CLAUDE.md).
 
-## 8. When a test fails
+## 10. When a test fails
 
 Before reasoning about a failure, run the **Evidence-First Debug Sequence** in
 [`docs/harness/debug-first-evidence.md`](harness/debug-first-evidence.md)

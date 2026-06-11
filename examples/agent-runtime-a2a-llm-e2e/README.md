@@ -137,6 +137,68 @@ limiting, circuit breaking, dynamic scaling through K8S or an equivalent
 orchestrator, multi-AZ deployment, same-city disaster recovery, cross-region
 recovery, SLA/SLO dashboards, and error-budget governance.
 
+### Runtime Self-Registration Client
+
+The registration, discovery, and route-grant HTTP edge of the facade is served
+by the auto-configured `agent-service-starter` dependency (the example sets
+only `agent-service.route-grant-secret`); the example keeps its own telemetry
+and gateway-health controllers. On the runtime side,
+`com.huawei.ascend.service.client.RuntimeRegistrationClient` (module
+`agent-service`, Spring-free) is the client a runtime instance points at that
+edge:
+
+- `register(...)` announces the instance at `POST /v1/runtime-registrations`;
+  a service-side rejection is returned as data, only transport failures throw.
+- `startHeartbeat(...)` renews the lease on a daemon scheduler
+  (`PUT /v1/runtime-registrations/{id}/lease`); the renewal supplier is invoked
+  per tick so each renewal carries the runtime's current state and capacity
+  snapshot, and failures are logged and retried on the next tick — a transient
+  registry outage never kills the renewal loop.
+- `close()` stops the heartbeat scheduler first, then best-effort deregisters
+  every instance this client registered
+  (`DELETE /v1/runtime-registrations/{id}`).
+
+Canonical usage — the automated `RuntimeSelfRegistrationE2eTest` drives exactly
+this flow over real HTTP:
+
+```java
+try (RuntimeRegistrationClient client = RuntimeRegistrationClient
+        .builder(URI.create("http://localhost:" + facadePort))
+        .requestTimeout(Duration.ofSeconds(5))
+        .build()) {
+
+    RuntimeRegistrationOutcome outcome = client.register(new RuntimeAgentRegistration(
+            RuntimeInstanceId.of("runtime-1"),
+            "sample-tenant",
+            "openjiuwen-react-agent",
+            agentCard,
+            URI.create("http://runtime-1.local/a2a"),
+            URI.create("http://runtime-1.local/v1/health"),
+            "1.0.0",
+            Duration.ofSeconds(30),          // lease TTL
+            Map.of("zone", "az-1")));
+
+    client.startHeartbeat(
+            RuntimeInstanceId.of("runtime-1"),
+            Duration.ofSeconds(10),
+            () -> new RuntimeLeaseRenewal(
+                    RuntimeInstanceId.of("runtime-1"),
+                    RuntimeState.READY,
+                    Duration.ofSeconds(30),
+                    null,                     // optional SLA snapshot
+                    currentCapacitySnapshot(),
+                    Map.of()));
+
+    // serve traffic; close() stops the heartbeat, then deregisters
+}
+```
+
+When the service ingress enforces JWT
+(`agent-service.access.jwt.enabled=true`), add `.bearerTokenSupplier(...)` —
+the token is re-read per request so rotated credentials propagate without
+rebuilding the client — and `.tenantId(...)` for the `X-Tenant-Id`
+cross-check.
+
 ## Quick start (config templates + scripts)
 
 Copy a template, fill it, and run; the env file is the only thing that differs
@@ -311,6 +373,74 @@ configuration. It sets `InMemoryCheckpointer` as the default path for local E2E
 runs. Set `SAA_SAMPLE_OPENJIUWEN_CHECKPOINTER=redis` and provide
 `SAA_SAMPLE_OPENJIUWEN_REDIS_URL` to switch the same runtime wiring to the
 openJiuwen `RedisCheckpointer` path.
+
+## Routing Sample LLM Traffic Through the Egress Gateway
+
+By default (`sample.llm.via-gateway=false`) both framework samples call the
+configured upstream LLM directly, as described above. Setting
+
+```bash
+export SAA_SAMPLE_LLM_VIA_GATEWAY=true
+```
+
+(or `sample.llm.via-gateway=true`) routes both the openJiuwen and AgentScope
+samples through the local `agent-runtime` LLM egress gateway instead. The same
+switch arms `agent-runtime.llm.gateway.enabled`, so the sample server serves
+the gateway's OpenAI-compatible surface (`POST /v1/chat/completions`) exactly
+when the sample model config points at it.
+
+What changes on the wire:
+
+- Both frameworks' `api-base` becomes `sample.llm.gateway.base-url` (default
+  `http://localhost:8080/v1` — the sample server's own gateway surface), their
+  `api-key` becomes the minted token, and their `model-name` becomes the model
+  alias. The framework code is unchanged: the token rides the existing
+  OpenAI-compatible `Authorization: Bearer ...` header and the alias rides the
+  `model` field.
+- The gateway authenticates the call by resolving the opaque minted token
+  against `agent-runtime.llm.gateway.tokens` to the (tenant, agent) identity
+  it was provisioned for — no JWT parsing, no caller-supplied identity
+  headers.
+- The gateway resolves the alias against the
+  `agent-runtime.llm.gateway.aliases` routing table; only that table knows the
+  real upstream `base-url`, `api-key`, and `upstream-model`. The upstream call
+  carries the real provider credential and real model name — raw provider URLs
+  and keys never appear in the agent-side model config on this path.
+
+The sample's routing table and minted-token directory live in
+`src/main/resources/application.yaml`:
+
+```yaml
+agent-runtime:
+  llm:
+    gateway:
+      enabled: ${sample.llm.via-gateway}
+      aliases:
+        sample-llm:
+          base-url: ${SAA_SAMPLE_OPENJIUWEN_API_BASE:http://localhost:4000/v1}
+          api-key: ${SAA_SAMPLE_LLM_API_KEY:sk-local-placeholder}
+          upstream-model: ${SAA_SAMPLE_LLM_MODEL:gpt-5.4-mini}
+      tokens:
+        saa-sample-minted-token:
+          tenant-id: sample-tenant
+          agent-id: openjiuwen-react-agent
+```
+
+The familiar upstream variables (`SAA_SAMPLE_OPENJIUWEN_API_BASE`,
+`SAA_SAMPLE_LLM_API_KEY`, `SAA_SAMPLE_LLM_MODEL`) keep configuring the real
+upstream — they move from the agent's model config to the gateway's alias
+route. On the gateway path both frameworks share the single `sample-llm`
+alias route; `SAA_SAMPLE_AGENTSCOPE_API_BASE` applies only on the direct path.
+
+Gateway-path overrides:
+
+- `SAA_SAMPLE_LLM_VIA_GATEWAY` (default `false`)
+- `SAA_SAMPLE_LLM_GATEWAY_BASE_URL` (default `http://localhost:8080/v1`; point
+  it at the actual server port if you change it)
+- `SAA_SAMPLE_LLM_GATEWAY_TOKEN` (default `saa-sample-minted-token`; must stay
+  a key of `agent-runtime.llm.gateway.tokens`)
+- `SAA_SAMPLE_LLM_GATEWAY_MODEL_ALIAS` (default `sample-llm`; must stay a key
+  of `agent-runtime.llm.gateway.aliases`)
 
 ## Install Runtime Dependencies
 
