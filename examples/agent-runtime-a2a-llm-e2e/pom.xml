@@ -55,6 +55,14 @@
       <groupId>com.huawei.ascend</groupId>
       <artifactId>springai-ascend-client</artifactId>
     </dependency>
+    <!-- Declarative ascend-agent/v1 YAML path exercised by the finance scenario
+         reference tests (src/test/java/.../scenarios). -->
+    <dependency>
+      <groupId>com.huawei.ascend</groupId>
+      <artifactId>agent-sdk</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.openjiuwen</groupId>
       <artifactId>agent-core-java</artifactId>

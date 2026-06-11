@@ -452,9 +452,10 @@ beans, so they are present in every Spring-booted runtime and replaceable by
 your own beans:
 
 ```java
-Optional<SessionMemoryStore> memory   = context.getSessionMemory();
-Optional<KnowledgeRegistry>  registry = context.getKnowledge();
-Optional<AgentMessageBus>    bus      = context.getMessageBus();
+Optional<SessionMemoryStore>    memory   = context.getSessionMemory();
+Optional<KnowledgeRegistry>     registry = context.getKnowledge();
+Optional<AgentMessageBus>       bus      = context.getMessageBus();
+Optional<BusinessFactPublisher> facts    = context.getBusinessFacts();
 ```
 
 **Session memory — `com.huawei.ascend.bus.memory`.**
@@ -479,8 +480,9 @@ session state. Business facts your agent discovers during execution
 (preferences, entity state changes, anything with business meaning) are
 **emitted to YOUR systems, never stored by the platform**: publish a
 `BusinessFactEvent(tenantId, sessionId, runId, factType, payload,
-placeholdersPreserved, occurredAt)` through the `BusinessFactPublisher` SPI and
-decide on your side whether to accept, transform, store or discard it. The
+placeholdersPreserved, occurredAt)` through the `BusinessFactPublisher` SPI
+(reached from a handler via `context.getBusinessFacts()`) and decide on your
+side whether to accept, transform, store or discard it. The
 in-repo `RecordingBusinessFactPublisher` is a bounded test/example log whose
 `drain()` hands facts over exactly once — a real deployment plugs a bridge to
 your systems behind the SPI. The platform does not claim factual authority,

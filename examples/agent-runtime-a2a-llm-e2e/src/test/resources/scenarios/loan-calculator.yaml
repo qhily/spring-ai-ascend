@@ -1,0 +1,43 @@
+# Loan calculator: a YAML-defined single agent exposing a Java amortization
+# calculator as a file:Class#method tool with a JSON-Schema input contract.
+# The test materializes this template, replacing @SUFFIX@ (unique per run:
+# agent/tool names are global registry keys).
+schema: ascend-agent/v1
+name: loanCalculator@SUFFIX@
+displayName: Loan Calculator
+description: Computes fixed-rate annuity repayment plans for retail loans.
+framework:
+  type: openjiuwen
+  agent: react
+  options:
+    # Deterministic execute mode: invokes the resolved tools without calling a model.
+    executeMode: sdk-proof
+model:
+  provider: openai-compatible
+  name: offline-fixture-model
+  baseUrl: http://127.0.0.1:1
+  apiKey: fixture-key-never-used
+prompt:
+  system: You compute loan repayment plans with the amortization tool.
+tools:
+  - name: loanAmortization@SUFFIX@
+    description: Compute the monthly annuity payment and totals for a fixed-rate loan.
+    inputSchema:
+      type: object
+      required:
+        - principal
+        - annualRatePercent
+        - termMonths
+      properties:
+        principal:
+          type: number
+          minimum: 1
+        annualRatePercent:
+          type: number
+          minimum: 0
+        termMonths:
+          type: integer
+          minimum: 1
+    outputSchema:
+      type: object
+    ref: file:com.huawei.ascend.examples.a2a.scenarios.LoanAmortizationCalculator#calculate

@@ -1,0 +1,31 @@
+# FX rate desk: a YAML-defined single agent whose only tool is the bank's
+# spot-rate HTTP service. The test materializes this template, replacing
+# @SUFFIX@ (unique per run: agent/tool names are global registry keys) and
+# @STUB_BASE_URL@ (the test-local stub exchange-rate service).
+schema: ascend-agent/v1
+name: fxRateDesk@SUFFIX@
+displayName: FX Rate Desk
+description: Answers spot foreign-exchange rate questions from the bank's published rate service.
+framework:
+  type: openjiuwen
+  agent: react
+  options:
+    # Deterministic execute mode: invokes the resolved tools without calling a model.
+    executeMode: sdk-proof
+model:
+  provider: openai-compatible
+  name: offline-fixture-model
+  baseUrl: http://127.0.0.1:1
+  apiKey: fixture-key-never-used
+prompt:
+  system: You are the FX rate desk. Use the spot-rate tool to answer currency questions.
+tools:
+  - name: fxSpotRate@SUFFIX@
+    description: Look up the bank's published spot exchange rate for a currency pair.
+    inputSchema:
+      type: object
+    ref:
+      type: http
+      url: "@STUB_BASE_URL@/rates"
+      method: GET
+      timeout: 10s
