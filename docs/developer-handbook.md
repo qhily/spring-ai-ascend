@@ -24,18 +24,46 @@ one A2A (Agent-to-Agent protocol) surface, a serviceization facade that fronts
 fleets of runtimes, client SDKs for calling hosted agents, and an LLM egress
 gateway so agents never hold provider credentials.
 
-### The 8-module reactor
+### Where you stand: four conceptual planes
 
-| Module | Kind | One-line role |
-|---|---|---|
-| `agent-runtime` | domain | Run-owning runtime SDK: framework-neutral engine SPI, Run lifecycle, A2A ingress, LLM egress gateway, bootable app |
-| `agent-bus` | domain | Bus & State Hub plane: design-frozen `bus.spi.*` contracts plus the live capability surfaces `bus.memory` / `bus.knowledge` / `bus.messaging` |
-| `agent-sdk` | domain | Declarative agent definition SDK: `ascend-agent/v1` YAML → runnable handler |
-| `agent-service` | domain | Spring-free serviceization facade: registration / discovery / route-grant SPIs + in-memory references + byte-level A2A forwarder |
-| `agent-service-starter` | starter | Spring Boot edge for `agent-service`: auto-configured HTTP controllers + JWT tenant cross-check filter |
-| `springai-ascend-client` | sdk | Java A2A client SDK for external applications (Spring-free) |
-| `springai-ascend-client-kotlin` | sdk | Kotlin coroutine/DSL idiom layer over the Java client |
-| `spring-ai-ascend-dependencies` | bom | Bill of Materials pinning all consumable modules and OSS transitives |
+The Maven artifacts are NOT the architecture — they are its build-level
+projection. Conceptually the platform has four planes, and which plane you
+work on decides what you depend on:
+
+1. **Hosting plane — what runs your agents.** One module: `agent-runtime`
+   (the runtime host: engine SPI, Run lifecycle, A2A ingress, LLM egress
+   gateway, bootable app). The bus capability surfaces your agents consume
+   at execution time — session memory, the knowledge seam, in-process
+   messaging — live in `agent-bus` but reach you THROUGH the runtime's
+   execution context; you never depend on `agent-bus` directly.
+2. **Authoring plane — what you write agents with.** `agent-sdk`: the
+   declarative `ascend-agent/v1` YAML path. Optional — handlers can be plain
+   Java against the engine SPI instead.
+3. **Fleet plane — what fronts many runtimes.** `agent-service` (the
+   Spring-free facade: registry, directory, route grants) plus
+   `agent-service-starter` (its only Spring-aware layer: HTTP controllers +
+   JWT ingress filter). One concept, deliberately split so the facade core
+   stays framework-free.
+4. **Caller plane — what other applications embed.** `springai-ascend-client`
+   (Java A2A client, depends on no platform server module) plus
+   `springai-ascend-client-kotlin` (idiom layer delegating every call to the
+   Java facade). One concept in two languages.
+
+`spring-ai-ascend-dependencies` belongs to no plane — it is the BOM, a
+versioning artifact that pins everything above.
+
+### The build-level mapping: 8 reactor modules
+
+| Plane | Module | Kind | One-line role |
+|---|---|---|---|
+| Hosting | `agent-runtime` | domain | Run-owning runtime SDK: framework-neutral engine SPI, Run lifecycle, A2A ingress, LLM egress gateway, bootable app |
+| Hosting (via runtime) | `agent-bus` | domain | Bus & State Hub plane: live capability surfaces `bus.memory` / `bus.knowledge` / `bus.messaging` (+ design-frozen `bus.spi.*` contracts) |
+| Authoring | `agent-sdk` | domain | Declarative agent definition SDK: `ascend-agent/v1` YAML → runnable handler |
+| Fleet | `agent-service` | domain | Spring-free serviceization facade: registration / discovery / route-grant SPIs + in-memory references + byte-level A2A forwarder |
+| Fleet | `agent-service-starter` | starter | Spring Boot edge for `agent-service`: auto-configured HTTP controllers + JWT tenant cross-check filter |
+| Caller | `springai-ascend-client` | sdk | Java A2A client SDK for external applications (Spring-free) |
+| Caller | `springai-ascend-client-kotlin` | sdk | Kotlin coroutine/DSL idiom layer over the Java client |
+| — | `spring-ai-ascend-dependencies` | bom | Bill of Materials pinning all consumable modules and OSS transitives |
 
 Module by module (verified from each `module-metadata.yaml` and pom):
 
