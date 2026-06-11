@@ -91,22 +91,38 @@ public class RuntimeAutoConfiguration {
     public A2aServerExecutor a2aServerExecutor() { return new A2aServerExecutor(); }
 
     @Bean @ConditionalOnMissingBean
+    public RuntimeReadiness runtimeReadiness() { return new RuntimeReadiness(); }
+
+    @Bean @ConditionalOnMissingBean
+    public AgentRuntimeLifecycle agentRuntimeLifecycle(ObjectProvider<AgentRuntimeHandler> handlers,
+            RuntimeReadiness readiness) {
+        return new AgentRuntimeLifecycle(handlers.orderedStream().toList(), readiness);
+    }
+
+    @Bean @ConditionalOnMissingBean
+    public AgentRuntimeHealthIndicator agentRuntimeHealthIndicator(ObjectProvider<AgentRuntimeHandler> handlers,
+            RuntimeReadiness readiness) {
+        return new AgentRuntimeHealthIndicator(handlers.orderedStream().toList(), readiness);
+    }
+
+    @Bean @ConditionalOnMissingBean
     public AgentExecutor a2aAgentExecutor(ObjectProvider<AgentRuntimeHandler> handlers,
-            ObjectProvider<A2aAgentExecutor.RemoteSupport> remoteSupport) {
+            ObjectProvider<A2aAgentExecutor.RemoteSupport> remoteSupport,
+            RuntimeReadiness readiness) {
         var registered = handlers.orderedStream().toList();
         A2aAgentExecutor.RemoteSupport support = remoteSupport.getIfAvailable();
         if (registered.isEmpty()) {
             // Tolerated so the A2A surface can boot for card discovery; every
             // execution will be rejected until a handler bean is registered.
             log.warn("No AgentRuntimeHandler registered - A2A executions will be rejected");
-            return new A2aAgentExecutor(null, support);
+            return new A2aAgentExecutor(null, support, readiness::isReady);
         }
         if (registered.size() > 1) {
             log.warn("Multiple AgentRuntimeHandlers registered; using '{}', ignoring {}",
                     registered.get(0).agentId(),
                     registered.stream().skip(1).map(AgentRuntimeHandler::agentId).toList());
         }
-        return new A2aAgentExecutor(registered.get(0), support);
+        return new A2aAgentExecutor(registered.get(0), support, readiness::isReady);
     }
 
     @Bean @ConditionalOnMissingBean
@@ -186,6 +202,7 @@ public class RuntimeAutoConfiguration {
      */
     public static final class A2aServerExecutor implements AutoCloseable {
         private static final AtomicInteger THREAD_SEQ = new AtomicInteger();
+        private static final java.time.Duration DRAIN_GRACE = java.time.Duration.ofSeconds(10);
         private final ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
             Thread thread = new Thread(runnable, "a2a-server-" + THREAD_SEQ.incrementAndGet());
             thread.setDaemon(true);
@@ -195,7 +212,20 @@ public class RuntimeAutoConfiguration {
         public ExecutorService executor() { return executor; }
 
         @Override
-        public void close() { executor.shutdownNow(); }
+        public void close() {
+            // Drain, don't interrupt: dispatch upstream has already stopped, so
+            // in-flight executions get a grace window to finish before the
+            // force-stop fallback.
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(DRAIN_GRACE.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public static final class RemoteAgentCatalogRefresher implements SmartLifecycle {

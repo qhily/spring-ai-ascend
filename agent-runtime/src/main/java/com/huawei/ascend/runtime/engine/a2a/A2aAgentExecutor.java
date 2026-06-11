@@ -10,7 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
 import org.a2aproject.sdk.server.agentexecution.RequestContext;
@@ -38,15 +40,30 @@ public final class A2aAgentExecutor implements AgentExecutor {
 
     private final AgentRuntimeHandler handler;
     private final RemoteSupport remoteSupport;
+    private final BooleanSupplier readiness;
     private final A2aParentTaskProjector parentProjector = new A2aParentTaskProjector();
+    private final ConcurrentHashMap<String, InFlightExecution> inFlight = new ConcurrentHashMap<>();
 
     public A2aAgentExecutor(AgentRuntimeHandler handler) {
-        this(handler, null);
+        this(handler, null, () -> true);
     }
 
     public A2aAgentExecutor(AgentRuntimeHandler handler, RemoteSupport remoteSupport) {
+        this(handler, remoteSupport, () -> true);
+    }
+
+    public A2aAgentExecutor(AgentRuntimeHandler handler, BooleanSupplier readiness) {
+        this(handler, null, readiness);
+    }
+
+    public A2aAgentExecutor(AgentRuntimeHandler handler, RemoteSupport remoteSupport, BooleanSupplier readiness) {
         this.handler = handler;
         this.remoteSupport = remoteSupport;
+        this.readiness = Objects.requireNonNull(readiness, "readiness");
+    }
+
+    /** Cancel state for one in-flight execution: the handler's raw stream plus a torn-down marker. */
+    private record InFlightExecution(Stream<?> rawStream, AtomicBoolean cancelled) {
     }
 
     @Override
@@ -56,6 +73,16 @@ public final class A2aAgentExecutor implements AgentExecutor {
             LOG.warn("[A2A] no handler registered taskId={}", taskId);
             emitter.reject(failureMessage(emitter, "NO_HANDLER",
                     "no agent handler registered for this task", false));
+            LOG.info("[A2A] task state=REJECTED taskId={}", taskId);
+            return;
+        }
+        if (!readiness.getAsBoolean()) {
+            // Boot has not finished or a drain is in progress: the handler may be
+            // mid start/stop, so executing now could run against half-open
+            // resources. Retryable - the client may try again once ready.
+            LOG.warn("[A2A] runtime not ready taskId={}", taskId);
+            emitter.reject(failureMessage(emitter, "RUNTIME_NOT_READY",
+                    "runtime is not accepting executions", true));
             LOG.info("[A2A] task state=REJECTED taskId={}", taskId);
             return;
         }
@@ -72,28 +99,41 @@ public final class A2aAgentExecutor implements AgentExecutor {
         AtomicBoolean firstArtifact = new AtomicBoolean(true);
         String artifactId = taskId + "-response";
 
+        // Everything after startWork must fail the task on error - context
+        // construction throws on wire-controllable input (blank/null ids), and
+        // an escape here would strand the task in WORKING forever.
+        AtomicBoolean cancelled = new AtomicBoolean(false);
         try {
             String inputText = extractText(ctx);
             LOG.info("[A2A] input parsed taskId={} textChars={}", taskId, inputText.length());
 
             if (parentProjector.isRemoteContinuation(ctx)) {
-                handleRemoteContinuation(ctx, emitter, taskId, artifactId, firstArtifact);
+                handleRemoteContinuation(ctx, emitter, taskId, artifactId, firstArtifact, cancelled);
                 LOG.info("[A2A] execute finish taskId={} durationMs={}",
                         taskId, (System.nanoTime() - startedNanos) / 1_000_000L);
                 return;
             }
 
             AgentExecutionContext context = toExecutionContext(ctx, inputText);
-            RouteDecision decision = consumeHandler(context, emitter, taskId, artifactId, firstArtifact, true);
+            RouteDecision decision = consumeHandler(context, emitter, taskId, artifactId, firstArtifact, true, cancelled);
             if (decision.remoteInvocation() != null) {
-                handleRemoteInvocation(ctx, decision.remoteInvocation(), emitter, taskId, artifactId, firstArtifact);
+                handleRemoteInvocation(ctx, decision.remoteInvocation(), emitter, taskId, artifactId,
+                        firstArtifact, cancelled);
             } else if (!decision.terminalRouted()) {
                 completeDrainedStream(taskId, emitter);
             }
+
             LOG.info("[A2A] execute finish taskId={} durationMs={}",
                     taskId, (System.nanoTime() - startedNanos) / 1_000_000L);
 
         } catch (Exception e) {
+            if (cancelled.get()) {
+                // The cancel path already moved the task to CANCELED and tore the
+                // stream down; reporting the teardown as a failure would fight the
+                // terminal state the client just observed.
+                LOG.info("[A2A] execute torn down by cancel taskId={}", taskId);
+                return;
+            }
             RuntimeErrorCode code = RuntimeErrorCode.classify(e);
             String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             LOG.error("[A2A] execute failed taskId={} code={} errorClass={} message={}",
@@ -107,6 +147,17 @@ public final class A2aAgentExecutor implements AgentExecutor {
     public void cancel(RequestContext ctx, AgentEmitter emitter) {
         String taskId = ctx.getTaskId();
         LOG.info("[A2A] cancel requested taskId={}", taskId);
+        InFlightExecution execution = inFlight.get(taskId);
+        if (execution != null) {
+            execution.cancelled().set(true);
+        }
+        if (handler != null) {
+            try {
+                handler.cancel(taskId);
+            } catch (RuntimeException e) {
+                LOG.warn("[A2A] handler cancel failed taskId={} message={}", taskId, e.getMessage(), e);
+            }
+        }
         try {
             emitter.cancel();
             if (remoteSupport != null && parentProjector.isRemoteContinuation(ctx)) {
@@ -123,12 +174,21 @@ public final class A2aAgentExecutor implements AgentExecutor {
         } catch (Exception e) {
             LOG.error("[A2A] cancel failed taskId={} message={}", taskId, e.getMessage(), e);
         }
+        if (execution != null) {
+            // Tear the transport down last so the CANCELED state has already
+            // landed when the execute thread observes the closed stream.
+            execution.rawStream().close();
+        }
     }
 
     private RouteDecision consumeHandler(AgentExecutionContext context, AgentEmitter emitter, String taskId,
-            String artifactId, AtomicBoolean firstArtifact, boolean remoteInvocationAllowed) {
+            String artifactId, AtomicBoolean firstArtifact, boolean remoteInvocationAllowed,
+            AtomicBoolean cancelled) {
+        InFlightExecution execution = null;
         try (Stream<?> raw = executeAgent(context);
              Stream<AgentExecutionResult> results = handler.resultAdapter().adapt(raw)) {
+            execution = new InFlightExecution(raw, cancelled);
+            inFlight.put(taskId, execution);
             Iterator<AgentExecutionResult> iterator = results.iterator();
             while (iterator.hasNext()) {
                 AgentExecutionResult result = iterator.next();
@@ -142,6 +202,15 @@ public final class A2aAgentExecutor implements AgentExecutor {
                 }
             }
             return RouteDecision.drained();
+        } catch (RuntimeException e) {
+            if (cancelled.get()) {
+                return RouteDecision.terminal();
+            }
+            throw e;
+        } finally {
+            if (execution != null) {
+                inFlight.remove(taskId, execution);
+            }
         }
     }
 
@@ -204,7 +273,7 @@ public final class A2aAgentExecutor implements AgentExecutor {
 
     private void handleRemoteInvocation(RequestContext requestContext,
             AgentExecutionResult.RemoteInvocation invocation, AgentEmitter emitter, String taskId,
-            String artifactId, AtomicBoolean firstArtifact) {
+            String artifactId, AtomicBoolean firstArtifact, AtomicBoolean cancelled) {
         if (remoteSupport == null) {
             emitter.fail(failureMessage(emitter, "REMOTE_NOT_CONFIGURED",
                     "remote A2A invocation is not configured", false));
@@ -213,11 +282,12 @@ public final class A2aAgentExecutor implements AgentExecutor {
         List<RemoteAgentInvocationService.RemoteAgentResult> results =
                 remoteSupport.invocationService.invoke(invocation,
                         result -> parentProjector.projectRemoteProgress(result, emitter));
-        handleRemoteResults(requestContext, invocation, results, emitter, taskId, artifactId, firstArtifact);
+        handleRemoteResults(requestContext, invocation, results, emitter, taskId, artifactId, firstArtifact,
+                cancelled);
     }
 
     private void handleRemoteContinuation(RequestContext ctx, AgentEmitter emitter, String taskId,
-            String artifactId, AtomicBoolean firstArtifact) {
+            String artifactId, AtomicBoolean firstArtifact, AtomicBoolean cancelled) {
         if (remoteSupport == null) {
             emitter.fail(failureMessage(emitter, "REMOTE_NOT_CONFIGURED",
                     "remote A2A invocation is not configured", false));
@@ -234,12 +304,12 @@ public final class A2aAgentExecutor implements AgentExecutor {
                 remoteSupport.invocationService.resumeRemoteInput(route, extractText(ctx),
                         result -> parentProjector.projectRemoteProgress(result, emitter));
         AgentExecutionResult.RemoteInvocation invocation = parentProjector.remoteInvocation(route);
-        handleRemoteResults(ctx, invocation, results, emitter, taskId, artifactId, firstArtifact);
+        handleRemoteResults(ctx, invocation, results, emitter, taskId, artifactId, firstArtifact, cancelled);
     }
 
     private void handleRemoteResults(RequestContext requestContext, AgentExecutionResult.RemoteInvocation invocation,
             List<RemoteAgentInvocationService.RemoteAgentResult> results, AgentEmitter emitter, String taskId,
-            String artifactId, AtomicBoolean firstArtifact) {
+            String artifactId, AtomicBoolean firstArtifact, AtomicBoolean cancelled) {
         A2aParentTaskProjector.RemoteOutcome outcome =
                 parentProjector.projectRemoteOutcome(invocation, results, emitter);
         if (outcome.waitingForRemoteInput()) {
@@ -247,7 +317,8 @@ public final class A2aAgentExecutor implements AgentExecutor {
         }
         AgentExecutionContext resumeContext =
                 parentProjector.remoteResumeContext(requestContext, handler.agentId(), invocation, outcome.toolResult());
-        RouteDecision decision = consumeHandler(resumeContext, emitter, taskId, artifactId, firstArtifact, false);
+        RouteDecision decision = consumeHandler(resumeContext, emitter, taskId, artifactId, firstArtifact, false,
+                cancelled);
         if (!decision.terminalRouted()) {
             completeDrainedStream(taskId, emitter);
         }
