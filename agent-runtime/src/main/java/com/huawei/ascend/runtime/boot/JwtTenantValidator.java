@@ -11,12 +11,16 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Minimal HS256 JWT validation for the W1 tenant cross-check (ADR-0040):
- * verifies the signature against a shared secret, rejects expired tokens,
- * and extracts the {@code tenant_id} claim. Deliberately JDK+Jackson only —
- * asymmetric algorithms arrive with the platform key infrastructure.
+ * The platform's JWT tenant cross-check primitive (ADR-0040): minimal HS256
+ * validation that verifies the signature against a shared secret, rejects
+ * expired tokens, and extracts the {@code tenant_id} claim. Reused by every
+ * tenant-attributing edge — the runtime's A2A filter here in boot and the
+ * serviceization (agent-service) ingress edges — so the cross-check semantics
+ * stay pinned by one validator and one set of security tests. Deliberately
+ * JDK+Jackson only — asymmetric algorithms arrive with the platform key
+ * infrastructure.
  */
-final class JwtTenantValidator {
+public final class JwtTenantValidator {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Base64.Decoder URL_DECODER = Base64.getUrlDecoder();
@@ -24,7 +28,7 @@ final class JwtTenantValidator {
     private final byte[] secret;
     private final long clockSkewSeconds;
 
-    JwtTenantValidator(String hmacSecret, long clockSkewSeconds) {
+    public JwtTenantValidator(String hmacSecret, long clockSkewSeconds) {
         if (hmacSecret == null || hmacSecret.isBlank()) {
             throw new IllegalArgumentException("jwt hmac secret must not be blank when jwt auth is enabled");
         }
@@ -33,17 +37,17 @@ final class JwtTenantValidator {
     }
 
     /** The validated tenant_id claim. */
-    record ValidatedToken(String tenantId) {
+    public record ValidatedToken(String tenantId) {
     }
 
     /** Thrown for every rejection; the message is safe to surface to the client. */
-    static final class InvalidTokenException extends RuntimeException {
-        InvalidTokenException(String message) {
+    public static final class InvalidTokenException extends RuntimeException {
+        public InvalidTokenException(String message) {
             super(message);
         }
     }
 
-    ValidatedToken validate(String token) {
+    public ValidatedToken validate(String token) {
         String[] parts = token.split("\\.");
         if (parts.length != 3) {
             throw new InvalidTokenException("token is not a JWS compact serialization");

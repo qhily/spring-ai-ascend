@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  agent-service: enterprise serviceization facade skeleton.
+  agent-service: enterprise serviceization facade.
 
-  The runtime SDK lives in agent-runtime. This module is a deliberately minimal
-  serviceization skeleton for future runtime-facing service contracts. Gateway
-  facade examples live under examples/agent-runtime-a2a-llm-e2e until a dedicated service
-  module decision is made.
+  The runtime SDK lives in agent-runtime. This module carries the Spring-free
+  registration/discovery/routing SPI (com.huawei.ascend.service.spi.*) plus
+  in-memory reference implementations and the byte-level A2A forwarder
+  (com.huawei.ascend.service.core). HTTP and DI edges compose around the module
+  from outside; nothing in main scope depends on Spring.
 
   ADR-0159 has been archived and is not normative authority for this module.
 -->
@@ -22,10 +23,10 @@
 
   <artifactId>agent-service</artifactId>
   <name>agent-service</name>
-  <description>Enterprise serviceization facade skeleton for future runtime-facing service contracts.</description>
+  <description>Enterprise serviceization facade: Spring-free registration/discovery/routing SPI with in-memory reference implementations.</description>
 
   <dependencies>
-    <!-- The future facade drives the runtime; dependency direction is service -> runtime. -->
+    <!-- The facade drives the runtime; dependency direction is service -> runtime. -->
     <dependency>
       <groupId>com.huawei.ascend</groupId>
       <artifactId>agent-runtime</artifactId>

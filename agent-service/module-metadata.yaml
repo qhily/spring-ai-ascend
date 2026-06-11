@@ -1,19 +1,20 @@
 # Module metadata for agent-service.
 # Required by CLAUDE.md Rule R-C sub-clause .b (Independent Module Evolution).
 # ADR-0159 has been archived and is not normative authority for this module.
-# Gateway facade examples live under examples/agent-runtime-a2a-llm-e2e until a dedicated
-# service module decision is made.
 # Enforced by gate rule module_metadata_present_and_complete.
 
 module: agent-service
 kind: domain
 version: 0.1.0-SNAPSHOT
 semver_compatibility: 0.x
-description: "Enterprise serviceization facade skeleton. Runtime-facing service contracts are reserved here; Gateway facade examples live under examples/agent-runtime-a2a-llm-e2e."
+description: "Enterprise serviceization facade: Spring-free registration/discovery/routing SPI (RuntimeRegistry lease/TTL state, tenant-scoped AgentDirectory, HMAC-signed RouteGrantService) with in-memory reference implementations and a byte-level A2A pass-through forwarder in service.core. HTTP/DI edges stay outside the module (example edge under examples/agent-runtime-a2a-llm-e2e)."
 architecture_doc: architecture/docs/L1/agent-service/README.md
 dfx_doc: docs/dfx/agent-service.yaml
 spi_packages:
-  - com.huawei.ascend.service.spi   # placeholder namespace for future serviceization SPIs
+  - com.huawei.ascend.service.spi             # shared error vocabulary for the three seams
+  - com.huawei.ascend.service.spi.registry    # runtime registration + lease/TTL state
+  - com.huawei.ascend.service.spi.discovery   # tenant-scoped agent cards + route resolution
+  - com.huawei.ascend.service.spi.routing     # HMAC-signed route grants
 allowed_dependencies:
   - agent-runtime    # framework-neutral engine SPI (engine.spi.AgentRuntimeHandler / StreamAdapter)
   - agent-bus                 # neutral bus.spi.engine + bus.spi.s2c SPIs
