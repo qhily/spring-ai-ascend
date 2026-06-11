@@ -51,7 +51,7 @@ workspace "Spring AI Ascend" "Architecture authority workspace (W8 — Structuri
                 }
             }
 
-            agentBus = container "agent-bus" "Bus & State Hub plane — ingress + s2c + three-track channel isolation" "Java 21 / Maven" "SAA Module" {
+            agentBus = container "agent-bus" "Bus & State Hub plane — s2c + three-track channel isolation (planned ingress superseded by ADR-0161)" "Java 21 / Maven" "SAA Module" {
                 properties {
                     "saa.id" "MOD-AGENT-BUS"
                     "saa.kind" "module"

@@ -74,7 +74,7 @@ The platform targets two distinct audiences in W0–W2 + W3+ sequence; the activ
 
 **Target architecture (W1–W4).** The W1–W4 product accepts authenticated tenant HTTP requests, drives LLMs through a tool-calling loop with audit-grade evidence, and persists durable side effects through an idempotent outbox. Built on Spring Boot 4.0.5 + Java 21.
 
-**W0 shipped subset.** What runs at the current release: the `agent-runtime` library — A2A access (`A2aJsonRpcController` + the well-known agent-card endpoint + the egress output registry), the framework-neutral engine (`engine.spi.AgentRuntimeHandler` + `StreamAdapter`, `EngineDispatcher` + `AgentRuntimeHandlerRegistry`, openJiuwen ReAct adapter), task-centric `control` (the single write authority), `session` (`RuntimeSessionRepository`), the internal event queue, and the pure-Java `app.RuntimeApp` entry — exercised end-to-end by `examples/agent-runtime-a2a-llm-e2e` (real-LLM A2A run). `agent-bus` ships the neutral SPI surfaces (`bus.spi.engine`: `Orchestrator` / `SuspendSignal` / `Checkpointer` / `RunContext` / `RunMode` / `ExecutorDefinition`; `bus.spi.ingress`; `bus.spi.s2c`). The Run domain kernel, LLM gateway, tool registry, outbox publisher, durable Postgres checkpointer, ActionGuard, and Temporal workflow implementations are staged as W1–W4 design contracts (see `§5` + `docs/governance/architecture-status.yaml`); they are not present as half-built runtime paths.
+**W0 shipped subset.** What runs at the current release: the `agent-runtime` library — A2A access (`A2aJsonRpcController` + the well-known agent-card endpoint + the egress output registry), the framework-neutral engine (`engine.spi.AgentRuntimeHandler` + `StreamAdapter`, `EngineDispatcher` + `AgentRuntimeHandlerRegistry`, openJiuwen ReAct adapter), task-centric `control` (the single write authority), `session` (`RuntimeSessionRepository`), the internal event queue, and the pure-Java `app.RuntimeApp` entry — exercised end-to-end by `examples/agent-runtime-a2a-llm-e2e` (real-LLM A2A run). `agent-bus` ships the neutral SPI surfaces (`bus.spi.engine`: `Orchestrator` / `SuspendSignal` / `Checkpointer` / `RunContext` / `RunMode` / `ExecutorDefinition`; `bus.spi.s2c`). The Run domain kernel, LLM gateway, tool registry, outbox publisher, durable Postgres checkpointer, ActionGuard, and Temporal workflow implementations are staged as W1–W4 design contracts (see `§5` + `docs/governance/architecture-status.yaml`); they are not present as half-built runtime paths.
 
 **Not in scope:** admin UI, LangChain4j dispatch, Python sidecars (out-of-process IPC), multi-region replication, on-device models. In-process polyglot (GraalVM Polyglot embedded in the JVM) is a W3-optional sandbox impl per ADR-0018 — it is not a sidecar. See `docs/governance/architecture-status.yaml` (per-capability deferral ledger) and `docs/governance/escalations.md` (legacy rules awaiting human review) for deferred items.
 
@@ -145,10 +145,10 @@ enterprise serviceization façade. Module count is unchanged —
   to agent-bus, and `agent-runtime` consumes it directly (the engine runs in-process
   behind `EngineDispatcher`; the former `InProcessEnginePort` realization was retired
   by the pure rebuild) while owning the full run-owning runtime SDK (ADR-0159).
-- The 3 S2C transport types into **agent-bus** under `com.huawei.ascend.bus.spi.s2c` —
-  pairing with the **new** `IngressGateway` SPI in `com.huawei.ascend.bus.spi.ingress`
-  (**ADR-0089**, 2026-05-20) so the Bus & State Hub plane owns the entirety of
-  cross-plane traffic in both directions (C2S and S2C).
+- The 3 S2C transport types into **agent-bus** under `com.huawei.ascend.bus.spi.s2c`.
+  The planned `IngressGateway` SPI (`bus.spi.ingress`, ADR-0089) was never
+  created; ADR-0161 supersedes it — client-to-platform fronting is owned by the
+  agent-service serviceization SPI, and S2C remains the bus plane's surface.
 
 After ADR-0159 `agent-service` carries no runtime internals; the former
 `service.runtime -> service.platform` sub-package invariant (Rule R-C.e) is now
@@ -159,7 +159,7 @@ satisfied vacuously, and the runtime↔façade boundary is the Maven-module edge
 |--------|-------------|-----------|----------------|
 | `agent-runtime` | compute_control | AgentRuntime | run-owning runtime SDK (ADR-0159) — framework-neutral engine (`engine.spi.AgentRuntimeHandler` + `StreamAdapter`; `EngineDispatcher` + `AgentRuntimeHandlerRegistry`) + access (`runtime.access`, A2A) + session + task-centric control + internal queue + pure-Java entry `app.RuntimeApp` / `LocalA2aRuntimeHost`; consumes the neutral `bus.spi.engine` boundary. Ships as a library; Run domain kernel is a design target, impl deferred |
 | `agent-service` | compute_control | AgentService | serviceization façade skeleton (ADR-0159) — enterprise serviceization layer that will drive `agent-runtime`-hosted Agent instances via registration/discovery (deferred; single placeholder SPI today); all runtime internals relocated to `agent-runtime` |
-| `agent-bus` | bus_state | AgentBus | active SPI surfaces — `bus.spi.ingress` (IngressGateway per ADR-0089) + `bus.spi.s2c` (S2cCallbackTransport per ADR-0088) + `bus.spi.engine` (neutral EnginePort + orchestration SPI: RunMode + Checkpointer + Orchestrator + RunContext + SuspendSignal + TraceContext + ExecutorDefinition + ExecutionContext per ADR-0158). Workflow primitives + W2 channel impls per ADR-0050 |
+| `agent-bus` | bus_state | AgentBus | SPI surfaces — `bus.spi.s2c` (S2cCallbackTransport per ADR-0088) + `bus.spi.engine` (neutral EnginePort + orchestration SPI: RunMode + Checkpointer + Orchestrator + RunContext + SuspendSignal + TraceContext + ExecutorDefinition + ExecutionContext per ADR-0158); both design-frozen pending implementations (see docs/logs/plans/2026-06-11-agent-bus-spi-decision.md). The planned `bus.spi.ingress` was superseded by ADR-0161. Workflow primitives + W2 channel impls per ADR-0050 |
 | `spring-ai-ascend-dependencies` | none | platform | shipped (BoM) |
 
 (The historical `agent-client` / `agent-middleware` / `agent-evolve` / `spring-ai-ascend-graphmemory-starter` modules are retired or never materialized and are NOT in the reactor.)
@@ -180,10 +180,8 @@ spring-ai-ascend/
   agent-bus/                                   # Bus & State Hub plane — cross-plane control surfaces in BOTH directions (bus_state plane; ADR-0050 + ADR-0088 + ADR-0089)
     pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-bus.yaml
     src/main/java/com/huawei/ascend/bus/spi/
-      ingress/                                 # NEW 2026-05-20 per ADR-0089: client-to-server ingress SPI
-        IngressGateway.java                    # the cross-plane C2S control surface; consumed by edge plane (agent-client) at W3+
-        IngressEnvelope.java                   # 6-required-field request shape (Rule R-C.c tenant scope)
-        IngressResponse.java                   # 4-field response carrying Task Cursor (Rule R-F) on ACCEPTED RUN_CREATE
+      # (the planned ingress/ subtree of ADR-0089 was never materialized; superseded by ADR-0161 —
+      #  client-to-platform fronting is owned by the agent-service serviceization SPI)
       s2c/                                     # NEW 2026-05-20 per ADR-0088 (relocated from agent-runtime-core): server-to-client S2C SPI
         S2cCallbackTransport.java              # transport interface (ADR-0074)
         S2cCallbackEnvelope.java               # 6-required-field S2C request shape
@@ -244,7 +242,7 @@ agent-runtime ───►  agent-bus (for the neutral bus.spi.engine RunContext
                               + access (A2A) + session + task-centric control + app.RuntimeApp]
 
 agent-bus  ──────────────►  [externals only — pure-Java SPI;
-                              owns ingress + s2c + neutral engine surfaces]
+                              owns s2c + neutral engine surfaces]
 ```
 
 The original pre-Phase-C `agent-runtime → agent-platform` Maven dependency was
@@ -343,7 +341,7 @@ repo-wide.
    Glue LOC target ≤ 1 500 at W0 close.
 
 7. **SPI purity**: new SPI surfaces default to strict package purity. The current
-   SPI homes are `com.huawei.ascend.bus.spi..` (neutral engine / ingress / s2c) and
+   SPI homes are `com.huawei.ascend.bus.spi..` (neutral engine / s2c) and
    `com.huawei.ascend.runtime.engine.spi..` (`AgentRuntimeHandler` / `StreamAdapter`);
    they import only `java.*` plus same-package sibling carriers. Cross-SPI dependency
    is not an allowed escape hatch; adapter layers translate between packages.

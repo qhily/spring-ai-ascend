@@ -1,6 +1,11 @@
 ---
 date: 2026-06-11
-status: proposal-awaiting-owner-review
+status: approved
+approved_by: owner (2026-06-11)
+owner_answers:
+  - "Q1 (Spring edge): agent-service runs in a Java/Spring environment, but by design principle the module stays INDEPENDENT of Spring — the SPI core is Spring-free; the Spring edge lives outside the module (separate starter)."
+  - "Q2 (validator): take the recommended option — extract JwtTenantValidator from runtime.boot for reuse; the small agent-runtime refactor is accepted."
+  - "Q3 (ingress freeze scope): immediately — the superseding ADR takes bus.spi.ingress out of the agent-bus freeze scope now, no waiting for the W2 gate."
 scope: agent-service registration/discovery serviceization SPI
 relates_to:
   - docs/logs/plans/2026-06-11-agent-bus-spi-decision.md

@@ -1,0 +1,61 @@
+id: ADR-0161
+title: "agent-service serviceization — promote example-proven registry/directory/route-grant seams to SPI; bus.spi.ingress superseded"
+status: accepted
+date: 2026-06-11
+level: L1
+view: development
+affects_level: L1
+affects_view: [logical, development]
+authors:
+  - owner (decision)
+  - claude (proposal + drafting)
+relates_to:
+  - ADR-0089    # IngressGateway/bus.spi.ingress — SUPERSEDED by this ADR: the package was never created; serviceization owns C2S fronting
+  - ADR-0158    # EnginePort boundary — unchanged; engine surface stays frozen per the agent-bus freeze decision
+context: |
+  agent-service has been an intentional skeleton (one package-info) since the
+  runtime consolidation. Meanwhile the live example module prototyped and
+  test-proved the serviceization seams: a runtime registry with lease/TTL
+  state, agent-card directory resolution, and HMAC-signed route grants
+  (examples/agent-runtime-a2a-llm-e2e .../a2a/gateway/). Separately,
+  bus.spi.ingress (IngressGateway, ADR-0089) was documented as an active
+  agent-bus surface but the package never existed in the repository — a
+  documented-but-absent SPI of the same family the agent-bus review flagged.
+
+  Full proposal with SPI signatures and staged plan:
+  docs/logs/plans/2026-06-11-agent-service-serviceization-proposal.md
+  (status: approved; owner answers recorded in its frontmatter).
+decision: |
+  1. Promote the three example-proven seams into com.huawei.ascend.service.spi:
+     RuntimeRegistry (register/renew/deregister, lease/TTL), AgentDirectory
+     (tenant-scoped getAgentCard/listAgents/resolveRoute), RouteGrantService
+     (HMAC-signed routing capabilities). In-memory reference implementations
+     and their tests land IN THE SAME CHANGE — agent-service must never become
+     a zero-implementation SPI surface like the frozen bus engine SPI.
+  2. Owner decision Q1: agent-service stays SPRING-FREE. The SPI core and
+     reference impls use pure JDK; the Spring edge (controllers,
+     autoconfiguration) lives outside the module as a separate starter when
+     Stage 2 lands. The example keeps its Spring wiring and rewires onto the
+     promoted types, deleting its local copies.
+  3. Owner decision Q2: JwtTenantValidator is extracted for reuse (made public
+     in runtime.boot) — one JWT tenant cross-check primitive for both the A2A
+     ingress and the future service edge; bounded duplication rejected.
+  4. Owner decision Q3: bus.spi.ingress / IngressGateway is declared
+     SUPERSEDED immediately and leaves the agent-bus freeze scope now (there
+     is nothing to freeze — the package never existed). Serviceization owns
+     client-to-platform fronting; the A2A-NO-REWRITE forwarding invariant
+     (opaque byte pass-through, routing keys only from URL/headers) is the
+     binding contract for that fronting.
+  5. The architecture-of-record texts claiming bus.spi.ingress is shipped or
+     active are corrected in lockstep (frozen-doc edit path: review proposal
+     docs/logs/reviews/2026-06-11-l0-ingress-supersession-correction.en.md in
+     the same commit).
+consequences: |
+  - agent-service gains its first real SPI surface with working reference
+    impls and tests; its module-metadata spi_packages/description become true.
+  - ADR-0089 is superseded; future C2S fronting design happens in
+    agent-service terms, not bus terms. The agent-bus freeze decision doc's
+    scope shrinks to bus.spi.engine + bus.spi.s2c.
+  - Stage 2 (Spring edge + JWT at the service ingress) and Stage 3
+    (persistent registry, session affinity, card masking) follow per the
+    approved proposal's plan.

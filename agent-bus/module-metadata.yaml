@@ -7,7 +7,7 @@ module: agent-bus
 kind: domain             # platform | domain | starter | bom | sample
 version: 0.0.1-SNAPSHOT
 semver_compatibility: experimental
-description: "Bus & State Hub plane — owns cross-plane control surfaces in BOTH directions: ingress (C2S, IngressGateway per ADR-0089 / Rule R-I sub-clause .b) and s2c (S2C, S2cCallbackTransport per ADR-0074 + ADR-0088). Three-track channel isolation (control / data / rhythm per Rule R-E) declared in docs/governance/bus-channels.yaml. Workflow primitives (Mailbox, AdmissionDecision, BackpressureSignal, SleepDeclaration, WakeupPulse, TickEngine) deferred to W2 per ADR-0050."
+description: "Bus & State Hub plane — owns the server-to-client control surface: s2c (S2C, S2cCallbackTransport per ADR-0074 + ADR-0088); the planned C2S ingress surface (ADR-0089) was superseded by ADR-0161 (agent-service serviceization). Three-track channel isolation (control / data / rhythm per Rule R-E) declared in docs/governance/bus-channels.yaml. Workflow primitives (Mailbox, AdmissionDecision, BackpressureSignal, SleepDeclaration, WakeupPulse, TickEngine) deferred to W2 per ADR-0050."
 architecture_doc: architecture/docs/L1/agent-bus/README.md
 dfx_doc: docs/dfx/agent-bus.yaml
 spi_packages:
