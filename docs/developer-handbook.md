@@ -1,5 +1,7 @@
 # spring-ai-ascend Developer Handbook
 
+中文版: [developer-handbook.cn.md](developer-handbook.cn.md)
+
 The single front-door manual for an industry (bank-side) developer building
 agents and multi-agent systems on `spring-ai-ascend`. It is the **map plus the
 contracts**: every class name, property, endpoint and snippet here is verified
