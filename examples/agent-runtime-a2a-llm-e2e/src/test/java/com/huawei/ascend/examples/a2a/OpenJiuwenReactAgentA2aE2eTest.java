@@ -3,14 +3,15 @@ package com.huawei.ascend.examples.a2a;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.net.URI;
+import com.huawei.ascend.client.A2aEvents;
+import com.huawei.ascend.client.A2aResponse;
+import com.huawei.ascend.client.AscendA2aClient;
+import com.huawei.ascend.client.SendSpec;
 import java.time.Duration;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
-import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.a2aproject.sdk.spec.TransportProtocol;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,25 +35,30 @@ class OpenJiuwenReactAgentA2aE2eTest {
 
     @Test
     void a2aClientCanStreamOpenJiuwenReactAgentThroughAgentRuntimeOnly() throws Exception {
-        SampleA2aClient client = new SampleA2aClient(URI.create("http://localhost:" + port), TIMEOUT);
+        try (AscendA2aClient client = AscendA2aClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .timeout(TIMEOUT)
+                .build()) {
+            AgentCard agentCard = client.agentCard();
+            assertThat(agentCard.name()).isEqualTo(AGENT_ID);
+            assertThat(agentCard.description()).contains("openJiuwen ReAct agent");
+            assertThat(agentCard.capabilities().streaming()).isTrue();
+            assertThat(agentCard.supportedInterfaces())
+                    .extracting(AgentInterface::protocolBinding)
+                    .contains(TransportProtocol.JSONRPC.asString());
 
-        AgentCard agentCard = client.agentCard();
-        assertThat(agentCard.name()).isEqualTo(AGENT_ID);
-        assertThat(agentCard.description()).contains("openJiuwen ReAct agent");
-        assertThat(agentCard.capabilities().streaming()).isTrue();
-        assertThat(agentCard.supportedInterfaces())
-                .extracting(AgentInterface::protocolBinding)
-                .contains(TransportProtocol.JSONRPC.asString());
+            assumeTrue(hasText(System.getenv("SAA_SAMPLE_LLM_API_KEY")),
+                    "SAA_SAMPLE_LLM_API_KEY not set; skipping real openJiuwen ReAct agent E2E sample");
 
-        assumeTrue(hasText(System.getenv("SAA_SAMPLE_LLM_API_KEY")),
-                "SAA_SAMPLE_LLM_API_KEY not set; skipping real openJiuwen ReAct agent E2E sample");
+            String sessionId = "session-" + UUID.randomUUID();
+            A2aResponse response = client.streamText(
+                    SendSpec.of(AGENT_ID, sessionId, "sample-user", "ping"));
 
-        String sessionId = "session-" + UUID.randomUUID();
-        List<StreamingEventKind> events = client.streamMessage("sample-user", AGENT_ID, sessionId, "ping");
-
-        assertThat(events).isNotEmpty();
-        assertThat(events).anySatisfy(event -> assertThat(SampleA2aClient.isTerminal(event)).isTrue());
-        assertThat(normalizeAnswer(SampleA2aClient.textFrom(events))).isEqualTo("pong");
+            assertThat(response.events()).isNotEmpty();
+            assertThat(response.events())
+                    .anySatisfy(event -> assertThat(A2aEvents.isTerminal(event)).isTrue());
+            assertThat(normalizeAnswer(response.text())).isEqualTo("pong");
+        }
     }
 
     private static String normalizeAnswer(String answer) {

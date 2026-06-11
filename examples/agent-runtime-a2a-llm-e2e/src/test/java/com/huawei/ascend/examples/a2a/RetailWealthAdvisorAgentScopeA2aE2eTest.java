@@ -3,12 +3,13 @@ package com.huawei.ascend.examples.a2a;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.net.URI;
+import com.huawei.ascend.client.A2aEvents;
+import com.huawei.ascend.client.A2aResponse;
+import com.huawei.ascend.client.AscendA2aClient;
+import com.huawei.ascend.client.SendSpec;
 import java.time.Duration;
-import java.util.List;
 import java.util.UUID;
 import org.a2aproject.sdk.spec.AgentCard;
-import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -37,19 +38,26 @@ class RetailWealthAdvisorAgentScopeA2aE2eTest {
     void a2aClientCanStreamRetailWealthAdvisorSdkAgentThroughAgentRuntimeOnly() throws Exception {
         assumeRealLlmConfigured("Retail Wealth Advisor AgentScope SDK agent");
 
-        SampleA2aClient client = new SampleA2aClient(URI.create("http://localhost:" + port), TIMEOUT);
-        AgentCard card = client.agentCard();
-        assertThat(card.name()).isEqualTo(RetailWealthAdvisorAgentScopeConfiguration.AGENT_ID);
-        assertAdvisorPathReturnsAllocationSuggestion(client, card.name());
+        try (AscendA2aClient client = AscendA2aClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .timeout(TIMEOUT)
+                .build()) {
+            AgentCard card = client.agentCard();
+            assertThat(card.name()).isEqualTo(RetailWealthAdvisorAgentScopeConfiguration.AGENT_ID);
+            assertAdvisorPathReturnsAllocationSuggestion(client, card.name());
+        }
     }
 
-    private void assertAdvisorPathReturnsAllocationSuggestion(SampleA2aClient client, String agentId) throws Exception {
+    private void assertAdvisorPathReturnsAllocationSuggestion(AscendA2aClient client, String agentId)
+            throws Exception {
         String sessionId = "session-" + UUID.randomUUID();
-        List<StreamingEventKind> events = client.streamMessage("sample-user", agentId, sessionId, PROMPT);
-        String answer = SampleA2aClient.textFrom(events);
+        A2aResponse response = client.streamText(
+                SendSpec.of(agentId, sessionId, "sample-user", PROMPT));
+        String answer = response.text();
 
-        assertThat(events).isNotEmpty();
-        assertThat(events).anySatisfy(event -> assertThat(SampleA2aClient.isTerminal(event)).isTrue());
+        assertThat(response.events()).isNotEmpty();
+        assertThat(response.events())
+                .anySatisfy(event -> assertThat(A2aEvents.isTerminal(event)).isTrue());
         assertThat(answer)
                 .contains("客户画像")
                 .contains("资产配置")

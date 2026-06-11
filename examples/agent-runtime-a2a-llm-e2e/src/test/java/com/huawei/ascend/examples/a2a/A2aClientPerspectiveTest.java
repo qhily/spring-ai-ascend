@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class A2aClientPerspectiveTest {
 
     @Test
-    void exampleClientUsesA2aSdkInsteadOfHandWrittenHttpOrTaskPolling() throws IOException {
+    void exampleClientUsesPlatformSdkInsteadOfHandWrittenHttpOrTaskPolling() throws IOException {
         List<Path> javaFiles = javaFiles(Path.of("src/main/java/com/huawei/ascend/examples/a2a"));
         javaFiles.addAll(javaFiles(Path.of("src/test/java/com/huawei/ascend/examples/a2a")));
 
@@ -26,10 +26,12 @@ class A2aClientPerspectiveTest {
                 .doesNotContain("tasks" + "/get")
                 .doesNotContain("get" + "Task(")
                 .doesNotContain("message" + "/send");
+        // The example consumes the supported client SDK facade (which itself
+        // rides the A2A SDK transport), never a hand-rolled protocol client.
         assertThat(source)
-                .contains("A2A" + "CardResolver")
-                .contains("JSONRPC" + "Transport")
-                .contains("sendMessage" + "Streaming");
+                .contains("Ascend" + "A2aClient")
+                .contains("stream" + "Text")
+                .contains("agent" + "Card()");
     }
 
     private static List<Path> javaFiles(Path source) throws IOException {

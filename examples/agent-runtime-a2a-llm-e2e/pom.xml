@@ -49,6 +49,12 @@
       <artifactId>agent-service-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- Client perspective of the sample (console app + boot/e2e tests) rides
+         the supported SDK facade instead of a hand-rolled A2A client. -->
+    <dependency>
+      <groupId>com.huawei.ascend</groupId>
+      <artifactId>springai-ascend-client</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.openjiuwen</groupId>
       <artifactId>agent-core-java</artifactId>
