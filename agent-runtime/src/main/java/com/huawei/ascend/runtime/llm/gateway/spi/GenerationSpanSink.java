@@ -1,10 +1,11 @@
 package com.huawei.ascend.runtime.llm.gateway.spi;
 
 /**
- * Receiver of GENERATION records for LLM invocations. This is the L1.x stand-in
- * for a real span exporter: the platform has no OpenTelemetry span infrastructure
- * yet, so the gateway emits the GENERATION attribute set to this minimal sink
- * until the OTel exporter wave replaces the default with a real span pipeline.
+ * Receiver of GENERATION records for LLM invocations. The gateway emits the
+ * GENERATION attribute set of every call to this seam. Default binding is the
+ * dropping {@link NoopGenerationSpanSink}; deployments providing an OpenTelemetry
+ * bean get the OTel bridge ({@code gateway.otel.OtelGenerationSpanSink}), and a
+ * deployment-registered sink bean replaces either.
  */
 public interface GenerationSpanSink {
 

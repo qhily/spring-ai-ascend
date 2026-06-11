@@ -136,6 +136,14 @@
       <artifactId>micrometer-registry-prometheus</artifactId>
       <optional>true</optional>
     </dependency>
+    <!-- OpenTelemetry API: optional GENERATION-span bridge of the LLM gateway.
+         No OTel type appears in any bean signature outside the class-presence-guarded
+         configuration, so consumers without an OTel SDK are unaffected. -->
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
+      <optional>true</optional>
+    </dependency>
 
     <!-- Logback JSON. -->
     <dependency>
@@ -226,6 +234,11 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-sdk-testing</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

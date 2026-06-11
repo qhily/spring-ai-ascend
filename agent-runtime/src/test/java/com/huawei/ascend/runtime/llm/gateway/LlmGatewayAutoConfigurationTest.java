@@ -2,9 +2,11 @@ package com.huawei.ascend.runtime.llm.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.huawei.ascend.runtime.llm.gateway.otel.OtelGenerationSpanSink;
 import com.huawei.ascend.runtime.llm.gateway.spi.GenerationSpanSink;
 import com.huawei.ascend.runtime.llm.gateway.spi.InMemorySpendLog;
 import com.huawei.ascend.runtime.llm.gateway.spi.SpendLog;
+import io.opentelemetry.api.OpenTelemetry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -86,6 +88,39 @@ class LlmGatewayAutoConfigurationTest {
                     assertThat(upstream.getPricing().getInputPerMillionTokensUsd()).isEqualTo(0.15);
                     assertThat(properties.getTokens().get("tok-1").getTenantId()).isEqualTo("tenant-a");
                 });
+    }
+
+    /** An OpenTelemetry bean upgrades the span sink from the Noop default to the OTel bridge. */
+    @Test
+    void openTelemetryBeanSelectsOtelSinkOverNoopDefault() {
+        runner.withUserConfiguration(OpenTelemetryConfiguration.class)
+                .withPropertyValues("agent-runtime.llm.gateway.enabled=true")
+                .run(ctx -> {
+                    assertThat(ctx).getBeans(GenerationSpanSink.class).hasSize(1);
+                    assertThat(ctx.getBean(GenerationSpanSink.class))
+                            .isInstanceOf(OtelGenerationSpanSink.class);
+                });
+    }
+
+    /** A deployment-registered sink still wins even when an OpenTelemetry bean exists. */
+    @Test
+    void customSinkSuppressesOtelBridgeToo() {
+        runner.withUserConfiguration(OpenTelemetryConfiguration.class, CustomSeamsConfiguration.class)
+                .withPropertyValues("agent-runtime.llm.gateway.enabled=true")
+                .run(ctx -> {
+                    assertThat(ctx).getBeans(GenerationSpanSink.class).hasSize(1);
+                    assertThat(ctx.getBean(GenerationSpanSink.class))
+                            .isNotInstanceOf(OtelGenerationSpanSink.class);
+                });
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class OpenTelemetryConfiguration {
+
+        @Bean
+        OpenTelemetry openTelemetry() {
+            return OpenTelemetry.noop();
+        }
     }
 
     @Configuration(proxyBeanMethods = false)

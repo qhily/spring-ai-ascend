@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 class LlmGatewayEmissionBoundaryArchTest {
 
     private static final String GATEWAY_PACKAGE = "com.huawei.ascend.runtime.llm.gateway";
-    private static final String SPI_PACKAGE = "com.huawei.ascend.runtime.llm.gateway.spi";
 
     private static final JavaClasses RUNTIME_MAIN_CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -36,8 +35,10 @@ class LlmGatewayEmissionBoundaryArchTest {
 
     @Test
     void onlyGatewayAndSpiPackagesMayDependOnTheGenerationSpanSink() {
+        // Subpackage-inclusive: emission bridges (e.g. the OTel sink) are
+        // gateway-internal subpackages, which is exactly the boundary's intent.
         ArchRule rule = noClasses()
-                .that().resideOutsideOfPackages(GATEWAY_PACKAGE, SPI_PACKAGE)
+                .that().resideOutsideOfPackage(GATEWAY_PACKAGE + "..")
                 .should().dependOnClassesThat()
                 .haveNameMatching("com\\.huawei\\.ascend\\.runtime\\.llm\\.gateway\\.spi\\."
                         + ".*GenerationSpanSink(\\$.*)?");

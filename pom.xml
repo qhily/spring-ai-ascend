@@ -64,6 +64,10 @@
          MetaClass property lookup under JDK 21 during applyProxySettings.
          5.0.6 is the latest stable patch on the 5.0.x line. -->
     <groovy.version>5.0.6</groovy.version>
+    <!-- OpenTelemetry SDK/API line. Matches the opentelemetry-bom that
+         spring-boot-dependencies manages, but pinned explicitly so the
+         published SDK BoM carries the version contract itself. -->
+    <opentelemetry.version>1.55.0</opentelemetry.version>
     <opentelemetry-agent.version>2.10.0</opentelemetry-agent.version>
     <logstash-logback.version>8.0</logstash-logback.version>
     <springdoc.version>3.0.3</springdoc.version>
