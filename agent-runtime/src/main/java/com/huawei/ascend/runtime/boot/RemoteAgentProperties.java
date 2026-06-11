@@ -1,4 +1,4 @@
-package com.huawei.ascend.runtime.boot.config;
+package com.huawei.ascend.runtime.boot;
 
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;

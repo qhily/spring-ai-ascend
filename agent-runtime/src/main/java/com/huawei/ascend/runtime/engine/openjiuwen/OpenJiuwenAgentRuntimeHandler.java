@@ -110,8 +110,8 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
      * Install runtime-owned tools on the concrete openJiuwen agent instance.
      *
      * <p>The default is intentionally empty. Runtime integrations such as remote
-     * A2A tool injection can override this hook without changing the concrete
-     * user's agent implementation.
+     * A2A tool injection can use this hook without changing the concrete user's
+     * agent implementation.
      */
     protected void installRuntimeTools(BaseAgent agent, AgentExecutionContext context) {
         if (runtimeToolInstaller != null) {
@@ -174,11 +174,16 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
     }
 
     @SuppressWarnings("unchecked")
-    private com.huawei.ascend.runtime.engine.spi.AgentExecutionResult mapRawResult(Object rawResult) {
+    private AgentExecutionResult mapRawResult(Object rawResult) {
         LOGGER.info("openjiuwen raw result received type={}",
                 rawResult == null ? "null" : rawResult.getClass().getName());
         if (rawResult instanceof AgentExecutionResult result) {
             return result;
+        }
+        if (rawResult == null) {
+            return resultMapper.map(Map.of(
+                    "result_type", "error",
+                    "output", "openjiuwen runner returned no result"));
         }
         if (rawResult instanceof Map<?, ?> map) {
             return resultMapper.map((Map<String, Object>) map);

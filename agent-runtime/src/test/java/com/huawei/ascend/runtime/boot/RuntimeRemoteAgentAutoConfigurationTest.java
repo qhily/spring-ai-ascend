@@ -10,14 +10,15 @@ import com.huawei.ascend.runtime.engine.service.RemoteAgentCatalog;
 import com.huawei.ascend.runtime.engine.service.RemoteAgentInvocationService;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
 import com.huawei.ascend.runtime.engine.spi.StreamAdapter;
-import com.huawei.ascend.runtime.boot.config.RemoteAgentProperties;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -48,11 +49,10 @@ class RuntimeRemoteAgentAutoConfigurationTest {
     @Test
     void remoteAgentCatalogRefresherRunsOnBackgroundExecutor() {
         RecordingCatalog catalog = new RecordingCatalog();
-        RecordingExecutor executor = new RecordingExecutor();
-        RuntimeAutoConfiguration configuration = new RuntimeAutoConfiguration();
+        RecordingExecutorService executor = new RecordingExecutorService();
 
         RuntimeAutoConfiguration.RemoteAgentCatalogRefresher refresher =
-                configuration.remoteAgentCatalogRefresher(catalog, executor);
+                new RuntimeAutoConfiguration.RemoteAgentCatalogRefresher(catalog, executor);
 
         refresher.start();
 
@@ -128,9 +128,11 @@ class RuntimeRemoteAgentAutoConfigurationTest {
                                     "http://localhost:" + server.getAddress().getPort())));
             RemoteAgentCatalog catalog = configuration.remoteAgentCatalog(properties);
 
+            ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
             RuntimeAutoConfiguration.RemoteAgentCatalogRefresher refresher =
-                    configuration.remoteAgentCatalogRefresher(catalog, Runnable::run);
+                    new RuntimeAutoConfiguration.RemoteAgentCatalogRefresher(catalog, executor);
             refresher.refreshOnce();
+            executor.shutdownNow();
 
             assertThat(catalog.availableToolSpecs()).hasSize(1);
         } finally {
@@ -179,12 +181,39 @@ class RuntimeRemoteAgentAutoConfigurationTest {
         }
     }
 
-    private static final class RecordingExecutor implements Executor {
+    private static final class RecordingExecutorService extends AbstractExecutorService {
         private Runnable command;
+        private boolean shutdown;
 
         @Override
         public void execute(Runnable command) {
             this.command = command;
+        }
+
+        @Override
+        public void shutdown() {
+            shutdown = true;
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            shutdown = true;
+            return List.of();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return shutdown;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) {
+            return shutdown;
         }
     }
 
