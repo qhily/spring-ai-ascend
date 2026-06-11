@@ -198,7 +198,6 @@ A2aAgentExecutor(AgentRuntimeHandler handler, A2aAgentExecutor.RemoteSupport rem
 
 ```text
 RemoteSupport =
-  A2aParentTaskProjector.Factory
   RemoteAgentInvocationService
 ```
 
@@ -244,7 +243,7 @@ A2aAgentExecutor
   -> 远端 /a2a message/send 或 message/stream
 ```
 
-`RemoteAgentInvocationService` 负责用例编排：构造 neutral request、调用内部 `OutboundPort`、整理远端结果、负责总耗时保护和 best-effort remote cancel。它不持有 `AgentEmitter`，也不引用 OpenJiuwen 类型。v1 不单独新增 `RemoteAgentOutboundPort.java`；`RemoteAgentRequest`、`RemoteAgentResult`、`RemoteTaskReference` 和 `OutboundPort` 作为 `RemoteAgentInvocationService` 的嵌套类型。
+`RemoteAgentInvocationService` 负责用例编排：构造 neutral request、调用内部 `OutboundPort`、整理远端结果，并暴露 best-effort remote cancel。它不持有 `AgentEmitter`，也不引用 OpenJiuwen 类型。v1 不单独新增 `RemoteAgentOutboundPort.java`；`RemoteAgentRequest`、`RemoteAgentResult`、`RemoteTaskReference` 和 `OutboundPort` 作为 `RemoteAgentInvocationService` 的嵌套类型。
 
 `A2aRemoteAgentOutboundAdapter` 是唯一持有远端 A2A client 的类。它把 neutral request 转成远端 A2A JSON-RPC，并在内部把远端 task/event 映射成 `RemoteAgentResult`。v1 不单独新增 `A2aRemoteResultMapper.java`。
 
@@ -253,14 +252,12 @@ A2aAgentExecutor
 `A2aParentTaskProjector` 收敛 parent task 投影、remote route metadata 读写和远端 outcome 处理。不再单独新增 `A2aRemoteOutcomeProjector`。
 
 ```text
-startWork(parentTaskId)
-addRemoteProgress(parentTaskId, message/artifact)
-requireInput(parentTaskId, message, metadata)
-mergeRemoteRouteMetadata(parentTaskId, metadata)
-remoteRoute(parentTaskId)
-complete(parentTaskId, message)
-fail(parentTaskId, error)
-isTerminal(parentTaskId)
+isRemoteContinuation(ctx)
+projectRemoteProgress(result, emitter)
+requireRemoteInput(invocation, result, emitter)
+remoteRoute(task)
+projectRemoteOutcome(invocation, results, emitter)
+remoteResumeContext(requestContext, handlerAgentId, invocation, toolResult)
 ```
 
 它不能只写 EventQueue。远端 progress 至少要让 streaming/subscription 可见；远端 input-required 必须同时更新 parent `Task.status`、`status.message`、`Task.metadata`；`tasks/get` 也必须能从 `TaskStore` 读到已经投影的状态和 metadata。v1 通过 SDK `AgentEmitter` 写这些状态和事件，不在 controller 层手写 A2A JSON-RPC response 或 SSE event。
@@ -334,9 +331,9 @@ remote continuation 分支中，本轮用户输入必须从 `RequestContext.getM
 | --- | --- |
 | 远端 card 暂时不可用 | 保持 `PENDING`，按固定间隔持续后台重试；不阻塞本地 runtime 启动和用户请求。 |
 | 已注册远端运行时调用失败 | 生成同一 `toolCallId` 的错误 JSON 字符串，resume 本地 OpenJiuwen；不直接 failed parent task。 |
-| 远端调用 + 本地 re-enter 总耗时超过 runtime 内部保护时长 | `RemoteAgentInvocationService` 负责计时，默认 60 秒；超时后 parent task 置为 failed，错误码 `REMOTE_INVOCATION_TIMEOUT`，并 best-effort 取消远端 task。 |
+| 远端流式调用超过 runtime 内部保护时长 | v1 在 `A2aRemoteAgentOutboundAdapter` 的远端 SSE 等待处做 60 秒保护；超时被归一化为远端 failed result，再作为同一 `toolCallId` 的错误 JSON resume 本地 OpenJiuwen，不直接 failed parent task。 |
 | parent task 在远端调用期间被取消 | `A2aAgentExecutor.cancel(...)` 先把 parent task 置为 canceled；如果 metadata 中已有 remote task/context，则 best-effort 调远端 `tasks/cancel`。取消传播失败不改变 parent canceled 状态。 |
-| 远端超时或取消后的迟到结果 | `A2aParentTaskProjector.isTerminal(parentTaskId)` 为 true 时丢弃迟到 outcome，只记录日志，不再回灌本地 OpenJiuwen。 |
+| 远端超时或取消后的迟到结果 | v1 是同步阻塞模型，不引入后台 watcher 或异步回调，因此没有独立的迟到 outcome 回灌通道；transport 超时会被当前调用同步归一化为 failed result。 |
 | 远端 card 在运行中变化 | v1 不感知运行时变化；重启本地 runtime 后重新拉取 card 并生成 tool。 |
 | 远端并发过高 | v1 不暴露并发配置；实际并发受 SDK executor、远端 HTTP client 连接池和远端 runtime 能力共同限制。生产化阶段再增加 remote invocation concurrency / connection pool 配置。 |
 
@@ -347,7 +344,8 @@ remote continuation 分支中，本轮用户输入必须从 `RequestContext.getM
 | 文件 | 职责边界 | 本次修改 |
 | --- | --- | --- |
 | `agent-runtime/pom.xml` | 只声明 `agent-runtime` 编译和运行所需依赖，不承载任何远端调用逻辑。 | 增加远端 A2A client transport/http 依赖，供 `engine.a2a.A2aRemoteAgentOutboundAdapter` 编译使用。 |
-| `boot/RuntimeAutoConfiguration.java` | 只做 Spring bean 装配、配置绑定和生命周期启动；不写远端调用流程，不解析 OpenJiuwen interrupt，不直接投影 parent task。 | 绑定 `agent-runtime.remote-agents[].url`；装配 catalog、invocation service、A2A outbound adapter、OpenJiuwen installer；创建 `A2aAgentExecutor` 时注入可选 `A2aAgentExecutor.RemoteSupport`。remote properties 先作为本配置类内部 record/bean 方法，不单独建文件。 |
+| `boot/RuntimeAutoConfiguration.java` | 做 runtime Spring bean 装配和生命周期启动；不承载配置结构定义，不写远端调用流程，不解析 OpenJiuwen interrupt，不直接投影 parent task。v1 为减少新增文件，暂时在这里接入 OpenJiuwen installer。 | 启用 `RemoteAgentProperties`；装配 catalog、invocation service、A2A outbound adapter、OpenJiuwen installer、`A2aAgentExecutor.RemoteSupport` 和内部 catalog refresher；bean 创建阶段不做同步 card 拉取。 |
+| `boot/config/RemoteAgentProperties.java` | 只定义 `agent-runtime.remote-agents[].url` 的配置绑定模型，并提供过滤空 URL 后的 `urls()` 视图；不创建 bean、不拉 card、不装配远端调用组件。 | 新增配置文件读取对象，远端 URL 仍是 list，支持一个或多个远端 runtime。 |
 | `engine/a2a/A2aAgentExecutor.java` | A2A SDK `AgentExecutor` 入口和顶层编排者。负责判断本轮是本地 OpenJiuwen 执行还是 remote continuation，负责同步阻塞地调远端和 re-enter 本地 handler；不持有远端 A2A client，不直接注册 OpenJiuwen tool。 | 移除 `results.forEach(...)`，改为内部可短路的 `consumeHandler(...)` / `routeResult(...)` / `RouteDecision`；通过 `RemoteSupport` 使用 parent projector 和 remote invocation service；在 `execute(...)` 开头通过 `ctx.getTask()` 识别 remote continuation。 |
 | `engine/spi/AgentExecutionResult.java` | 框架中立的 handler 执行结果模型。只表达结果类型和必要 payload，不依赖 A2A SDK、OpenJiuwen 类型或 service 层类型。 | 新增 `REMOTE_INVOCATION` 类型、factory、`remoteInvocation()` getter 和嵌套 `RemoteInvocation` record；保留 `INTERRUPTED(prompt)` 给普通本地 input-required。 |
 | `engine/openjiuwen/OpenJiuwenAgentRuntimeHandler.java` | OpenJiuwen handler 生命周期模板。负责创建 agent、安装 rails/runtime tools、转换输入并运行 OpenJiuwen；不持有远端 A2A client，不编排远端调用。 | 在现有 `openJiuwenRails(context)` 之外增加可选 `OpenJiuwenRemoteToolInstaller` 字段和 `installRuntimeTools(...)` hook；执行顺序为 `createOpenJiuwenAgent` -> `installRails` -> `installRuntimeTools` -> `toOpenJiuwenInput` -> `runOpenJiuwenAgent`。 |
@@ -361,6 +359,8 @@ remote continuation 分支中，本轮用户输入必须从 `RequestContext.getM
 agent-runtime/src/main/java/com/huawei/ascend/runtime/
   boot/
     RuntimeAutoConfiguration.java  (修改)
+    config/
+      RemoteAgentProperties.java
   engine/
     service/
       RemoteAgentCatalog.java
@@ -387,8 +387,8 @@ agent-runtime/src/main/java/com/huawei/ascend/runtime/
 | 文件 | 职责边界 | 不负责 |
 | --- | --- | --- |
 | `engine/service/RemoteAgentCatalog.java` | 管理远端 URL 的 `PENDING / AVAILABLE` 状态；拉取并缓存远端 AgentCard；生成 remote tool spec；按规范化 card URL 去重；失败持续重试，成功后不刷新。 | 不修改本地 agent 实例；不调用远端 task；不保存 invocation 状态；不持有 OpenJiuwen 类型。 |
-| `engine/service/RemoteAgentInvocationService.java` | 远端调用用例编排。构造 neutral request，调用内部 `OutboundPort`，统一 `invoke(...)` 与 `resumeRemoteInput(...)` 的结果模型，负责总超时和 best-effort cancel。 | 不持有 `AgentEmitter`；不写 parent task；不引用 OpenJiuwen；不直接实现 A2A HTTP/JSON-RPC。 |
-| `engine/a2a/A2aParentTaskProjector.java` | 统一 parent A2A task/status/event/metadata 投影。封装 progress、input-required、failed/completed、metadata merge、remote route 读取、terminal guard 和迟到 outcome 丢弃。首轮和续轮都基于当前请求的 `AgentEmitter` 走同一投影逻辑。 | 不调用远端 A2A；不创建 OpenJiuwen input；不决定是否进入 remote continuation；不手写 controller response。 |
+| `engine/service/RemoteAgentInvocationService.java` | 远端调用用例编排。构造 neutral request，调用内部 `OutboundPort`，统一 `invoke(...)` 与 `resumeRemoteInput(...)` 的结果模型，暴露 best-effort cancel。 | 不持有 `AgentEmitter`；不写 parent task；不引用 OpenJiuwen；不直接实现 A2A HTTP/JSON-RPC；不负责 transport 级 SSE 等待超时。 |
+| `engine/a2a/A2aParentTaskProjector.java` | 统一 parent A2A task/status/event/metadata 投影。封装 progress、input-required、metadata merge、remote route 读取、remote outcome 到本地 resume tool result 的转换。首轮和续轮都基于当前请求的 `AgentEmitter` 走同一投影逻辑。 | 不调用远端 A2A；不创建 OpenJiuwen input；不手写 controller response；不实现后台 watcher 或异步迟到 outcome 处理。 |
 | `engine/a2a/A2aRemoteAgentOutboundAdapter.java` | 唯一持有远端 A2A client 的 outbound adapter。把 `RemoteAgentInvocationService` 的 neutral request 转成远端 A2A JSON-RPC，消费远端同步/流式结果并归一化为 `RemoteAgentResult`。 | 不写 parent task；不引用 OpenJiuwen；不决定 terminal result 是否作为 tool result 或用户可见消息。 |
 | `engine/openjiuwen/OpenJiuwenRemoteAgentInterruptRail.java` | OpenJiuwen 远端 tool rail。识别远端 tool name，读取 tool arguments，写 `InterruptRequest.context`，触发 OpenJiuwen interrupt，让 OpenJiuwen 保存 `ToolInterruptionState`。 | 不调用远端 A2A；不持有 `RemoteAgentInvocationService`；不写 A2A task；不处理远端返回。 |
 | `engine/openjiuwen/OpenJiuwenRemoteToolInstaller.java` | 在每次 OpenJiuwen handler 执行期，把 catalog 中 `AVAILABLE` 的远端 tool spec 安装到当前 agent 实例：`ToolCard`、placeholder `Tool`、remote rail。 | 不拉取 card；不调用远端；不缓存 invocation；不改变用户 agent 源码。 |
@@ -412,11 +412,11 @@ agent-runtime/src/main/java/com/huawei/ascend/runtime/
 | `engine/a2a + engine/service` | 集成测试覆盖 `A2aAgentExecutor + RemoteAgentInvocationService + fake OutboundPort`：远端 completed 会 re-enter 本地 handler，远端 input-required 不 re-enter。 |
 | `boot + engine/a2a` | 集成测试验证 parent task 处于 `TASK_STATE_INPUT_REQUIRED` 时，下一轮 `SendMessage` / `SendStreamingMessage` 会重新进入 SDK `AgentExecutor.execute(ctx, emitter)`。 |
 | `boot + engine/a2a` | 集成测试覆盖 remote continuation：下一轮用户输入能用新的 emitter 路由到同一 remote task/context，并保持 A2A response/SSE 格式与 SDK 原路径一致。 |
-| `engine/service` | timeout/cancel 测试覆盖：超时置 parent failed，parent canceled 后迟到 outcome 不再回灌本地 OpenJiuwen。 |
+| `engine/a2a` | cancel 测试覆盖：parent task 处于 remote waiting 且 metadata 中已有 remote task/context 时，`A2aAgentExecutor.cancel(...)` best-effort 调远端 cancel。 |
 | `engine/service` | 远端 card 拉取失败保持 `PENDING` 并按固定间隔持续重试；成功后转 `AVAILABLE`，不再刷新。 |
 | `boot` | blocking `SendMessage` 和 streaming `SendStreamingMessage` 都继续委托 SDK `RequestHandler`，不绕过 SDK 序列化与 SSE 包装。 |
 | `architecture` | 新增文件仍符合当前 package boundary。 |
-| e2e example | 两个 runtime 启动后，本地 OpenJiuwen 能把远端 runtime 当 tool 调用；远端 completed 和 input-required 两条路径都可手工验证。 |
+| e2e example | 两个 runtime 启动后，验证本地 runtime 发现远端 card、远端调用经 A2A client 出站、远端 input-required 续写回同一 remote task/context、远端 completed 后 resume 本地 OpenJiuwen。示例主路径使用确定性 handler 产生 remote interrupt marker，不把真实 LLM tool choice 作为稳定验收前提；真实 tool 注入/rail 拦截由 `engine/openjiuwen` 单元测试覆盖。 |
 
 验收标准：
 
@@ -428,4 +428,4 @@ agent-runtime/src/main/java/com/huawei/ascend/runtime/
 - 远端多轮 input-required 时，parent prompt 更新为最新远端提示，route metadata 不丢失。
 - runtime 不保存 OpenJiuwen checkpoint blob，不新增 `checkpointRef`。
 - remote completed 的本地恢复复用原始 `agentStateKey` / `conversation_id`，不创建新的 parent task。
-- parent task 超时或取消后，远端迟到结果不会重新写 parent task，也不会恢复本地 OpenJiuwen。
+- v1 不引入后台 watcher 或异步回调；所有远端 outcome 都在当前 `A2aAgentExecutor.execute(...)` 同步调用链内处理。

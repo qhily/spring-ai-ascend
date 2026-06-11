@@ -1,11 +1,18 @@
 package com.huawei.ascend.runtime.boot;
 
+import com.huawei.ascend.runtime.boot.config.RemoteAgentProperties;
 import com.huawei.ascend.runtime.engine.a2a.A2aAgentExecutor;
+import com.huawei.ascend.runtime.engine.a2a.A2aRemoteAgentOutboundAdapter;
+import com.huawei.ascend.runtime.engine.openjiuwen.OpenJiuwenAgentRuntimeHandler;
+import com.huawei.ascend.runtime.engine.openjiuwen.OpenJiuwenRemoteToolInstaller;
+import com.huawei.ascend.runtime.engine.service.RemoteAgentCatalog;
+import com.huawei.ascend.runtime.engine.service.RemoteAgentInvocationService;
 import com.huawei.ascend.runtime.engine.spi.AgentCardProvider;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
@@ -29,11 +36,15 @@ import org.a2aproject.sdk.spec.TransportProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.SmartLifecycle;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(RemoteAgentProperties.class)
 public class RuntimeAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(RuntimeAutoConfiguration.class);
 
@@ -75,8 +86,57 @@ public class RuntimeAutoConfiguration {
     public Executor a2aExecutor() { return Executors.newCachedThreadPool(); }
 
     @Bean @ConditionalOnMissingBean
-    public AgentExecutor a2aAgentExecutor(ObjectProvider<AgentRuntimeHandler> handlers) {
-        return new A2aAgentExecutor(handlers.orderedStream().findFirst().orElse(null));
+    public AgentExecutor a2aAgentExecutor(ObjectProvider<AgentRuntimeHandler> handlers,
+            ObjectProvider<A2aAgentExecutor.RemoteSupport> remoteSupport) {
+        AgentRuntimeHandler handler = handlers.orderedStream().findFirst().orElse(null);
+        A2aAgentExecutor.RemoteSupport support = remoteSupport.getIfAvailable();
+        return support == null ? new A2aAgentExecutor(handler) : new A2aAgentExecutor(handler, support);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public RemoteAgentCatalog remoteAgentCatalog(RemoteAgentProperties properties) {
+        return new RemoteAgentCatalog(properties.urls());
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public A2aRemoteAgentOutboundAdapter a2aRemoteAgentOutboundAdapter(RemoteAgentCatalog catalog) {
+        return new A2aRemoteAgentOutboundAdapter(catalog);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public RemoteAgentInvocationService remoteAgentInvocationService(A2aRemoteAgentOutboundAdapter outboundAdapter) {
+        return new RemoteAgentInvocationService(outboundAdapter);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public A2aAgentExecutor.RemoteSupport a2aRemoteSupport(RemoteAgentInvocationService invocationService) {
+        return new A2aAgentExecutor.RemoteSupport(invocationService);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public OpenJiuwenRemoteToolInstaller openJiuwenRemoteToolInstaller(RemoteAgentCatalog catalog,
+            ObjectProvider<OpenJiuwenAgentRuntimeHandler> handlers) {
+        OpenJiuwenRemoteToolInstaller installer =
+                new OpenJiuwenRemoteToolInstaller(catalog::availableToolSpecs);
+        handlers.orderedStream().forEach(handler -> handler.setRuntimeToolInstaller(installer));
+        return installer;
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "agent-runtime.remote-agents.0", name = "url")
+    @ConditionalOnMissingBean
+    public RemoteAgentCatalogRefresher remoteAgentCatalogRefresher(RemoteAgentCatalog catalog, Executor exec) {
+        return new RemoteAgentCatalogRefresher(catalog, exec);
     }
 
     @Bean @ConditionalOnMissingBean
@@ -97,5 +157,49 @@ public class RuntimeAutoConfiguration {
                 .capabilities(AgentCapabilities.builder().streaming(true).pushNotifications(true).build())
                 .defaultInputModes(List.of("text")).defaultOutputModes(List.of("text")).skills(List.of())
                 .supportedInterfaces(List.of(new AgentInterface(TransportProtocol.JSONRPC.asString(), "/a2a"))).build();
+    }
+
+    public static final class RemoteAgentCatalogRefresher implements SmartLifecycle {
+        private final RemoteAgentCatalog catalog;
+        private final Executor executor;
+        private final AtomicBoolean running = new AtomicBoolean();
+
+        RemoteAgentCatalogRefresher(RemoteAgentCatalog catalog, Executor executor) {
+            this.catalog = catalog;
+            this.executor = executor;
+        }
+
+        @Override
+        public void start() {
+            if (running.compareAndSet(false, true)) {
+                executor.execute(this::run);
+            }
+        }
+
+        void refreshOnce() {
+            catalog.refreshPending();
+        }
+
+        private void run() {
+            while (running.get()) {
+                refreshOnce();
+                try {
+                    Thread.sleep(5_000L);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    running.set(false);
+                }
+            }
+        }
+
+        @Override
+        public void stop() {
+            running.set(false);
+        }
+
+        @Override
+        public boolean isRunning() {
+            return running.get();
+        }
     }
 }

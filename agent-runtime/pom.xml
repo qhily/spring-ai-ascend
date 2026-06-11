@@ -160,6 +160,14 @@
       <groupId>org.a2aproject.sdk</groupId>
       <artifactId>a2a-java-sdk-server-common</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.a2aproject.sdk</groupId>
+      <artifactId>a2a-java-sdk-client-transport-jsonrpc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.a2aproject.sdk</groupId>
+      <artifactId>a2a-java-sdk-http-client</artifactId>
+    </dependency>
 
     <!-- Boot 4 + springdoc 3.0.3 transitively requires YAMLFactory at boot. -->
     <dependency>

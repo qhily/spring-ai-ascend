@@ -1,6 +1,7 @@
 package com.huawei.ascend.runtime.engine.openjiuwen;
 
 import com.huawei.ascend.runtime.engine.AgentExecutionContext;
+import com.huawei.ascend.runtime.engine.spi.AgentExecutionResult;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
 import com.huawei.ascend.runtime.engine.spi.MemoryProvider;
 import com.huawei.ascend.runtime.engine.spi.StreamAdapter;
@@ -30,6 +31,7 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
     private final String agentId;
     private final OpenJiuwenMessageAdapter messageConverter;
     private final OpenJiuwenStreamAdapter resultMapper;
+    private OpenJiuwenRemoteToolInstaller runtimeToolInstaller;
 
     protected OpenJiuwenAgentRuntimeHandler(String agentId) {
         this(agentId, new OpenJiuwenMessageAdapter());
@@ -67,6 +69,7 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
                     context.getScope().agentId());
             BaseAgent agent = Objects.requireNonNull(createOpenJiuwenAgent(context), "openJiuwen agent");
             installRails(agent, context);
+            installRuntimeTools(agent, context);
             Object input = toOpenJiuwenInput(context);
             Object result = runOpenJiuwenAgent(agent, input, openJiuwenConversationId(context));
             LOGGER.info("openjiuwen execute finished tenantId={} sessionId={} taskId={} resultType={}",
@@ -74,6 +77,9 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
                     context.getScope().sessionId(),
                     context.getScope().taskId(),
                     result == null ? "null" : result.getClass().getName());
+            if (result instanceof java.util.stream.Stream<?> stream) {
+                return stream;
+            }
             return java.util.stream.Stream.of(result);
         } catch (RuntimeException error) {
             LOGGER.warn("openjiuwen execute failed tenantId={} sessionId={} taskId={} errorClass={} message={}",
@@ -98,6 +104,23 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
      */
     protected List<AgentRail> openJiuwenRails(AgentExecutionContext context) {
         return List.of();
+    }
+
+    /**
+     * Install runtime-owned tools on the concrete openJiuwen agent instance.
+     *
+     * <p>The default is intentionally empty. Runtime integrations such as remote
+     * A2A tool injection can override this hook without changing the concrete
+     * user's agent implementation.
+     */
+    protected void installRuntimeTools(BaseAgent agent, AgentExecutionContext context) {
+        if (runtimeToolInstaller != null) {
+            runtimeToolInstaller.install(agent, context);
+        }
+    }
+
+    public final void setRuntimeToolInstaller(OpenJiuwenRemoteToolInstaller runtimeToolInstaller) {
+        this.runtimeToolInstaller = runtimeToolInstaller;
     }
 
     /** Create the default openJiuwen memory rail for subclasses that opt in. */
@@ -154,6 +177,9 @@ public abstract class OpenJiuwenAgentRuntimeHandler implements AgentRuntimeHandl
     private com.huawei.ascend.runtime.engine.spi.AgentExecutionResult mapRawResult(Object rawResult) {
         LOGGER.info("openjiuwen raw result received type={}",
                 rawResult == null ? "null" : rawResult.getClass().getName());
+        if (rawResult instanceof AgentExecutionResult result) {
+            return result;
+        }
         if (rawResult instanceof Map<?, ?> map) {
             return resultMapper.map((Map<String, Object>) map);
         }
