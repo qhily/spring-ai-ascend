@@ -5,21 +5,66 @@ agent-runtime:
     a2a:
       default-tenant-id: sample-tenant
       default-agent-id: openjiuwen-react-agent
+  llm:
+    gateway:
+      # Armed together with sample.llm.via-gateway so the local /v1 egress
+      # surface exists exactly when the sample model config points at it.
+      enabled: ${sample.llm.via-gateway}
+      aliases:
+        # The alias the sample sends as its model name; only this routing
+        # table knows the real upstream URL, credential and model.
+        sample-llm:
+          base-url: ${SAA_SAMPLE_OPENJIUWEN_API_BASE:http://localhost:4000/v1}
+          api-key: ${SAA_SAMPLE_LLM_API_KEY:sk-local-placeholder}
+          upstream-model: ${SAA_SAMPLE_LLM_MODEL:gpt-5.4-mini}
+      tokens:
+        # Sample minted token (map key = the opaque Bearer credential the
+        # agent sends). Keep in sync with sample.llm.gateway.token below.
+        saa-sample-minted-token:
+          tenant-id: sample-tenant
+          agent-id: openjiuwen-react-agent
+
+# Spring edge of the serviceization facade (agent-service-starter). The sample
+# keeps its historical env var / property names for the route-grant signer.
+agent-service:
+  route-grant-secret: ${sample.gateway.route-grant-secret:${SAA_SAMPLE_GATEWAY_ROUTE_GRANT_SECRET:agent-examples-local-route-grant-secret}}
 
 sample:
+  llm:
+    # true routes the sample's model traffic through the local agent-runtime
+    # LLM gateway (/v1, minted token); false keeps today's direct upstream
+    # path. The switch selects the raw/gateway block below via the nested
+    # placeholder in sample.llm.path.
+    via-gateway: ${SAA_SAMPLE_LLM_VIA_GATEWAY:false}
+    path: ${sample.llm.path-when-${sample.llm.via-gateway}}
+    path-when-false: raw
+    path-when-true: gateway
+    raw:
+      openjiuwen-api-base: ${SAA_SAMPLE_OPENJIUWEN_API_BASE:http://localhost:4000/v1}
+      agentscope-api-base: ${SAA_SAMPLE_AGENTSCOPE_API_BASE:http://localhost:4000/v1}
+      api-key: ${SAA_SAMPLE_LLM_API_KEY:sk-local-placeholder}
+      model-name: ${SAA_SAMPLE_LLM_MODEL:gpt-5.4-mini}
+    gateway:
+      base-url: ${SAA_SAMPLE_LLM_GATEWAY_BASE_URL:http://localhost:8080/v1}
+      token: ${SAA_SAMPLE_LLM_GATEWAY_TOKEN:saa-sample-minted-token}
+      model-alias: ${SAA_SAMPLE_LLM_GATEWAY_MODEL_ALIAS:sample-llm}
+      openjiuwen-api-base: ${sample.llm.gateway.base-url}
+      agentscope-api-base: ${sample.llm.gateway.base-url}
+      api-key: ${sample.llm.gateway.token}
+      model-name: ${sample.llm.gateway.model-alias}
   openjiuwen:
     model-provider: ${SAA_SAMPLE_OPENJIUWEN_MODEL_PROVIDER:openai}
-    api-key: ${SAA_SAMPLE_LLM_API_KEY:sk-local-placeholder}
-    api-base: ${SAA_SAMPLE_OPENJIUWEN_API_BASE:http://localhost:4000/v1}
-    model-name: ${SAA_SAMPLE_LLM_MODEL:gpt-5.4-mini}
+    api-key: ${sample.llm.${sample.llm.path}.api-key}
+    api-base: ${sample.llm.${sample.llm.path}.openjiuwen-api-base}
+    model-name: ${sample.llm.${sample.llm.path}.model-name}
     ssl-verify: ${SAA_SAMPLE_OPENJIUWEN_SSL_VERIFY:false}
     checkpointer: ${SAA_SAMPLE_OPENJIUWEN_CHECKPOINTER:in-memory}
     redis-url: ${SAA_SAMPLE_OPENJIUWEN_REDIS_URL:redis://localhost:6379}
   agentscope:
-    api-key: ${SAA_SAMPLE_LLM_API_KEY:sk-local-placeholder}
-    api-base: ${SAA_SAMPLE_AGENTSCOPE_API_BASE:http://localhost:4000/v1}
+    api-key: ${sample.llm.${sample.llm.path}.api-key}
+    api-base: ${sample.llm.${sample.llm.path}.agentscope-api-base}
     endpoint-path: ${SAA_SAMPLE_AGENTSCOPE_ENDPOINT_PATH:/chat/completions}
-    model-name: ${SAA_SAMPLE_LLM_MODEL:gpt-5.4-mini}
+    model-name: ${sample.llm.${sample.llm.path}.model-name}
     runtime:
       base-url: ${SAA_SAMPLE_AGENTSCOPE_RUNTIME_BASE_URL:self}
       endpoint-path: ${SAA_SAMPLE_AGENTSCOPE_RUNTIME_ENDPOINT_PATH:/sample/agentscope/process}

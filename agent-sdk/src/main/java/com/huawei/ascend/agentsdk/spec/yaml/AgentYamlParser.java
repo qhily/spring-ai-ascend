@@ -1,6 +1,7 @@
 package com.huawei.ascend.agentsdk.spec.yaml;
 
 import com.huawei.ascend.agentsdk.spec.AgentSpec;
+import com.huawei.ascend.agentsdk.spec.model.GatewayModelResolver;
 import com.huawei.ascend.agentsdk.spec.model.ModelSpec;
 import com.huawei.ascend.agentsdk.spec.prompt.PromptSpec;
 import com.huawei.ascend.agentsdk.spec.skill.SkillSourceLoader;
@@ -18,6 +19,16 @@ import java.util.List;
 import java.util.Map;
 
 public final class AgentYamlParser {
+
+    private final GatewayModelResolver gatewayModelResolver;
+
+    public AgentYamlParser() {
+        this(GatewayModelResolver.withEnvironmentFallback(null, null));
+    }
+
+    public AgentYamlParser(GatewayModelResolver gatewayModelResolver) {
+        this.gatewayModelResolver = gatewayModelResolver;
+    }
 
     public AgentSpec parse(Map<String, Object> root, Path yamlPath) {
         Path yamlDir = yamlPath.toAbsolutePath().normalize().getParent();
@@ -57,7 +68,27 @@ public final class AgentYamlParser {
                 mcpServers);
     }
 
+    /**
+     * Two forms, never mixed: the explicit form names the upstream directly
+     * (provider/name/baseUrl/apiKey), the alias form delegates all routing to
+     * the platform gateway. A leftover explicit key next to an alias almost
+     * always means the author believes both are in effect — the gateway would
+     * silently ignore it, so it is rejected by name instead.
+     */
     private ModelSpec model(Map<String, Object> model) {
+        String alias = string(model.get("alias"));
+        if (alias != null && !alias.isBlank()) {
+            for (String key : List.of("provider", "name", "baseUrl", "apiKey")) {
+                if (model.containsKey(key)) {
+                    throw new ValidationException("model.alias is mutually exclusive with model." + key
+                            + ": the alias form delegates provider/name/baseUrl/apiKey to the platform gateway");
+                }
+            }
+            return gatewayModelResolver.resolve(
+                    alias,
+                    booleanValue(model.get("sslVerify"), true, "model.sslVerify"),
+                    stringMap(mapOrEmpty(model.get("headers"))));
+        }
         return new ModelSpec(
                 defaultString(string(model.get("provider")), "openai-compatible"),
                 requiredString(model, "name", "model.name"),

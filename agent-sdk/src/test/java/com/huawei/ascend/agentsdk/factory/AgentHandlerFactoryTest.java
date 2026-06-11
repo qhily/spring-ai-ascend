@@ -62,6 +62,32 @@ class AgentHandlerFactoryTest {
         assertThat(handler.agentId()).isEqualTo(yaml.agentId());
     }
 
+    @Test
+    void builderGatewaySettingsResolveTheModelAliasForm() throws Exception {
+        String agentId = "aliasAgent" + UUID.randomUUID().toString().replace("-", "");
+        Path tempDir = testDirectory("alias");
+        Path yaml = tempDir.resolve("agent.yaml");
+        Files.writeString(yaml, """
+                schema: ascend-agent/v1
+                name: %s
+                description: Alias agent resolved through the platform gateway
+                framework:
+                  type: openjiuwen
+                  agent: react
+                model:
+                  alias: retail-llm
+                prompt:
+                  system: answer briefly
+                """.formatted(agentId));
+
+        AgentRuntimeHandler handler = AgentHandlerFactory.builder()
+                .gateway("http://localhost:8080", "saa-minted-token")
+                .fromYaml(yaml);
+
+        assertThat(handler).isInstanceOf(OpenJiuwenAgentRuntimeHandler.class);
+        assertThat(handler.agentId()).isEqualTo(agentId);
+    }
+
     private TestYaml exampleYaml(String agentType) throws Exception {
         String suffix = UUID.randomUUID().toString().replace("-", "");
         String agentId = "sdkExampleAgent" + suffix;

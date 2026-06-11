@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.huawei.ascend.agentsdk.spec.AgentSpec;
+import com.huawei.ascend.agentsdk.spec.model.GatewayModelResolver;
 import com.huawei.ascend.agentsdk.support.ValidationException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -302,6 +303,91 @@ class AgentYamlLoaderTest {
         assertThatThrownBy(() -> new AgentYamlLoader().load(yaml))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("sslVerify");
+    }
+
+    @Test
+    void modelAliasFormResolvesAgainstGatewaySettings() throws Exception {
+        Path tempDir = testDirectory("alias-resolves");
+        Path yaml = tempDir.resolve("agent.yaml");
+        Files.writeString(yaml, """
+                schema: ascend-agent/v1
+                name: alias-agent
+                description: Alias agent
+                framework:
+                  type: openjiuwen
+                  agent: react
+                model:
+                  alias: retail-llm
+                """);
+        AgentYamlLoader loader = new AgentYamlLoader(
+                new AgentYamlEnvironmentResolver(),
+                new AgentYamlParser(new GatewayModelResolver("http://gateway:8080", "saa-minted-token")));
+
+        AgentSpec spec = loader.load(yaml);
+
+        assertThat(spec.modelSpec().provider()).isEqualTo("openai-compatible");
+        assertThat(spec.modelSpec().name()).isEqualTo("retail-llm");
+        assertThat(spec.modelSpec().baseUrl()).isEqualTo("http://gateway:8080/v1");
+        assertThat(spec.modelSpec().apiKey()).isEqualTo("saa-minted-token");
+        assertThat(spec.modelSpec().sslVerify()).isTrue();
+    }
+
+    @Test
+    void modelAliasRejectsExplicitFormKeysByName() throws Exception {
+        for (String conflictingLine : new String[] {
+                "name: deepseek-chat",
+                "baseUrl: http://localhost",
+                "apiKey: secret",
+                "provider: openai-compatible"}) {
+            String key = conflictingLine.substring(0, conflictingLine.indexOf(':'));
+            assertThatThrownBy(() -> loadWithModelSection("alias-conflict-" + key, """
+                      alias: retail-llm
+                      %s
+                    """.formatted(conflictingLine)))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("model.alias is mutually exclusive with model." + key);
+        }
+    }
+
+    @Test
+    void modelAliasWithoutGatewaySettingsFailsNamingTheGatewayEnvVar() throws Exception {
+        AgentYamlLoader loader = new AgentYamlLoader(
+                new AgentYamlEnvironmentResolver(),
+                new AgentYamlParser(new GatewayModelResolver(null, null)));
+        Path tempDir = testDirectory("alias-no-gateway");
+        Path yaml = tempDir.resolve("agent.yaml");
+        Files.writeString(yaml, """
+                schema: ascend-agent/v1
+                name: alias-agent
+                description: Alias agent
+                framework:
+                  type: openjiuwen
+                  agent: react
+                model:
+                  alias: retail-llm
+                """);
+
+        assertThatThrownBy(() -> loader.load(yaml))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("SAA_GATEWAY_BASE_URL");
+    }
+
+    private static AgentSpec loadWithModelSection(String directory, String modelYaml) throws Exception {
+        Path tempDir = testDirectory(directory);
+        Path yaml = tempDir.resolve("agent.yaml");
+        Files.writeString(yaml, """
+                schema: ascend-agent/v1
+                name: model-agent
+                description: Model agent
+                framework:
+                  type: openjiuwen
+                  agent: react
+                model:
+                """ + modelYaml);
+        return new AgentYamlLoader(
+                new AgentYamlEnvironmentResolver(),
+                new AgentYamlParser(new GatewayModelResolver("http://gateway:8080", "saa-minted-token")))
+                .load(yaml);
     }
 
     @Test

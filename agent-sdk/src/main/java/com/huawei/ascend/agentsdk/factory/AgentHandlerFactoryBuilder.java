@@ -3,11 +3,14 @@ package com.huawei.ascend.agentsdk.factory;
 import com.huawei.ascend.agentsdk.adapter.deepagent.OpenJiuwenDeepAgentBuilder;
 import com.huawei.ascend.agentsdk.adapter.react.OpenJiuwenReactAgentBuilder;
 import com.huawei.ascend.agentsdk.spec.AgentSpec;
+import com.huawei.ascend.agentsdk.spec.model.GatewayModelResolver;
 import com.huawei.ascend.agentsdk.spec.tool.HttpToolResolver;
 import com.huawei.ascend.agentsdk.spec.tool.JavaFileToolResolver;
 import com.huawei.ascend.agentsdk.spec.tool.McpToolResolver;
 import com.huawei.ascend.agentsdk.spec.tool.ToolResolver;
+import com.huawei.ascend.agentsdk.spec.yaml.AgentYamlEnvironmentResolver;
 import com.huawei.ascend.agentsdk.spec.yaml.AgentYamlLoader;
+import com.huawei.ascend.agentsdk.spec.yaml.AgentYamlParser;
 import com.huawei.ascend.agentsdk.support.UnsupportedFrameworkException;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
 import com.openjiuwen.core.singleagent.ReActAgent;
@@ -19,6 +22,8 @@ import java.util.Locale;
 public final class AgentHandlerFactoryBuilder {
     private final List<ToolResolver> customToolResolvers = new ArrayList<>();
     private Path cacheRoot;
+    private String gatewayBaseUrl;
+    private String gatewayToken;
 
     public AgentHandlerFactoryBuilder toolResolver(ToolResolver resolver) {
         customToolResolvers.add(resolver);
@@ -30,8 +35,20 @@ public final class AgentHandlerFactoryBuilder {
         return this;
     }
 
+    /**
+     * Platform gateway settings for the {@code model.alias} YAML form: the
+     * gateway base URL and the minted scoped token the agent calls it with.
+     * Values left null fall back to the SAA_GATEWAY_BASE_URL / SAA_GATEWAY_TOKEN
+     * environment variables; the explicit model form never consults either.
+     */
+    public AgentHandlerFactoryBuilder gateway(String gatewayBaseUrl, String mintedToken) {
+        this.gatewayBaseUrl = gatewayBaseUrl;
+        this.gatewayToken = mintedToken;
+        return this;
+    }
+
     public AgentRuntimeHandler fromYaml(Path yamlPath) {
-        AgentSpec spec = new AgentYamlLoader().load(yamlPath);
+        AgentSpec spec = yamlLoader().load(yamlPath);
         String agentType = normalize(spec.agentType());
         if ("react".equals(agentType)) {
             return toHandler(spec.name(), toReactAgent(spec));
@@ -43,11 +60,11 @@ public final class AgentHandlerFactoryBuilder {
     }
 
     public ReActAgent toReactAgent(Path yamlPath) {
-        return toReactAgent(new AgentYamlLoader().load(yamlPath));
+        return toReactAgent(yamlLoader().load(yamlPath));
     }
 
     public Object toDeepAgent(Path yamlPath) {
-        return toDeepAgent(new AgentYamlLoader().load(yamlPath));
+        return toDeepAgent(yamlLoader().load(yamlPath));
     }
 
     public AgentRuntimeHandler toHandler(String name, Object agent) {
@@ -81,6 +98,12 @@ public final class AgentHandlerFactoryBuilder {
             // Reserved for localCache-enabled resource materialization.
         }
         return new OpenJiuwenDeepAgentBuilder(toolResolvers()).buildAgent(spec);
+    }
+
+    private AgentYamlLoader yamlLoader() {
+        return new AgentYamlLoader(
+                new AgentYamlEnvironmentResolver(),
+                new AgentYamlParser(GatewayModelResolver.withEnvironmentFallback(gatewayBaseUrl, gatewayToken)));
     }
 
     private List<ToolResolver> toolResolvers() {
