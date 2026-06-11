@@ -5,12 +5,23 @@ import com.huawei.ascend.runtime.engine.AgentExecutionContext;
 import com.huawei.ascend.runtime.engine.service.RemoteAgentInvocationService;
 import com.huawei.ascend.runtime.engine.spi.AgentExecutionResult;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
+import com.huawei.ascend.runtime.engine.spi.CompositeTrajectorySink;
+import com.huawei.ascend.runtime.engine.spi.TrajectoryChannel;
+import com.huawei.ascend.runtime.engine.spi.TrajectoryLevel;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySettings;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySink;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySinkFactory;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySource;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
@@ -23,6 +34,7 @@ import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public final class A2aAgentExecutor implements AgentExecutor {
 
@@ -34,6 +46,11 @@ public final class A2aAgentExecutor implements AgentExecutor {
     public static final String TENANT_STATE_KEY = "tenantId";
 
     private static final Logger LOG = LoggerFactory.getLogger(A2aAgentExecutor.class);
+    private static final String MDC_CONTEXT_ID = "contextId";
+    private static final String MDC_TASK_ID = "taskId";
+    private static final String TRAJECTORY_LEVEL_METADATA = "trajectory.level";
+    /** Request opts into northbound trajectory delivery (a second artifact stream) by setting this true. */
+    private static final String TRAJECTORY_NORTHBOUND_METADATA = "trajectory.northbound";
 
     /** Version of the structured-error payload carried on the failure DataPart/metadata. */
     private static final String ERROR_SCHEMA_VERSION = "1";
@@ -43,23 +60,41 @@ public final class A2aAgentExecutor implements AgentExecutor {
     private final BooleanSupplier readiness;
     private final A2aParentTaskProjector parentProjector = new A2aParentTaskProjector();
     private final ConcurrentHashMap<String, InFlightExecution> inFlight = new ConcurrentHashMap<>();
+    private final Executor trajectoryExecutor;
+    private final TrajectorySettings defaultTrajectorySettings;
+    private final List<TrajectorySinkFactory> sinkFactories;
 
     public A2aAgentExecutor(AgentRuntimeHandler handler) {
-        this(handler, null, () -> true);
+        this(handler, null, () -> true, null, TrajectorySettings.off(), List.of());
     }
 
     public A2aAgentExecutor(AgentRuntimeHandler handler, RemoteSupport remoteSupport) {
-        this(handler, remoteSupport, () -> true);
+        this(handler, remoteSupport, () -> true, null, TrajectorySettings.off(), List.of());
     }
 
     public A2aAgentExecutor(AgentRuntimeHandler handler, BooleanSupplier readiness) {
-        this(handler, null, readiness);
+        this(handler, null, readiness, null, TrajectorySettings.off(), List.of());
     }
 
     public A2aAgentExecutor(AgentRuntimeHandler handler, RemoteSupport remoteSupport, BooleanSupplier readiness) {
+        this(handler, remoteSupport, readiness, null, TrajectorySettings.off(), List.of());
+    }
+
+    public A2aAgentExecutor(AgentRuntimeHandler handler, Executor trajectoryExecutor,
+            TrajectorySettings defaultTrajectorySettings) {
+        this(handler, null, () -> true, trajectoryExecutor, defaultTrajectorySettings, List.of());
+    }
+
+    public A2aAgentExecutor(AgentRuntimeHandler handler, RemoteSupport remoteSupport, BooleanSupplier readiness,
+            Executor trajectoryExecutor, TrajectorySettings defaultTrajectorySettings,
+            List<TrajectorySinkFactory> sinkFactories) {
         this.handler = handler;
         this.remoteSupport = remoteSupport;
         this.readiness = Objects.requireNonNull(readiness, "readiness");
+        this.trajectoryExecutor = trajectoryExecutor;
+        this.defaultTrajectorySettings =
+                defaultTrajectorySettings != null ? defaultTrajectorySettings : TrajectorySettings.off();
+        this.sinkFactories = sinkFactories != null ? List.copyOf(sinkFactories) : List.of();
     }
 
     /** Cancel state for one in-flight execution: the handler's raw stream plus a torn-down marker. */
@@ -89,21 +124,24 @@ public final class A2aAgentExecutor implements AgentExecutor {
         long startedNanos = System.nanoTime();
         String sessionId = ctx.getContextId();
         String agentId = handler.agentId();
-        LOG.info("[A2A] execute start taskId={} sessionId={} agentId={}", taskId, sessionId, agentId);
-
-        emitter.submit();
-        LOG.info("[A2A] task state=SUBMITTED taskId={}", taskId);
-        emitter.startWork();
-        LOG.info("[A2A] task state=WORKING taskId={}", taskId);
-
+        MDC.put(MDC_CONTEXT_ID, sessionId != null ? sessionId : "");
+        MDC.put(MDC_TASK_ID, taskId != null ? taskId : "");
+        // Per-task local state (this bean is a shared singleton - never hoist to a field).
         AtomicBoolean firstArtifact = new AtomicBoolean(true);
         String artifactId = taskId + "-response";
-
-        // Everything after startWork must fail the task on error - context
-        // construction throws on wire-controllable input (blank/null ids), and
-        // an escape here would strand the task in WORKING forever.
+        String trajectoryArtifactId = taskId + "-trajectory";
         AtomicBoolean cancelled = new AtomicBoolean(false);
+        TrajectoryPipeline pipeline = TrajectoryPipeline.NONE;
+        TrajectoryChannel channel = TrajectoryChannel.NOOP;
         try {
+            LOG.info("[A2A] execute start taskId={} sessionId={} agentId={}", taskId, sessionId, agentId);
+
+            // -- (received) -> SUBMITTED -> WORKING --
+            emitter.submit();
+            LOG.info("[A2A] task state=SUBMITTED taskId={}", taskId);
+            emitter.startWork();
+            LOG.info("[A2A] task state=WORKING taskId={}", taskId);
+
             String inputText = extractText(ctx);
             LOG.info("[A2A] input parsed taskId={} textChars={}", taskId, inputText.length());
 
@@ -115,10 +153,21 @@ public final class A2aAgentExecutor implements AgentExecutor {
             }
 
             AgentExecutionContext context = toExecutionContext(ctx, inputText);
-            RouteDecision decision = consumeHandler(context, emitter, taskId, artifactId, firstArtifact, true, cancelled);
+            pipeline = openTrajectory(ctx, context);
+            channel = pipeline.channel();
+
+            RouteDecision decision = consumeHandler(context, emitter, taskId, artifactId, firstArtifact, true,
+                    cancelled);
+
+            // The full trajectory (through RUN_END) is only complete now; deliver it to the caller
+            // before the answer's terminal so it lands while the task can still accept artifacts.
+            deliverNorthbound(pipeline.northbound(), channel, pipeline.drain(), emitter, trajectoryArtifactId, taskId);
+
             if (decision.remoteInvocation() != null) {
                 handleRemoteInvocation(ctx, decision.remoteInvocation(), emitter, taskId, artifactId,
                         firstArtifact, cancelled);
+            } else if (decision.terminalAction() != null) {
+                decision.terminalAction().run();
             } else if (!decision.terminalRouted()) {
                 completeDrainedStream(taskId, emitter);
             }
@@ -138,8 +187,123 @@ public final class A2aAgentExecutor implements AgentExecutor {
             String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             LOG.error("[A2A] execute failed taskId={} code={} errorClass={} message={}",
                     taskId, code, e.getClass().getSimpleName(), e.getMessage(), e);
-            emitter.fail(failureMessage(emitter, code.name(), detail, code.retryable()));
-            LOG.info("[A2A] task state=FAILED taskId={}", taskId);
+            deliverNorthbound(pipeline.northbound(), channel, pipeline.drain(), emitter, trajectoryArtifactId, taskId);
+            try {
+                emitter.fail(failureMessage(emitter, code.name(), detail, code.retryable()));
+                LOG.info("[A2A] task state=FAILED taskId={}", taskId);
+            } catch (RuntimeException ignored) {
+                LOG.warn("[A2A] could not emit terminal failure taskId={}", taskId);
+            }
+        } finally {
+            channel.close();
+            MDC.remove(MDC_CONTEXT_ID);
+            MDC.remove(MDC_TASK_ID);
+        }
+    }
+
+    /**
+     * Opens a per-invocation trajectory channel for a {@link TrajectorySource} handler and starts
+     * a drain that fans events to the JSONL track. Returns a no-op channel when trajectory is
+     * disabled, the handler is not a source, or no drain executor is wired.
+     */
+    private TrajectoryPipeline openTrajectory(RequestContext ctx, AgentExecutionContext context) {
+        if (trajectoryExecutor == null || !(handler instanceof TrajectorySource source)) {
+            return TrajectoryPipeline.NONE;
+        }
+        TrajectorySettings settings = resolveSettings(metadata(ctx, TRAJECTORY_LEVEL_METADATA, null));
+        if (settings.level() == TrajectoryLevel.OFF) {
+            return TrajectoryPipeline.NONE;
+        }
+        TrajectoryChannel channel = source.openTrajectory(context, settings);
+        List<TrajectorySink> sinks = new ArrayList<>();
+        sinks.add(new JsonlLogSink());
+        for (TrajectorySinkFactory factory : sinkFactories) {
+            sinks.add(factory.create());
+        }
+        A2aNorthboundSink northbound = null;
+        if ("true".equalsIgnoreCase(metadata(ctx, TRAJECTORY_NORTHBOUND_METADATA, "false"))) {
+            northbound = new A2aNorthboundSink();
+            sinks.add(northbound);
+        }
+        TrajectorySink sink = new CompositeTrajectorySink(sinks);
+        try {
+            Map<String, String> mdc = MDC.getCopyOfContextMap();
+            TrajectoryChannel draining = channel;
+            String contextId = ctx.getContextId();
+            String taskId = ctx.getTaskId();
+            CompletableFuture<Void> drain = CompletableFuture.runAsync(
+                    () -> drainTrajectory(draining, mdc, sink, contextId, taskId), trajectoryExecutor);
+            return new TrajectoryPipeline(channel, northbound, drain);
+        } catch (RuntimeException e) {
+            // Trajectory must never break the run: if the drain can't be scheduled (e.g. the pool is
+            // shutting down), close the channel so the adapter's publishes are dropped, and degrade to
+            // no trajectory rather than letting the failure escape execute().
+            LOG.warn("[A2A] trajectory drain not scheduled taskId={} message={}", ctx.getTaskId(), e.getMessage());
+            channel.close();
+            return TrajectoryPipeline.NONE;
+        }
+    }
+
+    /** The per-invocation trajectory wiring: the channel, the optional northbound sink, and the joinable drain. */
+    private record TrajectoryPipeline(TrajectoryChannel channel, A2aNorthboundSink northbound,
+            CompletableFuture<Void> drain) {
+        static final TrajectoryPipeline NONE = new TrajectoryPipeline(TrajectoryChannel.NOOP, null, null);
+    }
+
+    /**
+     * When the caller opted into northbound trajectory, close the channel, wait (bounded) for the
+     * drain to buffer every event, and flush them as the {@code -trajectory} artifact - all on the
+     * execute thread, the only thread allowed to touch the single-writer emitter. A failure here
+     * must never break the answer: it degrades to no northbound trajectory.
+     */
+    private static void deliverNorthbound(A2aNorthboundSink northbound, TrajectoryChannel channel,
+            CompletableFuture<Void> drain, AgentEmitter emitter, String artifactId, String taskId) {
+        if (northbound == null) {
+            return;
+        }
+        try {
+            channel.close();
+            if (drain != null) {
+                drain.get(5, TimeUnit.SECONDS);
+            }
+            northbound.flush(emitter, artifactId);
+        } catch (Exception e) {
+            LOG.warn("[A2A] northbound trajectory delivery failed taskId={} message={}", taskId, e.getMessage());
+        }
+    }
+
+    private TrajectorySettings resolveSettings(String requestOverride) {
+        if (defaultTrajectorySettings.level() == TrajectoryLevel.OFF) {
+            return TrajectorySettings.off();
+        }
+        TrajectoryLevel level = TrajectoryLevel.from(requestOverride, defaultTrajectorySettings.level());
+        if (level == TrajectoryLevel.OFF) {
+            return TrajectorySettings.off();
+        }
+        return new TrajectorySettings(level, defaultTrajectorySettings.maskKeyPattern(),
+                defaultTrajectorySettings.truncateChars());
+    }
+
+    private static void drainTrajectory(TrajectoryChannel channel, Map<String, String> mdc, TrajectorySink sink,
+            String contextId, String taskId) {
+        // Restore the worker thread's prior MDC on exit rather than clearing it: this drain runs on a
+        // shared pool, so wiping the whole map could clobber MDC a reused thread legitimately holds.
+        Map<String, String> prior = MDC.getCopyOfContextMap();
+        if (mdc != null) {
+            MDC.setContextMap(mdc);
+        }
+        try {
+            sink.onOpen(contextId, taskId);
+            channel.drain().forEach(sink::accept);
+        } catch (RuntimeException e) {
+            LOG.warn("[A2A] trajectory drain failed message={}", e.getMessage());
+        } finally {
+            sink.onClose();
+            if (prior != null) {
+                MDC.setContextMap(prior);
+            } else {
+                MDC.clear();
+            }
         }
     }
 
@@ -218,52 +382,63 @@ public final class A2aAgentExecutor implements AgentExecutor {
         return handler.execute(context);
     }
 
+    /**
+     * Streams an OUTPUT chunk immediately; for the terminal kinds the decision carries the terminal
+     * emission as a deferred action the caller runs after any northbound trajectory has been
+     * flushed, so the trajectory artifact lands before the task reaches its terminal state.
+     */
     private RouteDecision route(AgentExecutionResult result, AgentEmitter emitter, String taskId,
             String artifactId, AtomicBoolean firstArtifact, boolean remoteInvocationAllowed) {
         switch (result.type()) {
             case OUTPUT -> {
                 String text = outputText(result);
                 LOG.info("[A2A] output stream taskId={} textChars={}", taskId, text.length());
+                // First chunk opens the artifact (append=false); later chunks append to the same
+                // artifactId so the stream forms one growing artifact rather than many fragments.
                 boolean append = !firstArtifact.getAndSet(false);
                 emitter.addArtifact(List.<Part<?>>of(new TextPart(text)),
                         artifactId, "agent-response", null, append, false);
+                // state stays WORKING - more output may follow; the terminal status closes the stream
                 return RouteDecision.continueRoute();
             }
             case COMPLETED -> {
                 String text = outputText(result);
-                if (!text.isBlank()) {
-                    LOG.info("[A2A] complete with final output taskId={} textChars={}", taskId, text.length());
-                    emitter.complete(emitter.newAgentMessage(List.<Part<?>>of(new TextPart(text)), null));
-                } else {
-                    emitter.complete();
-                }
-                LOG.info("[A2A] task state=COMPLETED taskId={}", taskId);
-                return RouteDecision.terminal();
+                return RouteDecision.terminal(() -> {
+                    if (!text.isBlank()) {
+                        LOG.info("[A2A] complete with final output taskId={} textChars={}", taskId, text.length());
+                        emitter.complete(emitter.newAgentMessage(List.<Part<?>>of(new TextPart(text)), null));
+                    } else {
+                        emitter.complete();
+                    }
+                    LOG.info("[A2A] task state=COMPLETED taskId={}", taskId);
+                });
             }
             case FAILED -> {
                 String code = result.errorCode() == null ? "RUNTIME_ERROR" : result.errorCode();
                 String msg = result.errorMessage() == null ? code : result.errorMessage();
-                LOG.warn("[A2A] task state=FAILED taskId={} code={} message={}", taskId, code, msg);
-                emitter.fail(failureMessage(emitter, code, result.errorMessage(), false));
-                return RouteDecision.terminal();
+                return RouteDecision.terminal(() -> {
+                    LOG.warn("[A2A] task state=FAILED taskId={} code={} message={}", taskId, code, msg);
+                    // Adapter-supplied codes pass through unchanged; retryability is unknown -> conservative false.
+                    emitter.fail(failureMessage(emitter, code, result.errorMessage(), false));
+                });
             }
             case INTERRUPTED -> {
                 String prompt = result.prompt() == null ? "" : result.prompt();
-                LOG.info("[A2A] task state=INPUT_REQUIRED taskId={} prompt={}", taskId, prompt);
-                Message message = prompt.isBlank()
-                        ? null
-                        : emitter.newAgentMessage(List.<Part<?>>of(new TextPart(prompt)), null);
-                emitter.requiresInput(message, false);
-                return RouteDecision.terminal();
+                return RouteDecision.terminal(() -> {
+                    LOG.info("[A2A] task state=INPUT_REQUIRED taskId={} prompt={}", taskId, prompt);
+                    Message message = prompt.isBlank()
+                            ? null
+                            : emitter.newAgentMessage(List.<Part<?>>of(new TextPart(prompt)), null);
+                    emitter.requiresInput(message, false);
+                });
             }
             case REMOTE_INVOCATION -> {
                 if (!remoteInvocationAllowed) {
-                    emitter.fail(failureMessage(
+                    return RouteDecision.terminal(() -> emitter.fail(failureMessage(
                             emitter,
                             "NESTED_REMOTE_INVOCATION_UNSUPPORTED",
                             "remote A2A invocation after REMOTE_RESUME is not supported",
-                            false));
-                    return RouteDecision.terminal();
+                            false)));
                 }
                 return RouteDecision.remote(result.remoteInvocation());
             }
@@ -319,12 +494,17 @@ public final class A2aAgentExecutor implements AgentExecutor {
                 parentProjector.remoteResumeContext(requestContext, handler.agentId(), invocation, outcome.toolResult());
         RouteDecision decision = consumeHandler(resumeContext, emitter, taskId, artifactId, firstArtifact, false,
                 cancelled);
-        if (!decision.terminalRouted()) {
+        if (decision.terminalAction() != null) {
+            decision.terminalAction().run();
+        } else if (!decision.terminalRouted()) {
             completeDrainedStream(taskId, emitter);
         }
     }
 
     private static void completeDrainedStream(String taskId, AgentEmitter emitter) {
+        // The handler stream drained without a terminal result (e.g. the upstream runtime
+        // replied with no events). DefaultRequestHandler never forces a terminal state, so
+        // finalize here or the task stays WORKING forever and polling clients hang.
         LOG.warn("[A2A] result stream ended without terminal result taskId={} - completing", taskId);
         emitter.complete();
     }
@@ -368,6 +548,10 @@ public final class A2aAgentExecutor implements AgentExecutor {
                         metadata(ctx, "agentId", handler.agentId())),
                 "USER_MESSAGE",
                 messages,
+                // In A2A every message/send of a conversation opens a NEW task within
+                // the same contextId, so the framework conversation key must follow the
+                // session - keying it by taskId would start a fresh framework
+                // conversation each turn and checkpointer restore would never fire.
                 Map.of(AgentExecutionContext.AGENT_STATE_KEY_VARIABLE, sessionId));
     }
 
@@ -412,22 +596,31 @@ public final class A2aAgentExecutor implements AgentExecutor {
         }
     }
 
+    /**
+     * Outcome of routing one adapted result. {@code terminalAction} carries the deferred terminal
+     * emission (run by the caller after trajectory delivery); {@code terminalRouted} is also true
+     * for terminals already emitted elsewhere (the cancel teardown path).
+     */
     private record RouteDecision(boolean stop, AgentExecutionResult.RemoteInvocation remoteInvocation,
-            boolean terminalRouted) {
+            boolean terminalRouted, Runnable terminalAction) {
         static RouteDecision continueRoute() {
-            return new RouteDecision(false, null, false);
+            return new RouteDecision(false, null, false, null);
         }
 
         static RouteDecision drained() {
-            return new RouteDecision(true, null, false);
+            return new RouteDecision(true, null, false, null);
         }
 
         static RouteDecision terminal() {
-            return new RouteDecision(true, null, true);
+            return new RouteDecision(true, null, true, null);
+        }
+
+        static RouteDecision terminal(Runnable terminalAction) {
+            return new RouteDecision(true, null, true, terminalAction);
         }
 
         static RouteDecision remote(AgentExecutionResult.RemoteInvocation invocation) {
-            return new RouteDecision(true, invocation, false);
+            return new RouteDecision(true, invocation, false, null);
         }
     }
 }

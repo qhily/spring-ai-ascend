@@ -9,10 +9,15 @@ import com.huawei.ascend.runtime.engine.service.RemoteAgentInvocationService;
 import com.huawei.ascend.runtime.engine.spi.AgentCardProvider;
 import com.huawei.ascend.runtime.engine.spi.AgentCards;
 import com.huawei.ascend.runtime.engine.spi.AgentRuntimeHandler;
+import com.huawei.ascend.runtime.engine.spi.TrajectoryLevel;
+import com.huawei.ascend.runtime.engine.spi.TrajectoryMasking;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySettings;
+import com.huawei.ascend.runtime.engine.spi.TrajectorySinkFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
 import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
@@ -39,9 +44,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(RuntimeAccessProperties.class)
+@EnableConfigurationProperties({RuntimeAccessProperties.class, TrajectoryProperties.class})
+@Import(TrajectoryOtelConfiguration.class)
 public class RuntimeAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(RuntimeAutoConfiguration.class);
 
@@ -108,7 +115,8 @@ public class RuntimeAutoConfiguration {
     @Bean @ConditionalOnMissingBean
     public AgentExecutor a2aAgentExecutor(ObjectProvider<AgentRuntimeHandler> handlers,
             ObjectProvider<A2aAgentExecutor.RemoteSupport> remoteSupport,
-            RuntimeReadiness readiness) {
+            RuntimeReadiness readiness, A2aServerExecutor exec, TrajectoryProperties trajectoryProperties,
+            ObjectProvider<TrajectorySinkFactory> sinkFactories) {
         var registered = handlers.orderedStream().toList();
         A2aAgentExecutor.RemoteSupport support = remoteSupport.getIfAvailable();
         if (registered.isEmpty()) {
@@ -122,7 +130,35 @@ public class RuntimeAutoConfiguration {
                     registered.get(0).agentId(),
                     registered.stream().skip(1).map(AgentRuntimeHandler::agentId).toList());
         }
-        return new A2aAgentExecutor(registered.get(0), support, readiness::isReady);
+        return new A2aAgentExecutor(registered.get(0), support, readiness::isReady, exec.executor(),
+                toTrajectorySettings(trajectoryProperties), sinkFactories.orderedStream().toList());
+    }
+
+    static TrajectorySettings toTrajectorySettings(TrajectoryProperties properties) {
+        if (!properties.isEnabled()) {
+            return TrajectorySettings.off();
+        }
+        TrajectoryLevel level = TrajectoryLevel.from(properties.getDefaultLevel(), TrajectoryLevel.SUMMARY);
+        if (level == TrajectoryLevel.OFF) {
+            return TrajectorySettings.off();
+        }
+        return new TrajectorySettings(level, compileMaskPattern(properties.getMask().getKeyPattern()),
+                properties.getMask().getTruncateChars());
+    }
+
+    /**
+     * Compiles the configured mask pattern, falling back to the default on a bad regex. A masking
+     * typo must never crash boot, and must never degrade to a null pattern (which would silently
+     * disable key redaction) — it fails safe toward the default pattern, with a WARN.
+     */
+    private static Pattern compileMaskPattern(String pattern) {
+        try {
+            return Pattern.compile(pattern);
+        } catch (RuntimeException e) {
+            log.warn("invalid app.trajectory.mask.key-pattern '{}'; falling back to default ({})",
+                    pattern, e.getMessage());
+            return Pattern.compile(TrajectoryMasking.DEFAULT_KEY_PATTERN);
+        }
     }
 
     @Bean @ConditionalOnMissingBean
