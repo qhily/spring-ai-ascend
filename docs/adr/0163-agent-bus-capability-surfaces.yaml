@@ -1,0 +1,54 @@
+id: ADR-0163
+title: "agent-bus capability surfaces — session memory, knowledge seam, async agent messaging (engine/s2c freeze untouched)"
+status: accepted
+date: 2026-06-11
+level: L1
+view: development
+affects_level: L1
+affects_view: [logical, development]
+authors:
+  - owner (directive + decision)
+  - claude (proposal + drafting)
+relates_to:
+  - ADR-0051    # memory/knowledge ownership boundary — binding for bus.memory/bus.knowledge
+  - ADR-0161    # serviceization — cross-process agent communication stays A2A through the facade
+context: |
+  agent-bus has carried only the design-frozen bus.spi.engine/bus.spi.s2c
+  surfaces. The owner's 2026-06-11 goal directive instructs agent-bus to
+  support memory, knowledge engineering, and asynchronous inter-agent
+  communication for multi-agent systems. ADR-0051 already pins the memory
+  ownership boundary (platform owns S-side session/trajectory memory;
+  business facts are emitted to the C-side, never stored platform-side) but
+  its contract types were never materialized in code.
+
+  Full proposal: docs/logs/plans/2026-06-11-agent-bus-capability-surfaces-proposal.md
+  (status: approved; the owner directive is recorded in its frontmatter).
+decision: |
+  1. Three new capability packages in agent-bus, each an SPI WITH an
+     in-memory reference implementation and tests in the same change:
+     com.huawei.ascend.bus.memory (SessionMemoryStore + BusinessFactPublisher
+     materializing ADR-0051's BusinessFactEvent), bus.knowledge
+     (KnowledgeSource + KnowledgeRegistry + CompositeKnowledgeSource), and
+     bus.messaging (AgentMessageBus with tenant-scoped topics, bounded
+     per-subscriber queues, contained handler failures).
+  2. Placement is OUTSIDE bus.spi.*: the engine/s2c design freeze and its
+     enforcement (BusSpiFreezeArchTest) are not re-opened or weakened.
+  3. Ownership boundaries are structural: SessionMemoryStore holds S-side
+     working memory only; BusinessFactPublisher emits — never persists —
+     C-side facts; KnowledgeSource is a retrieval seam over C-side-owned
+     content; bus.messaging is the in-process plane, and cross-process
+     agent-to-agent communication remains A2A through the service facade
+     (A2A-NO-REWRITE binding).
+  4. Runtime integration is opt-in and surgical: reference impls exposed as
+     replaceable beans, optional accessors on AgentExecutionContext; no
+     engine adapter changes required.
+consequences: |
+  - agent-bus's module charter becomes true capability surface, resolving
+    the "carries only frozen design" state for these three concerns; the
+    Align-vs-Retire question for bus.spi.engine/s2c remains a separate,
+    still-open owner decision.
+  - Durable transports (brokers), vector stores, and the Graphiti adapter
+    plug in through these SPIs later; their absence is recorded scope, not
+    debt.
+  - agent-bus module-metadata spi_packages, the contract catalog, and the
+    status ledger move in lockstep with this change.
