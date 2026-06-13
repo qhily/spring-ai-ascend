@@ -5,9 +5,9 @@ import java.util.stream.Stream;
 
 public final class AgentScopeHarnessRuntimeHandler extends AbstractAgentScopeRuntimeHandler {
 
-    private final AgentScopeHarnessAgent harnessAgent;
+    private final AgentScopeAgent harnessAgent;
 
-    public AgentScopeHarnessRuntimeHandler(String agentId, AgentScopeHarnessAgent harnessAgent) {
+    public AgentScopeHarnessRuntimeHandler(String agentId, AgentScopeAgent harnessAgent) {
         super(agentId, agentId, "AgentScope Harness agent hosted by agent-runtime.");
         this.harnessAgent = Objects.requireNonNull(harnessAgent, "harnessAgent");
     }
@@ -16,7 +16,7 @@ public final class AgentScopeHarnessRuntimeHandler extends AbstractAgentScopeRun
             String agentId,
             String name,
             String description,
-            AgentScopeHarnessAgent harnessAgent) {
+            AgentScopeAgent harnessAgent) {
         super(agentId, name, description);
         this.harnessAgent = Objects.requireNonNull(harnessAgent, "harnessAgent");
     }
