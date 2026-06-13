@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Flow;
@@ -222,6 +224,37 @@ class A2aJsonRpcControllerTest {
                 .assertNext(event -> assertThat(dataJson(event).path("error").path("code").asInt())
                         .isEqualTo(new JSONParseError().getCode()))
                 .verifyComplete();
+    }
+
+    /**
+     * Verifies the {@code @ExceptionHandler} safety net: when Spring cannot write the
+     * response body (HttpMessageNotWritableException / Content-Type=null scenario), the
+     * handler must return HTTP 200 with Content-Type: application/json and a well-formed
+     * JSON-RPC INTERNAL error — never a bare 500 or an empty body.
+     */
+    @Test
+    void notWritableExceptionHandlerReturnsJsonRpcInternalErrorWithApplicationJsonContentType() {
+        A2aJsonRpcController controller =
+                new A2aJsonRpcController(new SingleEventRequestHandler(), new RuntimeAccessProperties());
+
+        ResponseEntity<String> response = controller.handleNotWritable(
+                new HttpMessageNotWritableException("No converter for [class FakePojo] with preset Content-Type 'null'"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getHeaders().getContentType())
+                .as("Content-Type must be application/json, not null")
+                .isEqualTo(MediaType.APPLICATION_JSON);
+        String body = response.getBody();
+        assertThat(body).isNotBlank();
+        JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+        assertThat(root.has("error"))
+                .as("response must carry a JSON-RPC error object, got: %s", body)
+                .isTrue();
+        JsonObject error = root.getAsJsonObject("error");
+        assertThat(error.get("code").getAsInt())
+                .as("error code must be INTERNAL")
+                .isEqualTo(org.a2aproject.sdk.spec.A2AErrorCodes.INTERNAL.code());
+        assertThat(error.get("message").getAsString()).isNotBlank();
     }
 
     @Test

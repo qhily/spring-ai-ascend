@@ -38,9 +38,12 @@ import org.a2aproject.sdk.spec.StreamingEventKind;
 import org.reactivestreams.FlowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -174,6 +177,25 @@ public class A2aJsonRpcController {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize A2A stream event", e);
         }
+    }
+
+    /**
+     * Last-resort safety net: if Spring cannot write the response body (e.g. because a future
+     * code path accidentally returns a raw SDK POJO that has no registered HttpMessageConverter,
+     * producing Content-Type=null), convert the failure into a well-formed JSON-RPC INTERNAL
+     * error instead of letting Spring emit a 500 with an empty or unwritable body.
+     *
+     * The request id is not recoverable at this point — JSON-RPC allows null id for
+     * unrecoverable errors that occur before the id can be extracted.
+     */
+    @ExceptionHandler(HttpMessageNotWritableException.class)
+    ResponseEntity<String> handleNotWritable(HttpMessageNotWritableException ex) {
+        log.warn("[A2A] response not writable, falling back to JSON-RPC error: {}", ex.getMessage());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String body = JSONRPCUtils.toJsonRPCErrorResponse(null,
+                error(A2AErrorCodes.INTERNAL, "response serialization failure"));
+        return ResponseEntity.ok().headers(headers).body(body);
     }
 
     private static ResponseEntity<String> errorResponse(Object id, A2AError error) {
