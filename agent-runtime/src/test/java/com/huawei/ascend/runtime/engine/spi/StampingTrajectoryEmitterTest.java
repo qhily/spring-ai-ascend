@@ -157,6 +157,22 @@ class StampingTrajectoryEmitterTest {
     }
 
     @Test
+    void finishReasonFlowsThroughUnmaskedOnModelCallEnd() {
+        CapturingSink sink = new CapturingSink();
+        StampingTrajectoryEmitter emitter = emitter(sink, EnumSet.allOf(Kind.class));
+
+        emitter.emit(TrajectoryDraft.runStart());
+        emitter.emit(TrajectoryDraft.modelCallStart("in"));
+        emitter.emit(TrajectoryDraft.modelCallEnd(null, "stop", null));
+        emitter.emit(TrajectoryDraft.runEnd());
+
+        TrajectoryEvent modelEnd = first(sink.events, Kind.MODEL_CALL_END);
+        // finishReason is a controlled token — not free-text — so it is passed unmasked.
+        assertThat(modelEnd.finishReason()).isEqualTo("stop");
+        assertThat(modelEnd.result()).isNull();
+    }
+
+    @Test
     void payloadsAreMaskedAndTruncated() {
         CapturingSink sink = new CapturingSink();
         TrajectorySettings settings = new TrajectorySettings(true,

@@ -20,45 +20,51 @@ public record TrajectoryDraft(
         Integer attempt,
         Boolean retryable,
         ErrorInfo error,
-        String reasoning) {
+        String reasoning,
+        String finishReason) {
 
     public static TrajectoryDraft runStart() {
-        return new TrajectoryDraft(Kind.RUN_START, "run", null, null, null, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.RUN_START, "run", null, null, null, null, null, null, null, null, null);
     }
 
     public static TrajectoryDraft runEnd() {
-        return new TrajectoryDraft(Kind.RUN_END, "run", null, null, null, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.RUN_END, "run", null, null, null, null, null, null, null, null, null);
     }
 
     public static TrajectoryDraft modelCallStart(Object args) {
-        return new TrajectoryDraft(Kind.MODEL_CALL_START, "model_call", null, args, null, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.MODEL_CALL_START, "model_call", null, args, null, null, null, null, null, null, null);
     }
 
-    public static TrajectoryDraft modelCallEnd(Usage usage, Object result, String reasoning) {
-        return new TrajectoryDraft(Kind.MODEL_CALL_END, "model_call", null, null, result, usage, null, null, null, reasoning);
+    /**
+     * Closes a model-call span. {@code finishReason} is the model's stop condition (e.g. "stop",
+     * "length") — a controlled token, not free-text — so sinks can emit it as a distinct
+     * {@code gen_ai.response.finish_reasons} attribute without coupling it to the reasoning text.
+     */
+    public static TrajectoryDraft modelCallEnd(Usage usage, String finishReason, String reasoning) {
+        return new TrajectoryDraft(Kind.MODEL_CALL_END, "model_call", null, null, null, usage, null, null, null, reasoning, finishReason);
     }
 
     public static TrajectoryDraft reasoning(String text) {
-        return new TrajectoryDraft(Kind.REASONING, "reasoning", null, null, null, null, null, null, null, text);
+        return new TrajectoryDraft(Kind.REASONING, "reasoning", null, null, null, null, null, null, null, text, null);
     }
 
     public static TrajectoryDraft progress(String delta) {
-        return new TrajectoryDraft(Kind.PROGRESS, "progress", null, null, delta, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.PROGRESS, "progress", null, null, delta, null, null, null, null, null, null);
     }
 
     public static TrajectoryDraft toolCallStart(String name, Object args) {
-        return new TrajectoryDraft(Kind.TOOL_CALL_START, "tool_call", name, args, null, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.TOOL_CALL_START, "tool_call", name, args, null, null, null, null, null, null, null);
     }
 
     public static TrajectoryDraft toolCallEnd(String name, Object result) {
-        return new TrajectoryDraft(Kind.TOOL_CALL_END, "tool_call", name, null, result, null, null, null, null, null);
+        return new TrajectoryDraft(Kind.TOOL_CALL_END, "tool_call", name, null, result, null, null, null, null, null, null);
     }
 
     /** Builds an ERROR draft with an explicit category. Use when the adapter can classify the failure. */
     public static TrajectoryDraft error(String name, String code, String message, ErrorCategory category,
             Integer attempt, Boolean retryable) {
         return new TrajectoryDraft(Kind.ERROR, "error", name, null, null, null, attempt, retryable,
-                new ErrorInfo(code, message, category), null);
+                new ErrorInfo(code, message, category), null, null);
     }
 
     /** Builds an ERROR draft with {@link ErrorCategory#UNKNOWN}. Existing callers remain unchanged. */

@@ -50,6 +50,7 @@ public record TrajectoryEvent(
         Boolean retryable,
         ErrorInfo error,
         String reasoning,
+        String finishReason,
         String schemaVersion) {
 
     /**
@@ -79,8 +80,13 @@ public record TrajectoryEvent(
     public static final Set<Kind> MANDATORY_KINDS = Set.of(
             Kind.RUN_START, Kind.RUN_END, Kind.TOOL_CALL_START, Kind.TOOL_CALL_END, Kind.ERROR);
 
-    /** Token/latency/model telemetry, aligned to OpenTelemetry {@code gen_ai.usage.*}. */
-    public record Usage(Integer inputTokens, Integer outputTokens, Double latencyMs, String model) {}
+    /**
+     * Token/latency/model telemetry, aligned to OpenTelemetry {@code gen_ai.usage.*}.
+     * {@code provider} maps to {@code gen_ai.system}; {@code inputCostUsd}/{@code outputCostUsd}
+     * support FinOps accounting — both are nullable and populated by a later enrichment step.
+     */
+    public record Usage(Integer inputTokens, Integer outputTokens, Double latencyMs, String model,
+            String provider, Double inputCostUsd, Double outputCostUsd) {}
 
     /** Error payload. {@code category} is always non-null; use {@link ErrorCategory#UNKNOWN} when the category is not yet mapped. */
     public record ErrorInfo(String code, String message, ErrorCategory category) {

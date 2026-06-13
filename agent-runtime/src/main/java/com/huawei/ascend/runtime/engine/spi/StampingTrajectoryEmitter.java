@@ -91,6 +91,7 @@ public final class StampingTrajectoryEmitter implements TrajectoryEmitter {
                 draft.retryable(),
                 error,
                 reasoning != null ? String.valueOf(reasoning) : null,
+                draft.finishReason(),
                 TrajectoryEvent.SCHEMA_VERSION));
     }
 

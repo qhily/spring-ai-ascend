@@ -126,7 +126,8 @@ final class OpenJiuwenTrajectoryRail extends AgentRail {
         // openJiuwen reports totalLatency in seconds; normalize to milliseconds.
         Double latencyMs = usage.getTotalLatency() > 0 ? usage.getTotalLatency() * 1000.0 : null;
         return new TrajectoryEvent.Usage(
-                usage.getInputTokens(), usage.getOutputTokens(), latencyMs, usage.getModelName());
+                usage.getInputTokens(), usage.getOutputTokens(), latencyMs, usage.getModelName(),
+                null, null, null);
     }
 
     private static void safe(Runnable action) {

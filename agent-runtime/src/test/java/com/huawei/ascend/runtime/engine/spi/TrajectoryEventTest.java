@@ -22,10 +22,12 @@ class TrajectoryEventTest {
         assertThat(TrajectoryDraft.toolCallStart("search", "q").args()).isEqualTo("q");
 
         TrajectoryDraft end = TrajectoryDraft.modelCallEnd(
-                new TrajectoryEvent.Usage(10, 20, 5.0, "m"), "stop", "thinking");
+                new TrajectoryEvent.Usage(10, 20, 5.0, "m", null, null, null), "stop", "thinking");
         assertThat(end.kind()).isEqualTo(Kind.MODEL_CALL_END);
         assertThat(end.usage().inputTokens()).isEqualTo(10);
         assertThat(end.reasoning()).isEqualTo("thinking");
+        assertThat(end.finishReason()).isEqualTo("stop");
+        assertThat(end.result()).isNull();
 
         TrajectoryDraft error = TrajectoryDraft.error("tool", "CODE", "boom", 2, true);
         assertThat(error.kind()).isEqualTo(Kind.ERROR);
@@ -43,5 +45,18 @@ class TrajectoryEventTest {
         assertThat(draft.error().category()).isEqualTo(ErrorCategory.RATE_LIMITED);
         assertThat(draft.error().code()).isEqualTo("RATE_LIMIT");
         assertThat(draft.error().message()).isEqualTo("quota exceeded");
+    }
+
+    @Test
+    void usageProviderAndCostFieldsRoundTripViaAccessors() {
+        TrajectoryEvent.Usage usage = new TrajectoryEvent.Usage(5, 10, 200.0, "gpt-4", "openai", 0.001, 0.002);
+        assertThat(usage.provider()).isEqualTo("openai");
+        assertThat(usage.inputCostUsd()).isEqualTo(0.001);
+        assertThat(usage.outputCostUsd()).isEqualTo(0.002);
+        // Null variants are legal — fields are optional.
+        TrajectoryEvent.Usage sparse = new TrajectoryEvent.Usage(1, 2, null, "gemma", null, null, null);
+        assertThat(sparse.provider()).isNull();
+        assertThat(sparse.inputCostUsd()).isNull();
+        assertThat(sparse.outputCostUsd()).isNull();
     }
 }
