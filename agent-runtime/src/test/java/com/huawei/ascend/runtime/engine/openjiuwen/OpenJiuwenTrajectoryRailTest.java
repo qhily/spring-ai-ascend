@@ -181,12 +181,22 @@ class OpenJiuwenTrajectoryRailTest {
     }
 
     @Test
-    void toUsageProviderIsNullBecauseSdkDoesNotExposeVendorAtUsageLayer() {
-        // UsageMetadata only exposes modelName; the SDK has no provider/system accessor
-        // on the usage object, so gen_ai.system is not populated for openJiuwen.
-        assertThat(ErrorCategory.UNKNOWN).isNotNull(); // categorize always returns non-null
-        // The provider field test is structural: verify categorize does not NPE on null throwable chain
-        assertThat(OpenJiuwenTrajectoryRail.categorize(new RuntimeException()))
+    void categorizeWalksCauseChainToFindTimeout() {
+        // A timeout often surfaces wrapped in a higher-level model-call exception; the
+        // classifier must walk the cause chain, not just inspect the top throwable.
+        AgentCallbackContext context = AgentCallbackContext.builder()
+                .exception(new RuntimeException("model call failed", new SocketTimeoutException("read timed out")))
+                .build();
+        rail.onModelException(context);
+
+        assertThat(drafts).hasSize(1);
+        assertThat(drafts.get(0).error().category()).isEqualTo(ErrorCategory.TIMEOUT);
+    }
+
+    @Test
+    void categorizeReturnsUnknownNotNullForUnmappedException() {
+        // ErrorInfo requires a non-null category, so categorize must default to UNKNOWN.
+        assertThat(OpenJiuwenTrajectoryRail.categorize(new IllegalStateException()))
                 .isEqualTo(ErrorCategory.UNKNOWN);
     }
 }
