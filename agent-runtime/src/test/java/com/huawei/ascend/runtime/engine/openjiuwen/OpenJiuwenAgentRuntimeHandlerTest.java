@@ -280,6 +280,52 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         return events;
     }
 
+    /**
+     * Regression guard: a subclass that caches its BaseAgent and executes it twice must not
+     * accumulate trajectory rails. The fix registers the trajectory rail immediately before
+     * runOpenJiuwenAgent and removes it in a finally block; the second execution therefore
+     * carries exactly one OpenJiuwenTrajectoryRail, not two.
+     *
+     * <p>The test observes this by counting MODEL_CALL_START events emitted across two
+     * executions: each execution fires the callback through the registered rails, so
+     * accumulation would double the count on the second run.
+     */
+    @Test
+    void cachedAgentExecutedTwiceDoesNotAccumulateTrajectoryRails() {
+        CachedAgentModelCallingHandler handler = new CachedAgentModelCallingHandler();
+        List<TrajectoryEvent> allEvents = new ArrayList<>();
+        AgentExecutionContext context = context(Map.of());
+        TrajectorySettings settings = TrajectorySettings.basic(
+                true, Pattern.compile(TrajectoryMasking.DEFAULT_KEY_PATTERN), 256);
+
+        // First execution
+        handler.openTrajectory(context, settings, (TrajectorySink) allEvents::add);
+        try (Stream<?> raw = handler.execute(context)) {
+            raw.forEach(x -> { });
+        }
+        int eventsAfterFirst = allEvents.size();
+
+        // Second execution — if accumulation happened, MODEL_CALL_START would fire twice
+        handler.openTrajectory(context, settings, (TrajectorySink) allEvents::add);
+        try (Stream<?> raw = handler.execute(context)) {
+            raw.forEach(x -> { });
+        }
+        int eventsAfterSecond = allEvents.size() - eventsAfterFirst;
+
+        // Each execution emits exactly: RUN_START, MODEL_CALL_START, MODEL_CALL_END, RUN_END
+        assertThat(eventsAfterFirst).as("events on first execution").isEqualTo(eventsAfterSecond);
+        long modelCallStartsFirstRun = allEvents.stream()
+                .limit(eventsAfterFirst)
+                .filter(e -> e.kind() == Kind.MODEL_CALL_START)
+                .count();
+        long modelCallStartsSecondRun = allEvents.stream()
+                .skip(eventsAfterFirst)
+                .filter(e -> e.kind() == Kind.MODEL_CALL_START)
+                .count();
+        assertThat(modelCallStartsFirstRun).as("MODEL_CALL_START on first run").isEqualTo(1);
+        assertThat(modelCallStartsSecondRun).as("MODEL_CALL_START on second run (accumulation guard)").isEqualTo(1);
+    }
+
     @Test
     void executeFlattensStreamReturnedByOpenJiuwenRunner() {
         StreamingOpenJiuwenHandler handler = new StreamingOpenJiuwenHandler();
@@ -382,6 +428,39 @@ class OpenJiuwenAgentRuntimeHandlerTest {
 
     /** Fires openJiuwen's native model-call callbacks mid-run through the registered trajectory rail. */
     private static final class ModelCallingHandler extends TestOpenJiuwenHandler {
+        @Override
+        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
+            for (AgentRail rail : ((RecordingAgent) agent).registeredRails) {
+                if (rail instanceof OpenJiuwenTrajectoryRail trajectoryRail) {
+                    trajectoryRail.beforeModelCall(AgentCallbackContext.builder()
+                            .inputs(ModelCallInputs.builder().messages(List.of("a")).tools(List.of()).build())
+                            .build());
+                    trajectoryRail.afterModelCall(AgentCallbackContext.builder()
+                            .inputs(ModelCallInputs.builder().messages(List.of("a")).response("done").build())
+                            .build());
+                }
+            }
+            return Map.of("result_type", "answer", "output", "pong");
+        }
+    }
+
+    /**
+     * Returns the SAME cached agent on every createOpenJiuwenAgent call, and fires the
+     * openJiuwen model-call callbacks through all registered rails during runOpenJiuwenAgent.
+     * Used to verify that executing the cached agent twice does not accumulate trajectory rails.
+     */
+    private static final class CachedAgentModelCallingHandler extends OpenJiuwenAgentRuntimeHandler {
+        private final RecordingAgent cachedAgent = new RecordingAgent();
+
+        private CachedAgentModelCallingHandler() {
+            super("agent");
+        }
+
+        @Override
+        protected BaseAgent createOpenJiuwenAgent(AgentExecutionContext context) {
+            return cachedAgent;
+        }
+
         @Override
         protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
             for (AgentRail rail : ((RecordingAgent) agent).registeredRails) {
@@ -522,7 +601,7 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     }
 
     private static final class RecordingAgent extends BaseAgent {
-        private final List<AgentRail> registeredRails = new ArrayList<>();
+        private final List<AgentRail> registeredRails = new CopyOnWriteArrayList<>();
 
         private RecordingAgent() {
             super(AgentCard.builder().id("agent").name("agent").description("test").build());
@@ -541,6 +620,12 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         @Override
         public BaseAgent registerRail(AgentRail rail) {
             registeredRails.add(rail);
+            return this;
+        }
+
+        @Override
+        public BaseAgent unregisterRail(AgentRail rail) {
+            registeredRails.remove(rail);
             return this;
         }
 

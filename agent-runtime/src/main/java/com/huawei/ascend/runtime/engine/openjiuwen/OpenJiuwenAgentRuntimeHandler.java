@@ -81,20 +81,28 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
             BaseAgent agent = Objects.requireNonNull(createOpenJiuwenAgent(context), "openJiuwen agent");
             installRails(agent, context);
             installRuntimeTools(agent, context);
-            if (trajectory != TrajectoryEmitter.NOOP) {
-                agent.registerRail(new OpenJiuwenTrajectoryRail(trajectory));
+            OpenJiuwenTrajectoryRail trajectoryRail =
+                    trajectory != TrajectoryEmitter.NOOP ? new OpenJiuwenTrajectoryRail(trajectory) : null;
+            if (trajectoryRail != null) {
+                agent.registerRail(trajectoryRail);
             }
-            Object input = toOpenJiuwenInput(context);
-            Object result = runOpenJiuwenAgent(agent, input, openJiuwenConversationId(context));
-            LOGGER.info("openjiuwen execute finished tenantId={} sessionId={} taskId={} resultType={}",
-                    context.getScope().tenantId(),
-                    context.getScope().sessionId(),
-                    context.getScope().taskId(),
-                    result == null ? "null" : result.getClass().getName());
-            if (result instanceof java.util.stream.Stream<?> stream) {
-                return stream;
+            try {
+                Object input = toOpenJiuwenInput(context);
+                Object result = runOpenJiuwenAgent(agent, input, openJiuwenConversationId(context));
+                LOGGER.info("openjiuwen execute finished tenantId={} sessionId={} taskId={} resultType={}",
+                        context.getScope().tenantId(),
+                        context.getScope().sessionId(),
+                        context.getScope().taskId(),
+                        result == null ? "null" : result.getClass().getName());
+                if (result instanceof java.util.stream.Stream<?> stream) {
+                    return stream;
+                }
+                return java.util.stream.Stream.of(result);
+            } finally {
+                if (trajectoryRail != null) {
+                    agent.unregisterRail(trajectoryRail);
+                }
             }
-            return java.util.stream.Stream.of(result);
         } catch (RuntimeException error) {
             LOGGER.warn("openjiuwen execute failed tenantId={} sessionId={} taskId={} errorClass={} message={}",
                     context.getScope().tenantId(),
@@ -120,6 +128,25 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
      * decorations such as OpenJiuwen's external memory rail or the ReActAgent
      * compatibility {@link MemoryRuntimeRail} without changing A2A execution or
      * the framework-neutral runtime SPI.
+     *
+     * <p><strong>Rail-lifecycle contract:</strong>
+     * <ol>
+     *   <li>Rails returned here are installed before {@link #installRuntimeTools}, which runs before
+     *       the trajectory rail.</li>
+     *   <li>The trajectory rail ({@link OpenJiuwenTrajectoryRail}) is installed by this base class
+     *       immediately before {@link #runOpenJiuwenAgent} and is automatically removed in a
+     *       {@code finally} block after the run completes. Each execution therefore carries exactly
+     *       one trajectory rail bound to that invocation's emitter, regardless of how many times
+     *       the agent is executed.</li>
+     *   <li>Subclasses that <em>cache</em> their {@link com.openjiuwen.core.singleagent.BaseAgent}
+     *       instance (returning the same object from {@link #createOpenJiuwenAgent} on repeated
+     *       calls) must ensure that the rails returned here are likewise idempotent across
+     *       executions — for example by returning a pre-built singleton rail list — or they will
+     *       accumulate one additional rail per execution, mirroring the defect this base class
+     *       already guards against for the trajectory rail.</li>
+     *   <li>Concurrent invocations on a single cached {@code BaseAgent} are not supported by the
+     *       openJiuwen SDK; the execution model is sequential per agent instance.</li>
+     * </ol>
      */
     protected List<AgentRail> openJiuwenRails(AgentExecutionContext context) {
         return List.of();
