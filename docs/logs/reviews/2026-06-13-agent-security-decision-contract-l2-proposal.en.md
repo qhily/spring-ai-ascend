@@ -20,6 +20,7 @@ affects_artefact:
 > **Status:** Draft
 > **Parent proposal:** `2026-06-13-agent-security-decision-chain-proposal.en.md`
 > **Scope:** neutral security decision contract and the runtime-to-policy-engine boundary.
+> **Review order:** this L2 proposal should be reviewed after the L1 security decision chain direction is validated, as an implementation-boundary refinement under that L1 direction.
 
 ## 1. Background
 

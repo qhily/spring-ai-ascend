@@ -22,6 +22,7 @@ affects_artefact:
 > **Status:** Draft
 > **Parent proposal:** `2026-06-13-agent-security-decision-chain-proposal.en.md`
 > **Scope:** approval suspension, security-event stream, audit receipt, and runtime resume behavior.
+> **Review order:** this L2 proposal should be reviewed after the L1 security decision chain direction is validated, as an implementation-boundary refinement under that L1 direction.
 
 ## 1. Background
 

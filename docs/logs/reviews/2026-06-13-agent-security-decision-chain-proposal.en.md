@@ -30,6 +30,7 @@ affects_artefact:
 > **Scope:** cross-module runtime security decisions, capability permission governance, approval, security events, trajectory, and audit.
 > **Input analysis:** `docs/reports/2026-06-13-agent-security-design-recommendations.zh.md`
 > **Boundary:** this proposal does not redesign `agent-runtime`, `AgentRuntimeHandler`, OpenJiuwen, AgentScope, or sandbox architecture. It defines how security decisions are embedded into the current repository architecture.
+> **Review order:** this PR should be reviewed top-down: first validate the L1 security decision chain direction, then review the three L2 proposals as implementation-boundary refinements under that L1 direction.
 
 ## 1. Background
 
