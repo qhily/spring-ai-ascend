@@ -9,6 +9,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +30,12 @@ final class OtelSpanSink implements TrajectorySink {
     private static final AttributeKey<String> GEN_AI_MODEL = AttributeKey.stringKey("gen_ai.request.model");
     private static final AttributeKey<Long> GEN_AI_INPUT_TOKENS = AttributeKey.longKey("gen_ai.usage.input_tokens");
     private static final AttributeKey<Long> GEN_AI_OUTPUT_TOKENS = AttributeKey.longKey("gen_ai.usage.output_tokens");
+    private static final AttributeKey<String> GEN_AI_SYSTEM = AttributeKey.stringKey("gen_ai.system");
+    private static final AttributeKey<Double> GEN_AI_INPUT_COST_USD = AttributeKey.doubleKey("gen_ai.usage.input_cost_usd");
+    private static final AttributeKey<Double> GEN_AI_OUTPUT_COST_USD = AttributeKey.doubleKey("gen_ai.usage.output_cost_usd");
+    private static final AttributeKey<String> GEN_AI_ERROR_TYPE = AttributeKey.stringKey("gen_ai.error.type");
+    // OTel models finish_reasons as a string array — a single call can yield multiple choices.
+    private static final AttributeKey<List<String>> GEN_AI_FINISH_REASONS = AttributeKey.stringArrayKey("gen_ai.response.finish_reasons");
     private static final AttributeKey<String> GEN_AI_TOOL_NAME = AttributeKey.stringKey("gen_ai.tool.name");
     private static final AttributeKey<String> TRAJECTORY_SPAN_ID = AttributeKey.stringKey("trajectory.span_id");
     private static final AttributeKey<String> TRAJECTORY_TRACE_ID = AttributeKey.stringKey("trajectory.trace_id");
@@ -74,6 +81,9 @@ final class OtelSpanSink implements TrajectorySink {
             return; // unbalanced end — nothing open to close
         }
         applyUsage(span, event);
+        if (event.finishReason() != null) {
+            span.setAttribute(GEN_AI_FINISH_REASONS, List.of(event.finishReason()));
+        }
         span.end(event.tsEpochMillis(), TimeUnit.MILLISECONDS);
     }
 
@@ -85,6 +95,9 @@ final class OtelSpanSink implements TrajectorySink {
         parent.addEvent(String.valueOf(event.kind()).toLowerCase(Locale.ROOT));
         if (isError) {
             parent.setStatus(StatusCode.ERROR, errorMessage(event));
+            if (event.error() != null) {
+                parent.setAttribute(GEN_AI_ERROR_TYPE, event.error().category().wireValue());
+            }
         }
     }
 
@@ -124,6 +137,15 @@ final class OtelSpanSink implements TrajectorySink {
         }
         if (usage.outputTokens() != null) {
             span.setAttribute(GEN_AI_OUTPUT_TOKENS, usage.outputTokens().longValue());
+        }
+        if (usage.provider() != null) {
+            span.setAttribute(GEN_AI_SYSTEM, usage.provider());
+        }
+        if (usage.inputCostUsd() != null) {
+            span.setAttribute(GEN_AI_INPUT_COST_USD, usage.inputCostUsd());
+        }
+        if (usage.outputCostUsd() != null) {
+            span.setAttribute(GEN_AI_OUTPUT_COST_USD, usage.outputCostUsd());
         }
     }
 

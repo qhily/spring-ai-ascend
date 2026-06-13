@@ -119,8 +119,32 @@ class A2aNorthboundSinkTest {
                 assertThat(((Map<String, Object>) ((DataPart) p).data()).get("kind")).isNotEqualTo("TRUNCATED"));
     }
 
+    /** Asserts that the finishReason field is serialized into the toMap wire representation. */
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void toMap_withFinishReason_surfacesItInFlushedPart() {
+        A2aNorthboundSink sink = new A2aNorthboundSink();
+        sink.accept(eventWithFinishReason(0, Kind.MODEL_CALL_END, "stop"));
+
+        AgentEmitter emitter = mock(AgentEmitter.class);
+        sink.flush(emitter, "task-1-trajectory", false);
+
+        ArgumentCaptor<List> partsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(emitter).addArtifact(partsCaptor.capture(), eq("task-1-trajectory"), eq("agent-trajectory"),
+                any(), eq(false), eq(true));
+        List<?> parts = partsCaptor.getValue();
+        assertThat(parts).hasSize(1);
+        Map<String, Object> data = (Map<String, Object>) ((DataPart) parts.get(0)).data();
+        assertThat(data).containsEntry("finishReason", "stop");
+    }
+
     private static TrajectoryEvent event(long seq, Kind kind) {
         return new TrajectoryEvent(seq, kind, 0L, null, "task-1", "span", null, "tenant", "ctx-1", "task-1",
                 "run", null, null, null, null, null, null, null, null, null, "2");
+    }
+
+    private static TrajectoryEvent eventWithFinishReason(long seq, Kind kind, String finishReason) {
+        return new TrajectoryEvent(seq, kind, 0L, null, "task-1", "span", null, "tenant", "ctx-1", "task-1",
+                "run", null, null, null, null, null, null, null, null, finishReason, "2");
     }
 }
