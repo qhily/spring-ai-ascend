@@ -1,5 +1,6 @@
 package com.huawei.ascend.runtime.engine.spi;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -82,5 +83,9 @@ public record TrajectoryEvent(
     public record Usage(Integer inputTokens, Integer outputTokens, Double latencyMs, String model) {}
 
     /** Error payload. {@code category} is always non-null; use {@link ErrorCategory#UNKNOWN} when the category is not yet mapped. */
-    public record ErrorInfo(String code, String message, ErrorCategory category) {}
+    public record ErrorInfo(String code, String message, ErrorCategory category) {
+        public ErrorInfo {
+            Objects.requireNonNull(category, "category must not be null — use ErrorCategory.UNKNOWN");
+        }
+    }
 }
