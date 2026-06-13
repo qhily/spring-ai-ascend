@@ -114,8 +114,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     void memoryRuntimeRailInjectsSearchResultsIntoOpenJiuwenContext() {
         AgentExecutionContext context = context(Map.of());
         FakeMemoryProvider memoryProvider = new FakeMemoryProvider();
-        OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail rail =
-                new OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail(
+        MemoryRuntimeRail rail =
+                new MemoryRuntimeRail(
                         context, memoryProvider, new OpenJiuwenMemoryMessageAdapter());
         RecordingModelContext modelContext = new RecordingModelContext();
 
@@ -134,8 +134,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     void memoryRuntimeRailMergesSearchResultsIntoExistingSystemMessage() {
         AgentExecutionContext context = context(Map.of());
         FakeMemoryProvider memoryProvider = new FakeMemoryProvider();
-        OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail rail =
-                new OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail(
+        MemoryRuntimeRail rail =
+                new MemoryRuntimeRail(
                         context, memoryProvider, new OpenJiuwenMemoryMessageAdapter());
         RecordingModelContext modelContext = new RecordingModelContext();
         modelContext.setMessages(List.of(new SystemMessage("existing system prompt")), true);
@@ -154,8 +154,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         AgentExecutionContext context = context(Map.of());
         FakeMemoryProvider memoryProvider = new FakeMemoryProvider();
         memoryProvider.score = null;
-        OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail rail =
-                new OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail(
+        MemoryRuntimeRail rail =
+                new MemoryRuntimeRail(
                         context, memoryProvider, new OpenJiuwenMemoryMessageAdapter());
         RecordingModelContext modelContext = new RecordingModelContext();
 
@@ -170,8 +170,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     void memoryRuntimeRailDoesNotSaveInjectedRuntimeMemoryBackToMemory() {
         AgentExecutionContext context = context(Map.of());
         FakeMemoryProvider memoryProvider = new FakeMemoryProvider();
-        OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail rail =
-                new OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail(
+        MemoryRuntimeRail rail =
+                new MemoryRuntimeRail(
                         context, memoryProvider, new OpenJiuwenMemoryMessageAdapter());
         RecordingModelContext modelContext = new RecordingModelContext();
         rail.beforeInvoke(AgentCallbackContext.builder().context(modelContext).build());
@@ -192,8 +192,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     void memoryRuntimeRailDoesNotSaveSystemPromptToLongTermMemory() {
         AgentExecutionContext context = context(Map.of());
         FakeMemoryProvider memoryProvider = new FakeMemoryProvider();
-        OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail rail =
-                new OpenJiuwenAgentRuntimeHandler.MemoryRuntimeRail(
+        MemoryRuntimeRail rail =
+                new MemoryRuntimeRail(
                         context, memoryProvider, new OpenJiuwenMemoryMessageAdapter());
         RecordingModelContext modelContext = new RecordingModelContext();
         modelContext.setMessages(List.of(new SystemMessage("business policy: keep order status")), true);
