@@ -229,6 +229,40 @@ class RuntimeAutoConfigurationTest {
     }
 
     /**
+     * An explicit agent-card.name that matches no registered handler must WARN
+     * (the card would otherwise advertise a name no execution accepts) but MUST NOT
+     * throw — the bean is still produced and discovery keeps serving.
+     */
+    @Test
+    void explicitCardNameMatchingNoHandlerWarnsButStillProducesCard(CapturedOutput output) {
+        runner.withBean("handlerA", AgentRuntimeHandler.class, () -> new NamedHandler("agent-a"))
+                .withPropertyValues("agent-runtime.access.a2a.agent-card.name=wrong-name")
+                .withUserConfiguration(RuntimeAutoConfiguration.class)
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx.getBean(AgentCard.class).name()).isEqualTo("wrong-name");
+                    assertThat(output).contains("wrong-name");
+                    assertThat(output).contains("agent-a");
+                });
+    }
+
+    /**
+     * An explicit agent-card.name that DOES match a registered handler must NOT log
+     * a warning — the happy-path must stay silent.
+     */
+    @Test
+    void explicitCardNameMatchingAHandlerProducesCardWithNoWarn(CapturedOutput output) {
+        runner.withBean("handlerA", AgentRuntimeHandler.class, () -> new NamedHandler("agent-a"))
+                .withPropertyValues("agent-runtime.access.a2a.agent-card.name=agent-a")
+                .withUserConfiguration(RuntimeAutoConfiguration.class)
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx.getBean(AgentCard.class).name()).isEqualTo("agent-a");
+                    assertThat(output.toString()).doesNotContain("matches no registered handler");
+                });
+    }
+
+    /**
      * A host that only depends on the jar (no component scan of runtime.boot) must
      * still get the northbound controllers from the auto-configuration; otherwise
      * the engine boots healthy while every northbound route 404s.

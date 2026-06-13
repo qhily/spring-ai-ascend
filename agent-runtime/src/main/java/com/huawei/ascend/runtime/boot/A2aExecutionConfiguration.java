@@ -139,6 +139,12 @@ class A2aExecutionConfiguration {
             AgentRuntimeHandler handler = null;
             if (cardProperties.hasExplicitName()) {
                 name = cardProperties.getName();
+                List<AgentRuntimeHandler> registered = handlers.orderedStream().toList();
+                List<String> agentIds = registered.stream().map(AgentRuntimeHandler::agentId).toList();
+                if (!agentIds.isEmpty() && !agentIds.contains(name)) {
+                    log.warn("agent-runtime.access.a2a.agent-card.name '{}' matches no registered handler;"
+                            + " available agent ids: {}", name, agentIds);
+                }
             } else {
                 List<AgentRuntimeHandler> registered = handlers.orderedStream().toList();
                 List<String> agentIds = registered.stream().map(AgentRuntimeHandler::agentId).toList();
