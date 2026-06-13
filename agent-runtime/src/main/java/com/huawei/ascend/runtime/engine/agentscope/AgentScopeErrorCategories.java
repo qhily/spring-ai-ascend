@@ -11,7 +11,8 @@ import com.huawei.ascend.runtime.engine.spi.ErrorCategory;
  *   <li>{@code AGENTSCOPE_RUNTIME_HTTP_<status>} — HTTP-level error; status suffix is the numeric
  *       HTTP response code (e.g. {@code AGENTSCOPE_RUNTIME_HTTP_429})
  *   <li>{@code AGENTSCOPE_RUNTIME_PARSE} — response body could not be parsed
- *   <li>{@code AGENTSCOPE_ERROR} — generic/unclassified error (default when no code supplied)
+ *   <li>{@code AGENTSCOPE_UNCLASSIFIED} — explicitly unclassified; produced when the upstream
+ *       event carries no error code (maps to {@link ErrorCategory#UNKNOWN})
  * </ul>
  */
 final class AgentScopeErrorCategories {

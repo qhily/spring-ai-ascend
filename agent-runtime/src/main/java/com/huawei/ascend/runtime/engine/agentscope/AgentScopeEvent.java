@@ -12,6 +12,14 @@ public record AgentScopeEvent(
         String errorMessage,
         Map<String, Object> metadata) {
 
+    /**
+     * Sentinel error code used when a FAILED event carries no upstream error code.
+     * Explicitly unclassified — distinguishable from any real AgentScope error code.
+     * Maps to {@link com.huawei.ascend.runtime.engine.spi.ErrorCategory#UNKNOWN} via
+     * {@link AgentScopeErrorCategories}.
+     */
+    public static final String UNCLASSIFIED_ERROR_CODE = "AGENTSCOPE_UNCLASSIFIED";
+
     public enum Type {
         OUTPUT,
         COMPLETED,
@@ -24,7 +32,8 @@ public record AgentScopeEvent(
             throw new IllegalArgumentException("type must not be null");
         }
         text = text == null ? "" : text;
-        errorCode = errorCode == null || errorCode.isBlank() ? "AGENTSCOPE_ERROR" : errorCode;
+        errorCode = (type == Type.FAILED && (errorCode == null || errorCode.isBlank()))
+                ? UNCLASSIFIED_ERROR_CODE : errorCode;
         errorMessage = errorMessage == null ? "" : errorMessage;
         metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
     }
