@@ -319,6 +319,49 @@ class A2aRemoteAgentOutboundAdapterTest {
         assertThat(built.get(1).closed).isFalse();
     }
 
+    /**
+     * When a RemoteAgentRequest carries parentTaskId / parentContextId, toParams must include
+     * them as runtime.parent.taskId / runtime.parent.traceId in the outbound MessageSendParams
+     * metadata so the sub-agent's inbound dispatch can read them.
+     */
+    @Test
+    void outboundRequestIncludesParentTaskAndTraceIdInMetadata() {
+        RecordingTransport transport = new RecordingTransport(List.of(
+                status(TaskState.TASK_STATE_COMPLETED, "done", "remote-task-1", "remote-ctx-1")));
+        A2aRemoteAgentOutboundAdapter adapter = new A2aRemoteAgentOutboundAdapter(id -> transport);
+
+        adapter.invoke(new RemoteAgentInvocationService.RemoteAgentRequest(
+                "remote-agent", null, null, "tool-call-1",
+                "caller-task-99", "caller-ctx-99",
+                "conversation-1", "hello", Map.of()), null);
+
+        assertThat(transport.requests).hasSize(1);
+        Map<String, Object> metadata = transport.requests.get(0).metadata();
+        assertThat(metadata).containsEntry("runtime.parent.taskId", "caller-task-99");
+        assertThat(metadata).containsEntry("runtime.parent.traceId", "caller-ctx-99");
+    }
+
+    /**
+     * When parentTaskId / parentContextId are absent, no runtime.parent.* keys must appear
+     * in the outbound metadata — the sub-agent must not see spurious parent linkage.
+     */
+    @Test
+    void outboundRequestOmitsParentKeysWhenNoParentSet() {
+        RecordingTransport transport = new RecordingTransport(List.of(
+                status(TaskState.TASK_STATE_COMPLETED, "done", "remote-task-1", "remote-ctx-1")));
+        A2aRemoteAgentOutboundAdapter adapter = new A2aRemoteAgentOutboundAdapter(id -> transport);
+
+        adapter.invoke(new RemoteAgentInvocationService.RemoteAgentRequest(
+                "remote-agent", null, null, "tool-call-1",
+                null, null,
+                "conversation-1", "hello", Map.of()), null);
+
+        assertThat(transport.requests).hasSize(1);
+        Map<String, Object> metadata = transport.requests.get(0).metadata();
+        assertThat(metadata).doesNotContainKey("runtime.parent.taskId");
+        assertThat(metadata).doesNotContainKey("runtime.parent.traceId");
+    }
+
     @Test
     void streamTimeoutDefaultsToSixtySecondsAndHonorsConfiguredValue() {
         A2aRemoteAgentOutboundAdapter defaults = new A2aRemoteAgentOutboundAdapter(id -> null);

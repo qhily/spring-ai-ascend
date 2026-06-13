@@ -988,6 +988,54 @@ class A2aAgentExecutorTest {
         assertThat(outbound.canceled.get(0).remoteContextId()).isEqualTo("remote-ctx-1");
     }
 
+    /**
+     * An inbound A2A request carrying runtime.parent.taskId / runtime.parent.traceId must
+     * bind them on the AgentExecutionContext so the trajectory stamper can link sub-agent
+     * events to the calling run.
+     */
+    @Test
+    void inboundParentMetadata_setsParentLinkageOnExecutionContext() {
+        AgentRuntimeHandler handler = mock(AgentRuntimeHandler.class);
+        when(handler.agentId()).thenReturn("agent-x");
+        when(handler.execute(any())).thenAnswer(inv -> Stream.of(new Object()));
+        StreamAdapter adapter = raw -> raw.map(o -> AgentExecutionResult.completed("ok"));
+        when(handler.resultAdapter()).thenReturn(adapter);
+
+        RequestContext ctx = requestContext();
+        when(ctx.getMetadata()).thenReturn(Map.of(
+                "userId", "user-a",
+                "agentId", "agent-x",
+                "runtime.parent.taskId", "parent-task-42",
+                "runtime.parent.traceId", "parent-trace-abc"));
+
+        new A2aAgentExecutor(handler).execute(ctx, newEmitter());
+
+        ArgumentCaptor<AgentExecutionContext> captor = ArgumentCaptor.forClass(AgentExecutionContext.class);
+        verify(handler).execute(captor.capture());
+        assertThat(captor.getValue().getParentTaskId()).isEqualTo("parent-task-42");
+        assertThat(captor.getValue().getParentTraceId()).isEqualTo("parent-trace-abc");
+    }
+
+    /**
+     * An inbound request without parent metadata must leave parent linkage null so a
+     * top-level run does not emit spurious parent_task_id / parent_trace_id attributes.
+     */
+    @Test
+    void inboundRequestWithoutParentMetadata_leavesParentLinkageNull() {
+        AgentRuntimeHandler handler = mock(AgentRuntimeHandler.class);
+        when(handler.agentId()).thenReturn("agent-x");
+        when(handler.execute(any())).thenAnswer(inv -> Stream.of(new Object()));
+        StreamAdapter adapter = raw -> raw.map(o -> AgentExecutionResult.completed("ok"));
+        when(handler.resultAdapter()).thenReturn(adapter);
+
+        new A2aAgentExecutor(handler).execute(requestContext(), newEmitter());
+
+        ArgumentCaptor<AgentExecutionContext> captor = ArgumentCaptor.forClass(AgentExecutionContext.class);
+        verify(handler).execute(captor.capture());
+        assertThat(captor.getValue().getParentTaskId()).isNull();
+        assertThat(captor.getValue().getParentTraceId()).isNull();
+    }
+
     private static RequestContext requestContext() {
         RequestContext ctx = mock(RequestContext.class);
         when(ctx.getTaskId()).thenReturn("task-1");

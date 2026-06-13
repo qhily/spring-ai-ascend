@@ -258,10 +258,30 @@ public final class A2aRemoteAgentOutboundAdapter implements RemoteAgentInvocatio
         if (hasText(request.remoteContextId())) {
             message.contextId(request.remoteContextId());
         }
+        Map<String, Object> metadata = parentMetadata(request, request.arguments());
         return MessageSendParams.builder()
                 .message(message.build())
-                .metadata(request.arguments())
+                .metadata(metadata)
                 .build();
+    }
+
+    /**
+     * Merges parent-linkage keys into the outbound metadata so the sub-agent's
+     * inbound dispatch can read them via its own {@code metadata()} helper.
+     */
+    private static Map<String, Object> parentMetadata(
+            RemoteAgentInvocationService.RemoteAgentRequest request, Map<String, Object> base) {
+        if (!hasText(request.parentTaskId()) && !hasText(request.parentContextId())) {
+            return base;
+        }
+        java.util.LinkedHashMap<String, Object> merged = new java.util.LinkedHashMap<>(base);
+        if (hasText(request.parentTaskId())) {
+            merged.put("runtime.parent.taskId", request.parentTaskId());
+        }
+        if (hasText(request.parentContextId())) {
+            merged.put("runtime.parent.traceId", request.parentContextId());
+        }
+        return Map.copyOf(merged);
     }
 
     private static RemoteAgentInvocationService.RemoteAgentResult toResult(StreamingEventKind event) {

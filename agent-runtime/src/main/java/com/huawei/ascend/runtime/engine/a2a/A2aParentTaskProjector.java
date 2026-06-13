@@ -125,7 +125,7 @@ final class A2aParentTaskProjector {
                 AgentExecutionContext.AGENT_STATE_KEY_VARIABLE, invocation.localConversationId(),
                 AgentExecutionContext.REMOTE_TOOL_CALL_ID_VARIABLE, invocation.toolCallId(),
                 AgentExecutionContext.REMOTE_TOOL_RESULT_VARIABLE, toolResult);
-        return new AgentExecutionContext(
+        AgentExecutionContext context = new AgentExecutionContext(
                 new RuntimeIdentity(
                         A2aAgentExecutor.metadata(requestContext, A2aAgentExecutor.TENANT_STATE_KEY, "default"),
                         A2aAgentExecutor.metadata(requestContext, "userId", "system"),
@@ -137,6 +137,12 @@ final class A2aParentTaskProjector {
                 variables,
                 invocation.localConversationId(),
                 null);
+        String parentTaskId = A2aAgentExecutor.metadata(requestContext, "runtime.parent.taskId", null);
+        String parentTraceId = A2aAgentExecutor.metadata(requestContext, "runtime.parent.traceId", null);
+        if (parentTaskId != null || parentTraceId != null) {
+            context.withParentLinkage(parentTaskId, parentTraceId);
+        }
+        return context;
     }
 
     private static Map<String, Object> remoteMetadata(AgentExecutionResult.RemoteInvocation invocation,

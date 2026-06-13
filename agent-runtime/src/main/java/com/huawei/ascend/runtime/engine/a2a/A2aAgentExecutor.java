@@ -356,7 +356,7 @@ public final class A2aAgentExecutor implements AgentExecutor {
         // RuntimeMessage is the only message type that crosses into the SPI.
         List<RuntimeMessage> messages = List.of(RuntimeMessage.user(text));
         String sessionId = ctx.getContextId() != null ? ctx.getContextId() : ctx.getTaskId();
-        return new AgentExecutionContext(
+        AgentExecutionContext context = new AgentExecutionContext(
                 new RuntimeIdentity(
                         metadata(ctx, "tenantId", "default"),
                         metadata(ctx, "userId", "system"),
@@ -369,6 +369,12 @@ public final class A2aAgentExecutor implements AgentExecutor {
                 // can access business fields like intent, wap_userName without changing
                 // the neutral AgentExecutionContext contract.
                 mergeVariables(ctx));
+        String parentTaskId = metadata(ctx, "runtime.parent.taskId", null);
+        String parentTraceId = metadata(ctx, "runtime.parent.traceId", null);
+        if (parentTaskId != null || parentTraceId != null) {
+            context.withParentLinkage(parentTaskId, parentTraceId);
+        }
+        return context;
     }
 
     /**
