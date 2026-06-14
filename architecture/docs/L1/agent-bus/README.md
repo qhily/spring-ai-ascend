@@ -85,6 +85,7 @@ Agent / Service / Capability 注册与发现的完整设计态契约见 [`ICD-Ag
 - Stage 3 评审与后续收口计划：[`../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage3-review-and-followup-plan.md`](../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage3-review-and-followup-plan.md)。
 - Stage 3 收口评审与 Stage 4 计划：[`../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage3-close-review-and-stage4-plan.md`](../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage3-close-review-and-stage4-plan.md)。
 - Stage 4 评审与 Stage 5 计划：[`../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage4-review-and-stage5-plan.md`](../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage4-review-and-stage5-plan.md)。
+- Stage 5 评审与 Stage 6 计划：[`../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage5-review-and-stage6-plan.md`](../../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage5-review-and-stage6-plan.md)。
 
 ## 后续工作
 
