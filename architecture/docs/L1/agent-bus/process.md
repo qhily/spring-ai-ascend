@@ -14,7 +14,9 @@ status: draft
 进程视图中的所有流程都遵守两条规则：
 
 - 进入或跨越边界的请求必须带有可追踪的 envelope。
-- 状态机最终决策仍回到对应 owner，例如 Task 状态回到 `agent-service`。
+- 状态机最终决策仍回到对应 owner，例如 Task 状态回到 `agent-runtime`（当前实现/兼容落点：`agent-service`）。
+
+> 命名说明：本文架构语义（参与者、所有权、流程角色）使用 L0 逻辑名 `agent-runtime` / `agent-core`（当前实现/兼容落点分别为 `agent-service` / `agent-execution-engine`）；当前代码路径、Maven artifact、`module-metadata.yaml`、forbidden dependencies 仍保留旧名。完整映射见 [`README.md`](README.md)「命名说明」。
 
 ## 2. C2S ingress 流程
 
@@ -22,8 +24,8 @@ status: draft
 |---|---|---|
 | 1 | `agent-client` | 构造 `IngressEnvelope`，包含 `requestId`、`tenantId`、`idempotencyKey`、`requestType`、`payload`、`traceId`。 |
 | 2 | Gateway / `IngressGateway` | 校验 envelope 的基础字段、trace、幂等和入口规则。 |
-| 3 | Gateway | 将请求路由到 `agent-service`。 |
-| 4 | `agent-service` | 按 Task 生命周期规则创建、查询、取消或恢复 Task。 |
+| 3 | Gateway | 将请求路由到 `agent-runtime`。 |
+| 4 | `agent-runtime` | 按 Task 生命周期规则创建、查询、取消或恢复 Task。 |
 | 5 | Gateway | 返回 `IngressResponse`，表达 `ACCEPTED`、`REJECTED` 或 `DEFERRED`。 |
 
 关键约束：
@@ -36,17 +38,16 @@ status: draft
 
 | 步骤 | 参与者 | 动作 |
 |---|---|---|
-| 1 | `agent-service` / runtime | 某个 Run 需要客户端能力，进入等待客户端 callback 的流程。 |
+| 1 | `agent-runtime` / runtime | 某个 Run 需要客户端能力，进入等待客户端 callback 的流程。 |
 | 2 | runtime | 构造 `S2cCallbackEnvelope`，通过 `SuspendSignal.forClientCallback(...)` 承载。 |
 | 3 | `S2cCallbackTransport` | 将请求派发到 client/edge。 |
 | 4 | `agent-client` | 执行本地 capability，返回 `S2cCallbackResponse`。 |
-| 5 | `agent-service` | 校验 response schema，并决定 Run 恢复、失败或超时。 |
+| 5 | `agent-runtime` | 校验 response schema，并决定 Run 恢复、失败或超时。 |
 
 当前事实：
 
-- `S2cCallbackEnvelope` 当前没有 `tenantId`。
-- H2 已接受目标态：后续迁移中必须给 `S2cCallbackEnvelope` 增加 `tenantId`。
-- 迁移前不能自动修改契约和代码，必须先通知冲突方。
+- `S2cCallbackEnvelope` 已携带 `tenantId`（Stage 2 契约层迁移，commit `d894f494`，Rule R-C.c）。
+- runtime 侧构造点（envelope construction binding）与 schema validation integration 仍待后续波次，不改 Task lifecycle 所有权。
 
 失败路径：
 
@@ -58,10 +59,10 @@ status: draft
 
 | 步骤 | 参与者 | 动作 |
 |---|---|---|
-| 1 | `agent-service` | 通过 `EnginePort.execute(...)` 驱动执行。 |
-| 2 | `agent-execution-engine` | 实现 `EnginePort` 并返回 `AgentEvent` stream。 |
+| 1 | `agent-runtime` | 通过 `EnginePort.execute(...)` 驱动执行。 |
+| 2 | `agent-core` | 实现 `EnginePort` 并返回 `AgentEvent` stream。 |
 | 3 | `EnginePort` | 要求最后发出唯一 terminal event。 |
-| 4 | `agent-service` | 根据 event 更新 Task/Run 状态。 |
+| 4 | `agent-runtime` | 根据 event 更新 Task/Run 状态。 |
 
 `agent-bus` 在这里提供中立 SPI home。它不因此成为 execution owner，也不拥有 Run aggregate。
 
@@ -158,6 +159,6 @@ Agent 注册与发现是 service-to-service 路由的前置能力。它回答“
 | S2C 必须经过 `S2cCallbackTransport`。 | service L1 场景和 S2C SPI。 |
 | Task 状态只由 service 生命周期层更新。 | L0 boundaries 状态矩阵。 |
 | Engine terminal event 必须唯一且最后发出。 | `EnginePort` 契约和后续 harness。 |
-| S2C tenant 目标态必须进入 envelope。 | H2 决策和冲突通知记录。 |
+| S2C envelope 必须携带 `tenantId`（契约层已迁移，Stage 2）。 | `s2c-callback.v1.yaml` required fields 与 Stage 2 迁移记录。 |
 | 真 bus 转发底座进入实现前必须先定义 ack/retry/DLQ/ordering/backpressure。 | 后续 H2/H3 评审。 |
 | Agent 注册发现的 owner、租户隔离、health 和 contract version 语义已在 [`ICD-Agent-Registry-Discovery`](../../../../docs/architecture/l0/05-contracts/human-readable/ICD-agent-registry-discovery.md) 设计态定义。 | runtime 物理实现仍待后续波次；Stage 3 只定义接口和 harness 断言。 |

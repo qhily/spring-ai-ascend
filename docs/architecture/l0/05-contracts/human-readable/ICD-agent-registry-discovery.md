@@ -6,6 +6,8 @@ status: draft
 
 # ICD-Agent-Registry-Discovery
 
+> 命名说明：本 ICD 架构语义（参与模块、所有权、边界）使用 L0 逻辑名 `agent-runtime` / `agent-core`（当前实现/兼容落点分别为 `agent-service` / `agent-execution-engine`）；当前代码路径、Maven artifact、`module-metadata.yaml`、forbidden dependencies 仍保留旧名。
+
 ## 目的
 
 定义 `agent-bus` 拥有的 Agent / Service / Capability 注册与发现（registry / discovery）接口语义，支撑两类路由：
@@ -17,12 +19,12 @@ status: draft
 
 ## 适用读者
 
-`agent-bus` registry/discovery view owner、gateway 与真 bus 的实现者、`agent-service` / runtime owner、`agent-client` / edge owner、`agent-execution-engine` owner、`agent-middleware` owner、harness 生成器、架构评审者。
+`agent-bus` registry/discovery view owner、gateway 与真 bus 的实现者、`agent-runtime`（当前实现落点：`agent-service`）owner、`agent-client` / edge owner、`agent-core`（当前实现落点：`agent-execution-engine`）owner、`agent-middleware` owner、harness 生成器、架构评审者。
 
 ## 维护规则
 
 - 本 ICD 是 draft，正式 wire contract 需要与 ADR-0050（Bus & State Hub）、ADR-0089（Edge-Plane Ingress Gateway）、ADR-0074（S2C Callback）、ADR-0101（Federation）、`ICD-cs-capability-placement.md` 对齐。
-- `agent-bus` **只拥有 runtime route index / discovery view**（HD3-001）。agent 业务定义归 agent 定义来源；Task lifecycle / Task execution state 归 `agent-service` / runtime。
+- `agent-bus` **只拥有 runtime route index / discovery view**（HD3-001）。agent 业务定义归 agent 定义来源；Task lifecycle / Task execution state 归 `agent-runtime`（当前实现落点：`agent-service`）。
 - **registry key 必须包含 `tenantId`**（HD3-003）。`tenantId` 是注册和查询的强制维度；跨 tenant fallback 必须显式失败，不得静默。
 - **discovery result 不得携带 Task execution state**（Run 状态、Task 状态、suspend/resume 证据）。registry 只返回 routing 视图。
 - Stage 3 不新增运行态注册表生产类、不绑定 broker / MQ、不修改 Task 生命周期所有权。
@@ -30,9 +32,9 @@ status: draft
 | Field | Value |
 |---|---|
 | ICD ID | ICD-Agent-Registry-Discovery |
-| Participating Modules | `agent-bus`（registry / discovery view owner）；`agent-service` / runtime、`agent-client` / edge、`agent-execution-engine`、`agent-middleware`（消费者 / 注册方）；gateway + 真 bus（discovery 查询点）。 |
+| Participating Modules | `agent-bus`（registry / discovery view owner）；`agent-runtime`、`agent-client` / edge、`agent-core`、`agent-middleware`（消费者 / 注册方）；gateway + 真 bus（discovery 查询点）。 |
 | Interaction Purpose | 为 gateway ingress 路由与真 bus service-to-service 调用提供 tenant-scoped、version-aware、health-aware 的 route discovery；agent-bus 只拥有 route / discovery 视图，不拥有 agent 定义或 Task 状态。 |
-| Ownership Boundary (HD3-001) | `agent-bus` 只拥有 runtime route index。agent 业务定义归 agent 定义来源；Task lifecycle / execution state 归 `agent-service` / runtime。discovery result 不得携带 Task execution state。 |
+| Ownership Boundary (HD3-001) | `agent-bus` 只拥有 runtime route index。agent 业务定义归 agent 定义来源；Task lifecycle / execution state 归 `agent-runtime`（当前实现落点：`agent-service`）。discovery result 不得携带 Task execution state。 |
 | Registry Subject (HD3-002) | 注册主体 = service instance + agent / capability + endpoint / route key。注册的是「可路由能力（routable capability）」，不是 agent 源码定义、不是 Task 状态。 |
 | Registry Key (HD3-003) | registry key = `(tenantId, agentId|serviceId, capability)`。`tenantId` 是 key 的强制组成部分。 |
 | Tenant Isolation | `tenantId` 是注册和查询的强制维度。跨 tenant 查询必须显式失败（`tenant_isolation_violation`），**禁止跨 tenant fallback**。调用方 tenant 上下文必须与 query tenantId 一致。 |
@@ -50,6 +52,6 @@ status: draft
 | Audit Semantics | 记录 register / deregister / renew-lease / discover 事件、`tenantId`、`capability`、`contractVersion`、`capabilityVersion`、`health`、`caller`、`traceId`、`outcome`。 |
 | Observability Fields | `tenantId`、`traceId`、`registryOp`、`agentId`/`serviceId`、`capability`、`contractVersion`、`capabilityVersion`、`health`、`routeHandleId`、`outcome`、`latency`。 |
 | Versioning Strategy | registry entry 字段 additive；改变 route handle 编码、registry key 语义或 tenant 隔离规则属于 breaking change，需 ADR / CR。`contractVersion` / `capabilityVersion` 由注册方声明。 |
-| Contract Tests (design-level, 切片 3) | `registry_entry_requires_tenantId`；`discovery_query_requires_tenantId`；`discovery_result_has_no_task_execution_state`；`unhealthy_target_has_explicit_health_state`；`version_mismatch_has_explicit_result`；`cross_tenant_query_rejected`；`no_runtime_registry_production_class_added_in_stage3`。 |
-| Stage 3 Boundary | 不实现 runtime registry；不绑定 broker / MQ；不修改 Task lifecycle 所有权；不跨 tenant fallback；不把 `agent-service` / runtime 的 Task state 字段复制进 discovery result；不新增运行态注册表生产类。 |
+| Contract Tests (design-level, 切片 3) | `registry_entry_requires_tenant_id`；`discovery_query_requires_tenant_id`；`discovery_result_has_no_task_execution_state`；`unhealthy_target_has_explicit_health_state`；`version_mismatch_has_explicit_result`；`cross_tenant_query_rejected`；`no_runtime_registry_production_class_added_in_stage3`。 |
+| Stage 3 Boundary | 不实现 runtime registry；不绑定 broker / MQ；不修改 Task lifecycle 所有权；不跨 tenant fallback；不把 `agent-runtime` 的 Task state 字段复制进 discovery result；不新增运行态注册表生产类。 |
 | Open Issues | route handle 编码格式；lease / TTL 具体值；health metadata schema；durable vs memory 持久化选择（Stage 3 不选）；与 `ICD-cs-capability-placement.md` 的 local capability registry 关系待对齐；version downgrade 策略。 |

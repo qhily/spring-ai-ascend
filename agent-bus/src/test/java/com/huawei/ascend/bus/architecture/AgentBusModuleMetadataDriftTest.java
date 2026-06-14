@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * POM / module-metadata drift harness for {@code agent-bus} (Stage 1 follow-up
- * MI-002; coverage gap closed in MI-FU-001).
+ * MI-002; coverage gap closed in MI-FU-001; key-presence guard added in MI3-004).
  *
  * <p>{@link AgentBusDependencyBoundaryTest} proves via ArchUnit that production
  * bytecode never <em>reaches into</em> a sibling module. It cannot detect
@@ -34,6 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       intact set, and each declared forbidden sibling is metadata-driven
  *       absent from the POM production graph — so a newly-added forbidden entry
  *       is covered automatically without editing the test (MI-FU-001).
+ *   <li>The {@code allowed_dependencies} and {@code forbidden_dependencies}
+ *       keys themselves must be present — a deleted or misspelled key fails the
+ *       build rather than being read as an empty list (MI3-004).
  *   <li>{@code archunit-junit5} and {@code spring-boot-starter-test} stay
  *       test-scope; they must never enter the production dependency graph.
  * </ul>
@@ -52,8 +55,8 @@ class AgentBusModuleMetadataDriftTest {
     private static final File POM_XML = new File("pom.xml");
     private static final File MODULE_METADATA = new File("module-metadata.yaml");
     private static List<Dependency> dependencies;
-    private static List<String> allowedDependencies;
-    private static List<String> forbiddenDependencies;
+    private static MetadataList allowedDependenciesMeta;
+    private static MetadataList forbiddenDependenciesMeta;
 
     @BeforeAll
     static void parseSources() throws Exception {
@@ -68,8 +71,8 @@ class AgentBusModuleMetadataDriftTest {
                   + "directory (module basedir) — MI-FU-001 widened this harness to read metadata")
                 .exists();
         List<String> metaLines = Files.readAllLines(MODULE_METADATA.toPath());
-        allowedDependencies = parseListBlock(metaLines, "allowed_dependencies");
-        forbiddenDependencies = parseListBlock(metaLines, "forbidden_dependencies");
+        allowedDependenciesMeta = parseListBlock(metaLines, "allowed_dependencies");
+        forbiddenDependenciesMeta = parseListBlock(metaLines, "forbidden_dependencies");
     }
 
     @Test
@@ -118,7 +121,12 @@ class AgentBusModuleMetadataDriftTest {
 
     @Test
     void metadata_allowed_dependencies_is_empty() {
-        assertThat(allowedDependencies)
+        assertThat(allowedDependenciesMeta.present())
+                .as("module-metadata.yaml must declare an allowed_dependencies key (MI3-004) — a "
+                  + "missing key must fail the build, not be silently read as []. The key itself "
+                  + "is the invariant; absence is drift, not an empty list.")
+                .isTrue();
+        assertThat(allowedDependenciesMeta.values())
                 .as("module-metadata.yaml allowed_dependencies must be [] — agent-bus is a pure "
                   + "contract module; opening it would break the SPI-first boundary (R-C.b)")
                 .isEmpty();
@@ -126,6 +134,12 @@ class AgentBusModuleMetadataDriftTest {
 
     @Test
     void metadata_forbidden_dependencies_are_declared_and_absent_from_production_pom() {
+        assertThat(forbiddenDependenciesMeta.present())
+                .as("module-metadata.yaml must declare a forbidden_dependencies key (MI3-004) — a "
+                  + "missing key must fail the build, not be silently read as [].")
+                .isTrue();
+        List<String> forbiddenDependencies = forbiddenDependenciesMeta.values();
+
         // Declares the intact forbidden set — fails if any expected sibling is
         // removed from the metadata.
         assertThat(forbiddenDependencies)
@@ -188,13 +202,16 @@ class AgentBusModuleMetadataDriftTest {
 
     /**
      * Zero-dependency YAML list reader. Matches a top-level {@code key:} (no
-     * leading indentation) and returns its value as a list, handling both inline
-     * {@code [a, b]} (incl. empty {@code []}) and block {@code - a\n- b} forms.
-     * Item-level trailing comments ({@code - agent-service # reason}) are
-     * stripped. Only the two stable metadata keys are ever requested, so this is
-     * deliberately narrow — not a general YAML parser.
+     * leading indentation) and returns its value wrapped in {@link MetadataList},
+     * handling both inline {@code [a, b]} (incl. empty {@code []}) and block
+     * {@code - a\n- b} forms. Item-level trailing comments ({@code - agent-service # reason})
+     * are stripped. A <em>missing</em> key returns {@code present == false} so
+     * callers distinguish "key absent" (drift that must fail — MI3-004) from "key
+     * present with empty value" (legitimate {@code []}). Only the two stable
+     * metadata keys are ever requested, so this is deliberately narrow — not a
+     * general YAML parser.
      */
-    private static List<String> parseListBlock(List<String> lines, String key) {
+    private static MetadataList parseListBlock(List<String> lines, String key) {
         String keyPrefix = key + ":";
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
@@ -203,14 +220,14 @@ class AgentBusModuleMetadataDriftTest {
             }
             String inline = stripComment(line.substring(keyPrefix.length())).trim();
             if (inline.isEmpty()) {
-                return collectBlockItems(lines, i + 1);
+                return new MetadataList(true, collectBlockItems(lines, i + 1));
             }
             if ("[]".equals(inline)) {
-                return List.of();
+                return new MetadataList(true, List.of());
             }
-            return parseInlineList(inline);
+            return new MetadataList(true, parseInlineList(inline));
         }
-        return List.of(); // key absent
+        return new MetadataList(false, List.of()); // key absent — callers must fail on this
     }
 
     private static List<String> collectBlockItems(List<String> lines, int fromIndex) {
@@ -247,6 +264,16 @@ class AgentBusModuleMetadataDriftTest {
         int hash = s.indexOf('#');
         return hash >= 0 ? s.substring(0, hash) : s;
     }
+
+    /**
+     * Result of parsing one metadata list key. {@code present} distinguishes a
+     * declared key (with any value, including {@code []}) from a key that is
+     * absent from {@code module-metadata.yaml}. The Stage 3 review (MI3-004)
+     * requires that a missing {@code allowed_dependencies} or
+     * {@code forbidden_dependencies} key fails the build rather than reading as
+     * an empty list, so both fields are asserted.
+     */
+    private record MetadataList(boolean present, List<String> values) {}
 
     private record Dependency(String groupId, String artifactId, String scope) {}
 }

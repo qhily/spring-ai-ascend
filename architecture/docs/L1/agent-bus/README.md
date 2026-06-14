@@ -16,6 +16,19 @@ covers_views: [logical, process, development, physical, scenarios]
 
 - `docs/architecture/l0/10-governance/review-packets/agent-bus-architecture-review-draft.md`
 
+## 命名说明（L0 逻辑模块与当前实现）
+
+本文档集引用模块时区分两类名称（L0 commit `544391d8` 收敛后的逻辑边界）：
+
+| L0 逻辑模块 | 当前实现 / 兼容落点 |
+|---|---|
+| `agent-runtime` | `agent-service/` 目录、Maven artifact `agent-service` |
+| `agent-core` | `agent-execution-engine/` 目录、Maven artifact `agent-execution-engine` |
+
+- 架构语义（生命周期 owner、参与者、状态归属、跨模块关系）优先使用 L0 逻辑名 `agent-runtime` / `agent-core`。
+- 当前代码路径、Maven artifact、`module-metadata.yaml`、forbidden dependencies 等代码事实仍保留旧名 `agent-service` / `agent-execution-engine`。
+- 仓库当前**没有** `agent-runtime/` 或 `agent-core/` 目录；这是命名收敛，不是目录重命名。
+
 ## 视图文件
 
 | 文件 | 内容 | 状态 |
@@ -31,7 +44,7 @@ covers_views: [logical, process, development, physical, scenarios]
 
 ## 已接受的边界
 
-- `agent-service` / agent runtime 保持 Task 生命周期、Task 状态、Task 层级关系、suspend/resume 的所有权。
+- `agent-runtime` 保持 Task 生命周期、Task 状态、Task 层级关系、suspend/resume 的所有权。
 - `agent-bus` 不直接拥有或写入 Task execution state。
 - `agent-bus` 逻辑上拆分为两大块：
   - Gateway：负责外部到内部的转发、入口治理和调度。

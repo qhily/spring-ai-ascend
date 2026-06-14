@@ -25,6 +25,8 @@ agent-bus/
     s2c/
 ```
 
+> 命名说明：本文架构语义（所有权）使用 L0 逻辑名 `agent-runtime`（当前实现/兼容落点：`agent-service`）；forbidden dependencies 列表与 runtime 构造点引用保留当前 artifact 名。完整映射见 [`README.md`](README.md)「命名说明」。
+
 ## 2. 包职责
 
 | 包 | 职责 | 成熟度 |
@@ -87,8 +89,8 @@ Stage 2 已完成的迁移（commit `d894f494`）：
 
 仍待后续波次补齐（不改 Task lifecycle 所有权，S2C-TENANT-006）：
 
-- 构造 `S2cCallbackEnvelope` 的 `agent-service` / runtime 侧构造点。
+- 构造 `S2cCallbackEnvelope` 的 runtime 侧构造点（当前实现落点：`agent-service`）。
 - runtime-side schema validation integration。
 - downstream 文档与治理模板的剩余同步。
 
-迁移前已通知所有冲突方（CN-001..CN-007）；本迁移不改变 `agent-service` 对 Task lifecycle 的所有权。
+本迁移已通知所有冲突方（CN-001..CN-007）；不改变 `agent-runtime` 对 Task lifecycle 的所有权。

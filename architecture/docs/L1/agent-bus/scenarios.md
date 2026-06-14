@@ -7,11 +7,13 @@ status: draft
 
 # agent-bus 场景视图
 
+> 命名说明：本文参与者与所有权使用 L0 逻辑名 `agent-runtime` / `agent-core`（当前实现/兼容落点分别为 `agent-service` / `agent-execution-engine`）；当前代码路径、Maven artifact、`module-metadata.yaml`、forbidden dependencies 仍保留旧名。完整映射见 [`README.md`](README.md)「命名说明」。
+
 ## SC-001：client 创建或操作 Task
 
 | 项目 | 内容 |
 |---|---|
-| 参与者 | `agent-client`、Gateway、`agent-service` |
+| 参与者 | `agent-client`、Gateway、`agent-runtime` |
 | 入口 | `IngressGateway.routeClientRequest(...)` |
 | 契约 | `ingress-envelope.v1.yaml` |
 | 流程 | client 构造 `IngressEnvelope`，Gateway 校验并路由到 service，service 处理 Task 生命周期，Gateway 返回 `IngressResponse`。 |
@@ -24,20 +26,20 @@ status: draft
 
 | 项目 | 内容 |
 |---|---|
-| 参与者 | `agent-service`、`S2cCallbackTransport`、`agent-client` |
+| 参与者 | `agent-runtime`、`S2cCallbackTransport`、`agent-client` |
 | 入口 | `S2cCallbackTransport.dispatch(...)` |
 | 契约 | `s2c-callback.v1.yaml` |
 | 流程 | service 构造 `S2cCallbackEnvelope`，通过 transport 发给 client，client 执行本地 capability 后返回 `S2cCallbackResponse`，service 校验并恢复或失败。 |
 | 成功结果 | Run 恢复并继续执行。 |
 | 失败结果 | timeout、schema invalid、transport failure 等导致 Run 进入失败或对应终态。 |
 | 不变量 | service 仍拥有 suspend/resume 状态机。 |
-| 缺口 | envelope 需要增加 `tenantId`，且迁移前要通知冲突方。 |
+| 缺口 | envelope 已携带 `tenantId`（Stage 2 契约层迁移）；runtime 构造点与 schema validation integration 待后续波次。 |
 
 ## SC-003：service 驱动 execution engine
 
 | 项目 | 内容 |
 |---|---|
-| 参与者 | `agent-service`、`EnginePort`、`agent-execution-engine` |
+| 参与者 | `agent-runtime`、`EnginePort`、`agent-core` |
 | 入口 | `EnginePort.execute(...)` |
 | 契约 | `engine-port.v1.yaml` |
 | 流程 | service 通过中立端口发起执行，engine 返回 `AgentEvent` stream，service 消费事件并更新状态。 |
@@ -50,7 +52,7 @@ status: draft
 
 | 项目 | 内容 |
 |---|---|
-| 参与者 | 本地 Gateway、真 bus、`FederationGateway`、远端 `agent-service` |
+| 参与者 | 本地 Gateway、真 bus、`FederationGateway`、远端 `agent-runtime` |
 | 入口 | `FederationGateway.routeFederated(...)` |
 | 契约 | `federation-envelope.v1.yaml` |
 | 流程 | 本地 bus 判断请求需要跨部署转发，通过 federation gateway 发送到远端服务边界。 |
