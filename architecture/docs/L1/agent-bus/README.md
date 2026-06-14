@@ -93,3 +93,4 @@ Agent / Service / Capability 注册与发现的完整设计态契约见 [`ICD-Ag
 - 为 ingress、federation、reflection 增加契约测试计划。
 - 为本目录生成 graphify 输入和漂移检查 manifest。
 - Stage 5 运行态候选方案评审：见 [`../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-candidates.md`](../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-candidates.md)（候选评审，不绑定产品；Stage 4 设计态契约见上方「类 MQ 转发契约」章节）。
+- Stage 6 运行态候选裁决：见 [`../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-decision.md`](../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-decision.md)（H2/H3 裁决记录，draft 待裁决；裁决前不写生产代码，实现等待裁决；Stage 6 计划见上方「阶段记录」）。

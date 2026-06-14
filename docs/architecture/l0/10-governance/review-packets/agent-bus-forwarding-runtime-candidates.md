@@ -205,7 +205,31 @@ target_module: agent-bus
 - **是否新增 production dependency**：C3 可能复用现有 DB（无新依赖），C4/C5 必然新增 broker client + adapter。
 - **早期可迭代性**：C1/C2 的 local dev 复杂度最低，适合作为初始运行态切片的起点；C5 复杂度最高，不宜作为初始切片。
 
-### 6.2 本评审不下定论的决策（deferred 到 H2/H3）
+### 6.2 推荐进入 H2/H3 的候选（MI6-002，非裁决性质）
+
+本评审用强 / 中 / 弱暴露 trade-off，但对后续施工仍缺少「推荐进入 H2/H3 讨论的默认候选」。补一个 **非裁决性质** 的推荐，帮助 H2/H3 快速聚焦（来源：Stage 6 计划 MI6-002）：
+
+| 推荐 | 候选 | 说明 |
+|---|---|---|
+| 默认推荐候选 | C3 database outbox / inbox | durable、审计强、tenant 行级隔离清楚、可能复用现有 DB、比外部 broker 运维轻。 |
+| 备选早期实验 | C1 in-memory dispatcher | 只适合本地开发或非 durable 原型，**不作为生产候选**。 |
+| 暂不推荐 | C5 hybrid | 复杂度过高，不适合最小切片。 |
+
+这不是架构裁决，只是帮助 H2/H3 快速聚焦；最终裁决见 [`agent-bus-forwarding-runtime-decision`](agent-bus-forwarding-runtime-decision.md)（Stage 6 H2/H3 裁决记录）。
+
+每个候选的 **rejection criteria（不可接受条件）**，避免弱候选长期保留、影响裁决效率（来源：Stage 6 计划 MI6-004）：
+
+| 候选 | 不可接受条件（命中即不应选该候选） |
+|---|---|
+| C1 in-memory dispatcher | 需要跨进程可靠投递、重启不丢消息、或生产审计。 |
+| C2 runtime-local queue | 需要跨实例一致路由或 durable replay。 |
+| C3 database outbox / inbox | 系统没有可复用 DB，或 DB 压力不能接受 polling / outbox。 |
+| C4 external broker | 团队无法承担 broker 运维，或当前阶段禁止新增生产依赖。 |
+| C5 hybrid | 处于最小切片阶段，复杂度超过收益。 |
+
+**本评审（含推荐与 rejection criteria）仍不等同于最终裁决。** 是否允许进入生产代码施工，必须由 H2/H3 在 Stage 6 裁决记录中明确；施工智能体在裁决前不得写生产 runtime 代码（见 Stage 6 计划 §4、§6）。
+
+### 6.3 本评审不下定论的决策（deferred 到 H2/H3）
 
 - 具体 broker 产品选择（C4 内部的 Kafka / NATS / RocketMQ / RabbitMQ 之间）。
 - outbox store 是否复用现有 DB，还是独立存储（C3 的 owner 落点）。
@@ -213,7 +237,7 @@ target_module: agent-bus
 - ordering 的 route 维度定义（ICD Open Issue，需在选定承载后再定）。
 - backpressure 的具体状态编码（ICD Open Issue）。
 
-### 6.3 边界护栏（无论选哪个候选都必须守住）
+### 6.4 边界护栏（无论选哪个候选都必须守住）
 
 - forwarding envelope 始终通过 `routeHandle` 绑定投递目标，不绕过 Stage 3 discovery 直接用物理 endpoint。
 - envelope 不携带 payload body / token stream / Task execution state（`payloadRef` 条件必填，MI5-003 方案 B）。
@@ -229,4 +253,6 @@ target_module: agent-bus
 
 - 设计态契约：[`ICD-Agent-Bus-Forwarding`](../../05-contracts/human-readable/ICD-agent-bus-forwarding.md)（HD4）。
 - 第五阶段计划：[`agent-bus-stage4-review-and-stage5-plan`](../delivery-projections/agent-bus-stage4-review-and-stage5-plan.md)。
+- 第六阶段计划：[`agent-bus-stage5-review-and-stage6-plan`](../delivery-projections/agent-bus-stage5-review-and-stage6-plan.md)（含 MI6-002 推荐、MI6-004 rejection criteria、Stage 6 裁决切片）。
+- Stage 6 H2/H3 裁决记录：[`agent-bus-forwarding-runtime-decision`](agent-bus-forwarding-runtime-decision.md)（裁决入口，draft 状态）。
 - L1 入口：[`agent-bus L1 README`](../../../../architecture/docs/L1/agent-bus/README.md)。

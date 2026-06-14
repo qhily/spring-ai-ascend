@@ -58,7 +58,7 @@ status: draft
 - backpressure runtime。
 - tick engine。
 - DLQ / replay store。
-- 类 MQ 转发底座（运行态实现 deferred；Stage 4 转发语义见 [`ICD-Agent-Bus-Forwarding`](../../../../docs/architecture/l0/05-contracts/human-readable/ICD-agent-bus-forwarding.md)；Stage 5 运行态候选评审见 [`agent-bus-forwarding-runtime-candidates`](../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-candidates.md)）。
+- 类 MQ 转发底座（运行态实现 deferred；Stage 4 转发语义见 [`ICD-Agent-Bus-Forwarding`](../../../../docs/architecture/l0/05-contracts/human-readable/ICD-agent-bus-forwarding.md)；Stage 5 运行态候选评审见 [`agent-bus-forwarding-runtime-candidates`](../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-candidates.md)；Stage 6 候选裁决见 [`agent-bus-forwarding-runtime-decision`](../../../../docs/architecture/l0/10-governance/review-packets/agent-bus-forwarding-runtime-decision.md)，draft 待 H2/H3 裁决，裁决前不写生产代码）。
 - agent/service/capability registry runtime。
 - service discovery API。
 - runtime-side S2C construction binding / schema validation runtime（契约层迁移已完成）。
