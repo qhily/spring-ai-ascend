@@ -8,7 +8,7 @@ status: draft
 
 ## 目的
 
-保存 AI-6 生成的交付视图，把已确认的架构产物转化为开发切片、实现任务草案、DoD、harness 计划和验证矩阵增量。
+保存 AI-6 生成的交付视图，把已确认的架构产物转化为开发切片、实现任务草案、DoD、harness 计划、测试计划、自动化投影计划和验证矩阵增量。
 
 ## 适用读者
 
@@ -20,6 +20,7 @@ status: draft
 - 每个任务必须追溯到版本架构边界、A2D 产物和验证矩阵。
 - 任务不得越过 `architecture-envelopes/<version>.md` 的允许范围。
 - 进入自动实现前，DoD、验证方式和 harness 计划必须明确。
+- 使用 graphify、OpenAPI/Swagger、schema、stub/mock、contract test 或 codegen 时，必须声明 source fact、生成物路径、可写范围、验证方式和漂移检查方式。
 
 ## 最小结构
 
@@ -29,5 +30,6 @@ status: draft
 ## 1. 开发切片
 ## 2. 实现任务草案
 ## 3. Harness 计划
-## 4. 验证矩阵增量
+## 4. 自动化投影计划
+## 5. 验证矩阵增量
 ```

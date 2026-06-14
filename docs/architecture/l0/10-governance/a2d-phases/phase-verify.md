@@ -10,10 +10,12 @@ human_review_density: light
 
 1. 汇总实现结果，对比 H2 确认的架构包
 2. 检查实现是否偏离版本架构边界
-3. 检查验证矩阵覆盖率
-4. 汇总验证通过、失败、跳过的情况
-5. 生成漂移报告和发布风险说明
-6. 提交 H3 人类审核
+3. 检查 changed files 和自动化生成物是否落在允许范围内
+4. 检查 graphify / OpenAPI / Swagger / schema / codegen 结果是否仍能追溯到 accepted 架构事实
+5. 检查验证矩阵覆盖率
+6. 汇总验证通过、失败、跳过的情况
+7. 生成漂移报告和发布风险说明
+8. 提交 H3 人类审核
 
 ## 输入
 
@@ -23,6 +25,7 @@ human_review_density: light
 | 4+1 评审包 | `10-governance/review-packets/<version>.md` |
 | 交付视图 | `10-governance/delivery-projections/<version>.md` |
 | PR / 代码变更 | 代码仓库 |
+| 自动化生成物 | 代码仓库或交付视图声明的生成物目录 |
 | 测试结果 | CI 输出 |
 | 验证矩阵 | `09-verification/verification-matrix.md` |
 
@@ -43,12 +46,17 @@ human_review_density: light
 - 实现的契约调用是否与 ICD 一致
 - 实现的错误处理是否与契约错误语义一致
 - 实现的观测埋点是否与 harness 和不变量一致
+- changed files 是否全部落在版本架构边界的 writable 范围内
+- 自动化生成物是否全部来自交付视图声明的投影计划
+- OpenAPI/Swagger/schema 是否只是契约投影，而没有引入未被 ICD 接受的新语义
+- graphify 反向抽取的代码结构是否与模块责任卡和依赖边界一致
 
 ## 退出条件
 
 - 设计和实现没有未解释的漂移
 - P0/P1 finding 已关闭或降级并说明理由
 - 契约、状态、场景、harness 的追踪关系仍然成立
+- changed files 和自动化生成物没有未解释的越界
 - 需要回写的文档已更新
 
 ## 何时停下问人
