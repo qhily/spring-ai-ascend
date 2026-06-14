@@ -15,6 +15,7 @@ affects_artefact:
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/openjiuwen
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/agentscope
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/a2a
+  - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/versatile
 ---
 
 # Agent Capability Permission Policy L2 Proposal
@@ -52,7 +53,7 @@ This proposal defines:
 - deployer-readable `docs/governance/capability-permissions.yaml`;
 - schema contract `docs/contracts/capability-permission-policy.v1.yaml`;
 - default-deny plus allowlist baseline;
-- scope permissions for tool, file, API, MCP, A2A, sandbox, memory, model, and business actions;
+- scope permissions for tool, file, API, MCP, A2A, remote tool catalog, Versatile workflow, sandbox, memory, model, and business actions;
 - `CapabilitySecuritySpec`, `SkillSecuritySpec`, and `ToolSecuritySpec`;
 - `CapabilityInvocationRequest`;
 - how OpenJiuwen, AgentScope, SDK tools, remote A2A, file/API/MCP, memory, and sandbox paths attach permission metadata.
@@ -66,7 +67,7 @@ This proposal does not define:
 
 ## 3. Root Cause / Strongest Interpretation (Rule D-1)
 
-1. **Observed failure / motivation:** high-risk capabilities can be invoked through tool, file, API, MCP, A2A, sandbox, memory, and business adapters, but there is no unified deployer-readable permission matrix.
+1. **Observed failure / motivation:** high-risk capabilities can be invoked through tool, file, API, MCP, A2A, remote tool catalog, Versatile workflow, sandbox, memory, and business adapters, but there is no unified deployer-readable permission matrix.
 2. **Execution path:** `agent-sdk` loads skill/tool/capability specs; framework adapters map them to OpenJiuwen or AgentScope; `agent-runtime` then executes, routes, or delegates capabilities.
 3. **Root cause:** `SkillSpec`, `ToolSpec`, and remote capability descriptors do not carry risk semantics, so runtime must infer risk from names or implementation details.
 4. **Evidence:** `SkillSpec.java` currently carries `name/path/skillFile`; `ToolSpec.java` currently carries `name/description/inputSchema/ref`; L0 states the active modules are `agent-runtime`, `agent-service`, `agent-bus`, and BoM.
@@ -96,7 +97,9 @@ The allowlist answers whether the capability may be considered. Scope policy ans
 | `API` | HTTP/gRPC external API | egress, SSRF, external side effect |
 | `MCP` | MCP server tool/resource/prompt | indirect tool and data access |
 | `A2A_NORTHBOUND` | Agent Card, SendMessage, SendStreamingMessage, GetTask, ListTasks, CancelTask, SubscribeToTask, push config | external access, task visibility, cancel/subscribe, push callback egress |
+| `REMOTE_TOOL_CATALOG` | remote Agent Card to generated tool catalog admission | prompt/tool injection, untrusted remote metadata, open schema drift |
 | `A2A_REMOTE_AGENT` | A2A remote agent capability | cross-agent trust and tenant propagation |
+| `VERSATILE_WORKFLOW` | Versatile Adapter REST/SSE workflow call | metadata/header forwarding, open business inputs, continuation ambiguity |
 | `RUNTIME_CONTROL` | `start`, `stop`, `isHealthy`, `cancel(taskId)` on runtime/handler surfaces | availability manipulation, cross-task interruption, health visibility |
 | `SANDBOX` | sandbox acquire/execute/file transfer | code execution and isolation |
 | `MEMORY` | memory read/write/retrieval | data leakage or memory poisoning |
@@ -151,8 +154,12 @@ allowlist:
     capability: workspace.read
   - capabilityKind: MCP
     capability: mcp.docs.search
+  - capabilityKind: REMOTE_TOOL_CATALOG
+    capability: remote-agent.card.admit
   - capabilityKind: A2A_REMOTE_AGENT
     capability: quote-agent.ask
+  - capabilityKind: VERSATILE_WORKFLOW
+    capability: hotel-booking.workflow.call
 
 tiers:
   R0_PURE_REASONING:
@@ -224,6 +231,41 @@ capabilities:
         allowedSkills: ["quote"]
         requireTenantPropagation: true
         maxTimeoutMs: 30000
+
+  - selector:
+      capabilityKind: REMOTE_TOOL_CATALOG
+      capability: remote-agent.card.admit
+      remoteAgentId: quote-agent
+    riskTier: R2_NETWORK_READ
+    mode: ask
+    scope:
+      remoteToolCatalog:
+        allowedCardHosts: ["agents.example.com"]
+        requireCardHash: true
+        allowOpenInputSchema: false
+        maxSkillDescriptionBytes: 4096
+        denySkillPatterns: ["ignore previous instructions", "bypass policy"]
+    audit:
+      required: true
+
+  - selector:
+      capabilityKind: VERSATILE_WORKFLOW
+      capability: hotel-booking.workflow.call
+      workflowId: hotel-booking
+    riskTier: R3_STATE_WRITE
+    mode: ask
+    scope:
+      versatile:
+        allowedUrlVariables: ["workspace_id", "conversation_id"]
+        allowedQueryKeys: ["workspace_id"]
+        allowedHeaderKeys: ["x-language", "x-invoke-mode"]
+        deniedHeaderKeys: ["authorization", "cookie", "x-tenant-id"]
+        allowedInputKeys: ["query", "intent", "wap_userName"]
+        maxInputBytes: 65536
+        allowedResultExtractionKeys: ["responseContent", "summary"]
+        continuationNamespace: "runtime.waitingTarget"
+    audit:
+      required: true
 
   - selector:
       capabilityKind: SANDBOX
@@ -428,7 +470,9 @@ This is not the final decision. It is a capability-specific input that later map
 | `ApiScope` | allowed hosts, methods, paths, headers, timeout, payload limits |
 | `McpScope` | server id, tool names, resource schemes, dynamic discovery flag, result limit |
 | `A2aNorthboundScope` | methods, agent-card visibility, task read/list/cancel/subscribe, push callback hosts, includeArtifacts |
+| `RemoteToolCatalogScope` | allowed card hosts, required card hash, generated tool name policy, open-schema allowance, skill-description size and deny patterns |
 | `A2aScope` | remote agent id, allowed skills/capabilities, tenant propagation, timeout |
+| `VersatileWorkflowScope` | workflow id, URL variables, query/header allowlists, denied headers, input keys, payload limit, result extraction keys, continuation namespace |
 | `RuntimeControlScope` | lifecycle methods, own-task cancel scope, admin-only start/stop, health detail visibility |
 | `SandboxScope` | sandbox profile, network profile, filesystem transfer limits |
 | `MemoryScope` | memory kind, tenant/session bounds, read/write, retention, poisoning checks |
@@ -441,7 +485,7 @@ This is not the final decision. It is a capability-specific input that later map
 | Module | Change | Boundary |
 |---|---|---|
 | `agent-sdk` | security spec, YAML parser, capability invocation request builder | no dependency on `agent-service` |
-| `agent-runtime` | consumes capability metadata when adapters expose tool/file/API/MCP/A2A/memory/sandbox/model actions | no direct dependency on policy implementation |
+| `agent-runtime` | consumes capability metadata when adapters expose tool/file/API/MCP/A2A/remote-tool-catalog/Versatile/memory/sandbox/model actions | no direct dependency on policy implementation |
 | `agent-service` | loads policy, tenant posture, approval cache, budget state; provides policy evaluation | may depend on config/storage |
 | `agent-bus` | no new dependency for base policy; approval callback belongs to approval L2 | remains neutral |
 | BoM | pin parser dependencies if needed | no runtime behavior |
@@ -467,7 +511,9 @@ Rules:
 
 - OpenJiuwen tools keep their native representation, but mapping must preserve `capabilityKind`, `capability`, `resourceRef`, `action`, and security spec.
 - AgentScope wrappers follow the same rule; AgentScope does not need to understand this repository's policy language.
+- Remote Agent Card skills must pass `REMOTE_TOOL_CATALOG` admission before they become OpenJiuwen or AgentScope-visible tool specs. A discovered card is metadata, not authorization.
 - A2A remote tools are treated as `A2A_REMOTE_AGENT` plus capability label. They do not bypass permission policy.
+- Versatile Adapter calls are treated as `VERSATILE_WORKFLOW` plus API egress. Structured `headers`, `query`, and `inputs` are allowed only when they match `VersatileWorkflowScope`; body flexibility is not a policy bypass.
 - MCP dynamic discovery is denied by default unless policy explicitly allows the server and discovered tool/resource class.
 - If a tool's internal file/API access is runtime-observable, create a separate FILE/API request. If not observable, it must be pre-declared by the enclosing tool.
 
@@ -516,6 +562,10 @@ AgentScope / OpenJiuwen / JiuwenSwarm least-privilege mechanisms do not block th
 | policy conflicts with redline | redline wins; emit validation error |
 | sandbox requested but unavailable | deny or suspend; no automatic local fallback |
 | API/MCP/A2A endpoint outside scope | deny before network call |
+| remote Agent Card skill catalog fails admission | do not expose generated tool to the framework |
+| remote generated tool has open schema without parameter policy | deny in research/prod |
+| Versatile header/query/input/result extraction outside scope | deny before REST call |
+| continuation request has ambiguous `INPUT_REQUIRED` target | deny resume |
 | file path escapes allowed root | deny before file operation |
 | audit required but unavailable | block side-effect action in research/prod |
 
@@ -544,7 +594,10 @@ AgentScope / OpenJiuwen / JiuwenSwarm least-privilege mechanisms do not block th
 - [ ] `ApiPermissionScopeTest`: denied host/method/private-network is blocked.
 - [ ] `McpPermissionScopeTest`: unauthorized MCP server/tool/resource and dynamic discovery are rejected.
 - [ ] `A2aNorthboundPermissionScopeTest`: unauthorized Agent Card, task read/list/cancel/subscribe, push config, and includeArtifacts are rejected.
+- [ ] `RemoteToolCatalogAdmissionPolicyTest`: remote Agent Card endpoint, card hash, generated tool name, skill description, and open schema are checked before tool exposure.
 - [ ] `A2aPermissionScopeTest`: unauthorized remote agent/capability is rejected and tenant propagation is required.
+- [ ] `VersatileWorkflowPermissionScopeTest`: URL variables, query keys, headers, inputs, payload size, result extraction, and continuation namespace are scoped.
+- [ ] `OpenRemoteToolSchemaRequiresParameterPolicyTest`: generated remote tools with `additionalProperties=true` are denied unless a parameter policy exists.
 - [ ] `PushCallbackEgressPolicyTest`: push callback URL must match the egress allowlist; private-network or unknown hosts are rejected.
 - [ ] `RuntimeControlPermissionScopeTest`: lifecycle start/stop requires an admin scope, health detail follows visibility policy, and task cancel is limited to authorized tenant/session/task scope.
 - [ ] `AgentStatePermissionScopeTest`: InMemory/Redis/OpenJiuwen checkpointer access must match tenant/session key scope, and `release` cleans only authorized scope.

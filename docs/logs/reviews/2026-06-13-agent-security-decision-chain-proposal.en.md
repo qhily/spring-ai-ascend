@@ -18,6 +18,7 @@ affects_artefact:
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/openjiuwen
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/agentscope
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/a2a
+  - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/versatile
   - agent-service-security-policy
   - agent-security-control-plane-events
   - graphmemory-starter-security-guard
@@ -64,7 +65,7 @@ This proposal defines:
 - contract vocabulary for capability permissions and security decisions;
 - `agent-sdk` risk declaration models for skills, tools, and capabilities;
 - a neutral `agent-runtime` security decision outbound port;
-- guard placement for OpenJiuwen, AgentScope, A2A remote invocation, generic tools, files, APIs, MCP, memory, model, and sandbox actions;
+- guard placement for OpenJiuwen, AgentScope, A2A remote invocation, remote tool catalog, Versatile workflow, generic tools, files, APIs, MCP, memory, model, and sandbox actions;
 - paired security decision events and audit receipts;
 - fail-closed posture behavior;
 - validation and red-team coverage.
@@ -80,7 +81,7 @@ This proposal does not define:
 
 ## 3. Root Cause / Strongest Interpretation (Rule D-1)
 
-1. **Observed failure / motivation:** the repository contains multiple security requirements and signals, but high-risk tool/model/memory/sandbox/file/API/MCP/A2A/business actions do not yet pass through one unified executable and auditable decision chain.
+1. **Observed failure / motivation:** the repository contains multiple security requirements and signals, but high-risk tool/model/memory/sandbox/file/API/MCP/A2A/remote-tool-catalog/Versatile/business actions do not yet pass through one unified executable and auditable decision chain.
 2. **Execution path:** `A2aJsonRpcController -> AgentRuntimeHandler.execute(context) -> framework adapter / tool executor / file/API/MCP adapter / memory adapter / sandbox gateway / remote A2A outbound port -> trajectory/audit`.
 3. **Root cause:** redlines, permissions, risk tiers, approval, audit, and trajectory are distributed across documents and local implementations without one runtime decision contract and enforcement entry point.
 4. **Evidence:** `SkillSpec.java` currently carries `name/path/skillFile`; `ToolSpec.java` carries `name/description/inputSchema/ref`; `TrajectoryEvent.java` is executable telemetry but not a security decision contract; `audit-trail.v1.yaml` is still design-level; L0 identifies active modules as `agent-runtime`, `agent-service`, `agent-bus`, and BoM, while historical `agent-middleware` is not in the reactor.
@@ -115,7 +116,7 @@ OpenJiuwen and AgentScope do not own the repository-level unified security polic
 
 #### Least Agency vs Least Privilege
 
-The target is least agency, not only least privilege. Least privilege answers whether a tool, file, API, MCP server, A2A peer, or sandbox can be accessed. Least agency also answers how far the agent may autonomously act within the current role, task, session, tenant, data boundary, budget, and time window. Therefore AgentScope / OpenJiuwen / JiuwenSwarm-like allow / ask / deny modes, permission modes, approval overrides, or sandbox isolation are lower-layer permission and execution signals. They do not replace the repository-owned agency boundary.
+The target is least agency, not only least privilege. Least privilege answers whether a tool, file, API, MCP server, A2A peer, remote tool catalog entry, Versatile workflow, or sandbox can be accessed. Least agency also answers how far the agent may autonomously act within the current role, task, session, tenant, data boundary, budget, and time window. Therefore AgentScope / OpenJiuwen / JiuwenSwarm-like allow / ask / deny modes, permission modes, approval overrides, or sandbox isolation are lower-layer permission and execution signals. They do not replace the repository-owned agency boundary.
 
 | Framework capability shape | Impact on least agency | Repository preset requirement |
 |---|---|---|
@@ -124,6 +125,17 @@ The target is least agency, not only least privilege. Least privilege answers wh
 | framework-level "always allow" / approval override | can turn confirmation fatigue into over-delegation | import only as a scoped, expiring, actor-bound candidate grant, never beyond the agency envelope |
 | framework sandbox / jiuwenbox / remote runtime | provides isolation and execution environment | sandbox is not authorization; capability, scope, approval, audit, and fallback-equivalence still apply |
 | opaque framework-internal side effect | repository cannot prove whether the agency boundary was respected | deny R3+ in research/prod unless wrapper/proxy/pre-declaration/sandbox control point is added |
+
+### 4.1.1 Current Runtime Alignment
+
+The current mainline runtime already treats external agent and workflow systems as lower-layer capabilities:
+
+- A2A remote agents are discovered from configured remote Agent Cards and exposed as callable tool specs.
+- OpenJiuwen can receive those remote tool specs through the runtime-owned installer and interrupt rail.
+- Versatile Adapter converts A2A message text and metadata into REST/SSE workflow calls.
+- `INPUT_REQUIRED` may mean remote workflow continuation, remote agent continuation, or a future security approval pause.
+
+These capabilities strengthen the need for a repository-owned security chain. Remote Agent Card skills, Versatile workflow calls, A2A metadata/header forwarding, and remote continuation state are not trusted policy by themselves. They are capability descriptions and transport signals that must be admitted, scoped, audited, and, when needed, parked by this repository before side effects occur.
 
 ### 4.2 Logical Architecture
 
@@ -402,7 +414,9 @@ FALLBACK
 | Memory guard | `MemoryProvider` / memory adapter | memory read/write policy, retention, poisoning checks |
 | Agent-state guard | framework checkpointer adapter | checkpoint read/write/release and tenant/session key scope |
 | Sandbox guard | sandbox gateway/provider path | sandbox acquire/execute/release decision and fail-closed behavior |
+| Remote tool catalog guard | `runtime.engine.a2a.RemoteAgentCardCache` / framework tool installer | remote Agent Card endpoint, skill-derived tool description, generated tool name, open input schema, card refresh drift |
 | Remote A2A guard | `runtime.engine.a2a` outbound decorator | endpoint policy, capability label, tenant, audit |
+| Versatile workflow guard | `runtime.engine.versatile` | URL template variables, structured query/header forwarding, `inputs` body fields, result extraction, continuation semantics |
 | Trajectory/security event sink guard | runtime sink/exporter | masking and decision event emission |
 
 ### 4.9 Runtime Decision Sequence
@@ -475,6 +489,9 @@ Telemetry and audit must remain separate:
 | sandbox unavailable for R4/R5 | explicit dev fallback only | deny or suspend | deny |
 | approval timeout | ask again / deny | suspend or deny | deny or suspend per regulated workflow |
 | audit unavailable | low-risk warn | deny high-risk side effect | deny if audit required |
+| remote Agent Card / skill catalog cannot be validated | keep pending or disable dev-only tool | deny tool registration or require manual admission | deny tool registration |
+| Versatile metadata/body exceeds scope | ask or block by profile | deny before REST call | deny before REST call |
+| `INPUT_REQUIRED` lacks a trusted waiting-target namespace | reject continuation | reject continuation | reject continuation |
 | fallback is not safety-equivalent | deny | deny | deny |
 
 ### 4.12 Relationship To Sandbox Proposal
@@ -491,7 +508,7 @@ This proposal is above the sandbox proposal:
 | Alternative | Why rejected |
 |---|---|
 | Put all security rules into `AGENTS.md` | `AGENTS.md` should stay a thin wrapper and is not a machine-enforceable policy surface. |
-| Let every framework manage its own security | OpenJiuwen, AgentScope, remote A2A, and SDK tools would produce inconsistent policy, audit, and fallback behavior. |
+| Let every framework manage its own security | OpenJiuwen, AgentScope, remote A2A, Versatile, and SDK tools would produce inconsistent policy, audit, and fallback behavior. |
 | Reintroduce the global `HookDispatcher` | The current mainline moved away from this design. The proposal should not rebuild retired architecture. |
 | Treat sandbox as the only security mechanism | Sandbox does not solve credentials, tenant spoofing, memory poisoning, approval, or audit. |
 | Rely only on code allowlists | Deployers and reviewers need readable, diffable governance configuration. |
@@ -513,6 +530,9 @@ This proposal is above the sandbox proposal:
 | `SecurityDecisionPortContractTest` | decisions are serializable and carry policy/audit refs. |
 | `TenantHeaderTrustModeTest` | research/prod fail closed when tenant source is not trusted. |
 | `RuntimeHandlerLifecycleGuardTest` | `start`, `stop`, `isHealthy`, and `cancel` map to runtime control actions and do not bypass security state or audit events. |
+| `RemoteAgentToolCatalogAdmissionTest` | remote Agent Card skills are not exposed as tools until endpoint, card, schema openness, and capability policy are admitted. |
+| `VersatileWorkflowScopeDecisionTest` | structured headers/query/body inputs/result extraction rules are denied when outside policy scope. |
+| `InputRequiredNamespaceTest` | remote continuation and security approval pauses use distinct metadata namespaces and cannot resume each other. |
 
 ### 6.2 Integration Tests
 

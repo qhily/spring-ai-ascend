@@ -9,6 +9,8 @@ affects_artefact:
   - docs/contracts/security-decision.v1.yaml
   - docs/contracts/contract-catalog.md
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/spi
+  - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/a2a
+  - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/versatile
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/app/RuntimeComponents.java
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/app/RuntimeApp.java
   - agent-service/src/main/java/com/huawei/ascend/service/security
@@ -24,7 +26,7 @@ affects_artefact:
 
 ## 1. Background
 
-The parent proposal needs one unified executable decision point across tool, file, API, MCP, A2A remote agent, memory, sandbox, model, egress, and business actions. This L2 proposal defines that decision contract.
+The parent proposal needs one unified executable decision point across tool, file, API, MCP, remote tool catalog, A2A remote agent, Versatile workflow, memory, sandbox, model, egress, and business actions. This L2 proposal defines that decision contract.
 
 The current architecture requires `agent-runtime` to stay neutral. It may define and call a port, but it must not depend on `agent-service` implementation classes. Therefore, the core design is:
 
@@ -58,7 +60,7 @@ This proposal does not define:
 
 ## 3. Root Cause / Strongest Interpretation (Rule D-1)
 
-1. **Observed failure / motivation:** without a neutral decision contract, each adapter could make local safety decisions, producing inconsistent behavior across OpenJiuwen, AgentScope, A2A, SDK tools, memory, sandbox, and file/API/MCP paths.
+1. **Observed failure / motivation:** without a neutral decision contract, each adapter could make local safety decisions, producing inconsistent behavior across OpenJiuwen, AgentScope, A2A, Versatile, SDK tools, memory, sandbox, and file/API/MCP paths.
 2. **Execution path:** runtime receives an agent request, framework adapter is about to call a capability, adapter builds `SecurityEvaluationRequest`, runtime calls `SecurityDecisionPort`, policy returns `SecurityDecision`, adapter enforces before side effect.
 3. **Root cause:** current runtime SPI focuses on execution, while policy, permission, approval, and audit semantics are not expressed as one reusable runtime contract.
 4. **Evidence:** current `AgentRuntimeHandler` is framework-neutral execution SPI; `TrajectoryEvent` is telemetry; active architecture places runtime, service, and bus in separate modules.
@@ -173,6 +175,8 @@ public sealed interface CapabilityTarget permits
         McpTarget,
         A2aNorthboundTarget,
         A2aRemoteAgentTarget,
+        RemoteToolCatalogTarget,
+        VersatileWorkflowTarget,
         RuntimeControlTarget,
         SandboxTarget,
         MemoryTarget,
@@ -207,6 +211,25 @@ public record A2aRemoteAgentTarget(
         Set<String> declaredSkills) implements CapabilityTarget {
 }
 
+public record RemoteToolCatalogTarget(
+        URI cardUrl,
+        String remoteAgentId,
+        String generatedToolName,
+        String cardHash,
+        boolean openInputSchema,
+        Set<String> declaredSkillNames) implements CapabilityTarget {
+}
+
+public record VersatileWorkflowTarget(
+        String workflowId,
+        URI resolvedEndpoint,
+        Set<String> urlVariableKeys,
+        Set<String> queryKeys,
+        Set<String> headerKeys,
+        Set<String> inputKeys,
+        Set<String> resultExtractionRules) implements CapabilityTarget {
+}
+
 public record A2aNorthboundTarget(
         String method,
         String taskId,
@@ -228,7 +251,7 @@ public record AgentStateTarget(
 }
 ```
 
-The target object must describe the resource that policy needs, without leaking full payloads.
+The target object must describe the resource that policy needs, without leaking full payloads. For generated remote tools and Versatile workflow calls, the target must include enough catalog and parameter-shape metadata for policy to decide before the LLM-facing tool or REST call is admitted. Open schemas are allowed only when paired with explicit parameter policy and redacted preview hashing.
 
 ### 4.7 SecurityDecision
 
@@ -323,7 +346,9 @@ STATE_WRITE
 STATE_RELEASE
 SANDBOX_ACQUIRE
 SANDBOX_EXEC
+REMOTE_TOOL_CATALOG_ADMIT
 A2A_REMOTE_AGENT_CALL
+VERSATILE_WORKFLOW_CALL
 EXTERNAL_EGRESS
 FILE_READ
 FILE_WRITE
@@ -344,7 +369,9 @@ FALLBACK
 | AgentScope adapter | tool/runtime/harness calls | create `SecurityEvaluationRequest` before delegated side effect |
 | SDK tool executor | `TOOL_CALL`, `API_CALL`, `FILE_*` | enforce before tool call |
 | MCP adapter | `MCP_CALL` | enforce server/tool/resource scope |
+| remote tool catalog | `REMOTE_TOOL_CATALOG_ADMIT` | validate remote Agent Card endpoint, generated tool name, skill description source, input schema openness, and catalog drift before exposing the tool |
 | remote A2A outbound | `A2A_REMOTE_AGENT_CALL` | enforce remote endpoint and capability label |
+| Versatile adapter | `VERSATILE_WORKFLOW_CALL` | enforce URL template variables, structured query/header forwarding, body input keys, result extraction rules, timeout, and continuation namespace before REST call |
 | memory adapter | `MEMORY_READ`, `MEMORY_WRITE` | enforce tenant/session/data scope |
 | agent state adapter | `STATE_READ`, `STATE_WRITE`, `STATE_RELEASE` | enforce checkpointer tenant/session key scope |
 | sandbox gateway | `SANDBOX_ACQUIRE`, `SANDBOX_EXEC` | enforce sandbox profile, fallback, audit |
@@ -409,12 +436,15 @@ Rules:
 | missing audit ref when required | deny before side effect |
 | sandbox route required but sandbox unavailable | deny or suspend; no local fallback unless explicit dev override |
 | approval required but approval service unavailable | deny in research/prod |
+| remote tool catalog target missing card hash / endpoint / schema openness flag | deny tool admission |
+| Versatile workflow target contains unscoped header/query/input/result extraction keys | deny before REST call |
+| continuation target lacks trusted waiting-target metadata | deny resume |
 
 ## 5. Alternatives
 
 | Alternative | Why rejected |
 |---|---|
-| put policy logic directly inside each adapter | produces divergent semantics across OpenJiuwen, AgentScope, A2A, and SDK tools |
+| put policy logic directly inside each adapter | produces divergent semantics across OpenJiuwen, AgentScope, A2A, Versatile, and SDK tools |
 | make `agent-runtime` depend on `agent-service` directly | violates runtime neutrality and module direction |
 | use `TrajectoryEvent` as the decision object | trajectory is telemetry, not policy contract |
 | return boolean allow/deny only | cannot represent approval, sandbox routing, redaction, audit, or fallback obligations |
@@ -434,6 +464,9 @@ Rules:
 - [ ] `RuntimeControlActionTypeMappingTest`: `AgentRuntimeHandler.start/stop/isHealthy/cancel` maps to runtime control action types and cannot bypass tenant/task/admin scope.
 - [ ] `AgentStateActionTypeMappingTest`: InMemory/Redis/OpenJiuwen checkpointer read/write/release maps to state actions.
 - [ ] `FrameworkPermissionEvidenceMappingTest`: AgentScope/OpenJiuwen/JiuwenSwarm allow/ask/deny/bypass/disabled/override is mapped as evidence, not final decision.
+- [ ] `RemoteToolCatalogTargetMappingTest`: generated remote A2A tool specs include endpoint, card hash, open schema flag, and declared skill names before admission.
+- [ ] `VersatileWorkflowTargetMappingTest`: Versatile URL variables, query/header keys, input keys, and result extraction rules map to `VersatileWorkflowTarget`.
+- [ ] `InputRequiredContinuationTargetTest`: remote continuation and approval resume requests carry distinct trusted target metadata.
 - [ ] `OpaqueFrameworkSideEffectDenyTest`: opaque high-risk framework side effects are denied in research/prod.
 - [ ] `PolicyTimeoutFailClosedTest`: high-risk actions fail closed when policy times out.
 - [ ] `AuditRefRequiredTest`: R4/R5 side effects are blocked when required audit refs are missing.
@@ -444,7 +477,7 @@ Rules:
 - **Wave 2:** add Java records/interfaces behind experimental package.
 - **Wave 3:** wire a dev local implementation and policy timeout behavior.
 - **Wave 4:** connect `agent-service` or deployer policy client implementation.
-- **Wave 5:** enforce adapter-level coverage for OpenJiuwen, AgentScope, A2A, SDK tools, MCP, files, memory, and sandbox.
+- **Wave 5:** enforce adapter-level coverage for OpenJiuwen, AgentScope, A2A, Versatile, SDK tools, MCP, files, memory, and sandbox.
 
 Freeze impact:
 

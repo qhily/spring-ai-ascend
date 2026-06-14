@@ -11,6 +11,7 @@ affects_artefact:
   - docs/contracts/audit-trail.v1.yaml
   - docs/contracts/contract-catalog.md
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/a2a
+  - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/versatile
   - agent-runtime/src/main/java/com/huawei/ascend/runtime/engine/spi
   - agent-bus/src/main/java/com/huawei/ascend/bus/spi/s2c
   - agent-service/src/main/java/com/huawei/ascend/service/security
@@ -110,6 +111,9 @@ APPROVAL_CANCELLED
 AUDIT_RECEIPT_RESERVED
 AUDIT_RECEIPT_COMMITTED
 REDACTION_APPLIED
+REMOTE_TOOL_CATALOG_ADMITTED
+REMOTE_TOOL_CATALOG_REJECTED
+VERSATILE_WORKFLOW_REQUESTED
 SANDBOX_ROUTE_DECIDED
 EGRESS_DECISION_RECORDED
 MEMORY_ACCESS_DECISION_RECORDED
@@ -260,6 +264,8 @@ Core rules:
 | `agent-runtime.engine.spi.AgentRuntimeHandler` | handler wrapper or adapter returns a parked/typed failure state before side effect; guarded lifecycle/cancel operations emit runtime-control security events |
 | `agent-runtime.common.RuntimeMessage` | source object for approval prompts, display summaries, and audit hashes; must be redacted before event emission |
 | `agent-runtime.engine.a2a` | maps approval-required state to A2A `INPUT_REQUIRED` / parked task style behavior |
+| `agent-runtime.engine.a2a.RemoteAgentCardCache` | emits catalog admission/rejection security events before remote Agent Card skills become framework-visible tools |
+| `agent-runtime.engine.versatile` | emits workflow request/security events for scoped headers, query, body inputs, result extraction, and continuation state |
 | `agent-bus.spi.s2c.S2cCallbackTransport` | optional callback transport for server-to-client approval prompts |
 | host application / `agent-service` | runtime is a library and does not own durable persistence by default; host/service stores approval records, audit receipts, and redacted artifacts |
 | `TrajectoryEvent` | remains operational telemetry and carries correlation only |
@@ -286,6 +292,18 @@ Constraints:
 - framework cancellation and repository approval cancellation are correlated but distinct;
 - framework input-required state is not an audit receipt.
 - A2A `INPUT_REQUIRED`, `SendMessage` aggregate snapshots, SSE events, and push callbacks are not approval truth; they only carry visible state plus `approvalRef` / `decisionId`.
+
+#### Input-Required Namespace Separation
+
+The current runtime can use `INPUT_REQUIRED` for several different waiting states. They must be separated by trusted metadata namespaces:
+
+| Waiting state | Required namespace | Required refs |
+|---|---|---|
+| remote A2A agent continuation | `runtime.waitingTarget=remote_agent` | `runtime.remoteAgentId`, `runtime.remoteTaskId`, `runtime.remoteContextId`, `runtime.toolCallId` |
+| Versatile workflow continuation | `runtime.waitingTarget=versatile_workflow` | `workflowId`, `conversationId`, scoped continuation metadata |
+| repository security approval | `security.waitingTarget=approval` | `approvalRef`, `decisionId`, `auditRef`, `delegationEnvelopeRef` |
+
+Runtime must reject resume attempts when the waiting target is absent, ambiguous, or supplied only by untrusted model/tool output. Transport-visible `INPUT_REQUIRED` is a carrier. Repository-owned approval records and security events are the source of truth.
 
 #### Approval Boundary Under Least Agency
 
@@ -334,7 +352,7 @@ Rules:
 
 #### Interaction Redaction And Retention Rules
 
-Audit should prove which decision was made, which scope was used, who approved it, and what happened. It should not retain full interaction content by default. User input, model output, tool args, tool result, file snippets, API request/response, MCP resources, A2A messages, and sandbox stdout/stderr may contain PII, credentials, business secrets, or regulated data. They must be classified and redacted before entering durable logs or audit retrieval surfaces.
+Audit should prove which decision was made, which scope was used, who approved it, and what happened. It should not retain full interaction content by default. User input, model output, tool args, tool result, file snippets, API request/response, MCP resources, A2A messages, remote Agent Card skill descriptions, generated remote tool arguments, Versatile structured headers/query/inputs/result-extraction matches, and sandbox stdout/stderr may contain PII, credentials, business secrets, prompt injection, or regulated data. They must be classified and redacted before entering durable logs or audit retrieval surfaces.
 
 Recommended persistence chain:
 
@@ -356,6 +374,8 @@ Field rules:
 | `payloadRef` | yes | points only to redacted artifacts; access requires tenant/session/task scope and audit |
 | raw prompt / raw model output | no by default | requires regulated evidence store and break-glass |
 | raw tool args/result, file/API/MCP/A2A body, sandbox output | no by default | store hash, redacted summary, or controlled artifact ref only |
+| remote Agent Card skill text and generated tool schema | no raw-by-default in audit | store card hash, trusted endpoint, admitted tool name, schema openness flag, and redacted description summary |
+| Versatile headers/query/body/result extraction snippets | no raw-by-default in audit | store allowed key names, denied key counts, hashes, redaction summary, and redacted preview only |
 
 Degraded behavior:
 
@@ -442,6 +462,9 @@ capability-permissions.yaml activeProfile=review_unknown or regulated_prod
 - [ ] `AuditCommitRecoveryTest`: post-action audit commit failure creates recovery record and alert.
 - [ ] `A2aApprovalInputRequiredTest`: approval-required decision maps to a parked A2A-visible state.
 - [ ] `A2aInputRequiredNotApprovalTruthTest`: A2A `INPUT_REQUIRED`, SSE, and push callback carry approval refs but cannot replace the approval record.
+- [ ] `InputRequiredNamespaceSeparationTest`: remote-agent continuation, Versatile continuation, and security approval cannot resume through each other's metadata namespace.
+- [ ] `RemoteToolCatalogAuditRedactionTest`: remote Agent Card skill text and generated tool schema produce hash/redacted summaries rather than raw audit payloads.
+- [ ] `VersatileAuditRedactionTest`: headers, query, inputs, and result extraction snippets are classified, redacted, and recorded by key/hash rather than raw payload.
 - [ ] `RuntimeLibraryNoDurableAuditStoreTest`: `agent-runtime` does not create a durable audit store by default; host/service port or test harness must be injected.
 - [ ] `RuntimeControlAuditEventTest`: guarded start/stop/health/cancel operations emit runtime-control security events and cannot create durable audit records before redaction/policy refs exist.
 - [ ] `S2cApprovalCallbackTest`: approval request can be sent through S2C callback transport when configured.
