@@ -104,11 +104,13 @@ class IngressResponseTest {
     /**
      * Characterisation test — records the CURRENT behaviour that
      * {@link IngressResponse#accepted(UUID, String)} does not enforce a non-null
-     * {@code cursor}. This is explicitly flagged as a 待确认项 in the Stage 1
-     * delivery projection: if the architecture owner decides ACCEPTED + RUN_CREATE
-     * MUST carry a cursor, that becomes a separate contract-correction slice and
-     * this test will then flip to red, surfacing the change. Stage 1 records the
-     * status quo rather than silently tightening the contract.
+     * {@code cursor}. Resolved per MI-003 (2026-06-14): 方案 A — the
+     * {@code RUN_CREATE + ACCEPTED} cursor requirement is enforced at the ingress
+     * gateway / handler layer in a future gateway-harness wave, NOT on the
+     * low-context {@code IngressResponse} record. This is now an INTENTIONAL
+     * contract shape (response stays requestType-unaware), not a pending defect.
+     * If a future slice instead adopts 方案 B (requestType-aware response / factory),
+     * this test should be replaced, surfacing the contract change.
      */
     @Test
     void accepted_currently_does_not_enforce_non_null_cursor_pending_owner_decision() {

@@ -7,6 +7,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Module-boundary harness for {@code agent-bus} (Stage 1, Slice 1).
@@ -93,5 +94,20 @@ class AgentBusDependencyBoundaryTest {
                 .because("agent-bus is upstream of agent-evolve; it must not depend on "
                        + "agent-evolve (module-metadata.yaml forbidden_dependencies).");
         rule.check(BUS_PRODUCTION);
+    }
+
+    // ---- import-liveness guard (MI-004 follow-up) -------------------------
+
+    /**
+     * Guards against an accidental empty import (e.g. a typo'd package path)
+     * silently passing every {@code noClasses} rule above — an empty
+     * {@link JavaClasses} set vacuously satisfies "no bus classes depend on X".
+     * MI-004.
+     */
+    @Test
+    void bus_production_import_is_non_empty() {
+        assertThat(BUS_PRODUCTION)
+                .as("bus production class import must be non-empty (MI-004 liveness guard)")
+                .isNotEmpty();
     }
 }

@@ -7,6 +7,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * SPI-purity harness for {@code agent-bus} (Stage 1, Slice 1).
@@ -109,5 +110,106 @@ class AgentBusSpiPurityTest {
                 .because("agent-bus SPI must stay broker-agnostic; NATS is a candidate runtime "
                        + "binding, never an SPI dependency (per Stage 1 forbidden scope).")
                 .check(SPI_PRODUCTION);
+    }
+
+    // ---- HTTP / network framework coverage (MI-001 follow-up) -------------
+    // The L1 SPI-purity rule forbids ANY HTTP / Servlet / network framework:
+    // the SPI is the transport-agnostic contract surface, so dragging in a
+    // web stack here forces every consumer onto that same stack. One @Test per
+    // forbidden prefix so a violation names the exact offending import.
+
+    @Test
+    void spi_does_not_import_jakarta_servlet() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("jakarta.servlet..")
+                .because("agent-bus SPI must stay transport-agnostic; the Servlet API belongs "
+                       + "in an HTTP wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_javax_servlet() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("javax.servlet..")
+                .because("agent-bus SPI must stay transport-agnostic; the legacy Servlet API "
+                       + "belongs in an HTTP wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_jakarta_ws_rs() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("jakarta.ws.rs..")
+                .because("agent-bus SPI must stay transport-agnostic; JAX-RS belongs in a REST "
+                       + "wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_javax_ws_rs() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("javax.ws.rs..")
+                .because("agent-bus SPI must stay transport-agnostic; the legacy JAX-RS API "
+                       + "belongs in a REST wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_apache_http() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("org.apache.http..")
+                .because("agent-bus SPI must stay transport-agnostic; Apache HttpClient belongs "
+                       + "in an HTTP wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_okhttp() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("okhttp3..")
+                .because("agent-bus SPI must stay transport-agnostic; OkHttp belongs in an HTTP "
+                       + "wire binding, never in the contract surface (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_netty() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("io.netty..")
+                .because("agent-bus SPI must stay transport-agnostic; Netty is a network runtime, "
+                       + "never a contract-surface dependency (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    @Test
+    void spi_does_not_import_vertx() {
+        noClasses()
+                .that().resideInAPackage("com.huawei.ascend.bus.spi..")
+                .should().dependOnClassesThat().resideInAPackage("io.vertx..")
+                .because("agent-bus SPI must stay transport-agnostic; Vert.x is a network/reactive "
+                       + "runtime, never a contract-surface dependency (MI-001).")
+                .check(SPI_PRODUCTION);
+    }
+
+    // ---- import-liveness guard (MI-004 follow-up) -------------------------
+
+    /**
+     * Guards against an accidental empty import (e.g. a typo'd package path)
+     * silently passing every {@code noClasses} rule above — an empty
+     * {@link JavaClasses} set vacuously satisfies "no classes depend on X".
+     * MI-004.
+     */
+    @Test
+    void spi_production_import_is_non_empty() {
+        assertThat(SPI_PRODUCTION)
+                .as("SPI production class import must be non-empty (MI-004 liveness guard)")
+                .isNotEmpty();
     }
 }

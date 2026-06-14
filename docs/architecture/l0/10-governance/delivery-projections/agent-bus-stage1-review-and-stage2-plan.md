@@ -98,6 +98,8 @@ target_module: agent-bus
 
 建议优先采用方案 A：在后续 ingress gateway harness 中增加上下文级断言。
 
+**裁决记录（2026-06-14，MI-003 follow-up）：** 采纳方案 A。`IngressResponse` 保持低上下文（不携带 `requestType`、不在构造器校验 `cursor`），`RUN_CREATE + ACCEPTED` 必须有 cursor 的校验下沉到 ingress gateway / handler 层，在后续 ingress gateway harness 波次以上下文级断言实现。Stage 1 / Stage 2 不改 production code；`IngressResponseTest#accepted_currently_does_not_enforce_non_null_cursor_pending_owner_decision` 作为 characterisation test 保留，其 javadoc 已同步裁决结论。
+
 ### MI-004：ArchUnit 测试应避免“空导入误通过”
 
 当前 ArchUnit 测试通过 `importPackages("com.huawei.ascend.bus")` 和 `importPackages("com.huawei.ascend.bus.spi")` 导入生产类。
