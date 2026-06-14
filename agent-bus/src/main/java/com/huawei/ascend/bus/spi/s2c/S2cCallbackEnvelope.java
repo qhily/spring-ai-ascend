@@ -13,7 +13,17 @@ import java.util.UUID;
  * {@code docs/logs/reviews/2026-05-16-engine-contract-structural-response.en.md} §5.2)
  * defines six mandatory fields that MUST appear on every S2C envelope at every
  * layer (envelope class, transport SPI, response validator, integration test,
- * audit log). The record below validates the six on construction.
+ * audit log). The record below validates those six on construction, plus the
+ * seventh mandatory field — {@code tenantId} — added in the Stage 2 tenant
+ * migration (see {@code docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage1-review-and-stage2-plan.md}).
+ *
+ * <p>Stage 2 tenant migration: {@code tenantId} is now an in-band required
+ * field on the envelope itself (Rule R-C.c — Contract Spine Completeness),
+ * symmetric with {@link com.huawei.ascend.bus.spi.ingress.IngressEnvelope#tenantId()}.
+ * The prior ADR-0074 §Consequences design resolved tenant out-of-band via the
+ * {@code S2cCallbackTransport} registry binding at the wrapping Run boundary;
+ * that path remains as a COMPATIBILITY ONLY adjunct and MUST NOT substitute for
+ * the in-band tenant scope carried by this envelope.
  *
  * <p>Lives in {@code com.huawei.ascend.bus.spi.s2c} (moved from the old
  * runtime S2C package per the cross-constraint audit) so the SPI literally imports
@@ -22,9 +32,13 @@ import java.util.UUID;
  *
  * <p>Authority: ADR-0074; CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound).
  */
-// scope: process-internal — transport envelope; tenant resolved from callbackId via registry at the wrapping Run boundary (ADR-0074 §Consequences)
+// scope: process-internal — transport envelope; tenantId is the in-band required
+// tenant scope (Rule R-C.c); the S2cCallbackTransport registry binding remains as
+// a COMPATIBILITY ONLY path and MUST NOT substitute for this in-band scope
+// (Stage 2 migration of ADR-0074 §Consequences).
 public record S2cCallbackEnvelope(
         UUID callbackId,            // primary correlation key
+        String tenantId,            // Rule R-C.c contract spine — required tenant scope (Stage 2 migration)
         UUID serverRunId,           // suspending Run id
         String capabilityRef,       // declared client capability id
         Object requestPayload,      // opaque, validated by capability-specific schema (W3)
@@ -35,6 +49,10 @@ public record S2cCallbackEnvelope(
 ) {
     public S2cCallbackEnvelope {
         Objects.requireNonNull(callbackId, "callbackId is required");
+        Objects.requireNonNull(tenantId, "tenantId is required");
+        if (tenantId.isBlank()) {
+            throw new IllegalArgumentException("tenantId must not be blank");
+        }
         Objects.requireNonNull(serverRunId, "serverRunId is required");
         Objects.requireNonNull(capabilityRef, "capabilityRef is required");
         if (capabilityRef.isBlank()) {

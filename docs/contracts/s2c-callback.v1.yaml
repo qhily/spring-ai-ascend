@@ -15,6 +15,14 @@
 # surfaces with bus.spi.ingress). Schema unchanged across all three moves;
 # only the Java home moved.
 #
+# Stage 2 tenant migration (agent-bus-stage1-review-and-stage2-plan.md, 2026-06-14):
+# tenant_id added to request.required_fields as the seventh mandatory field — the
+# first deliberate schema change since v1. Tenant is promoted from the out-of-band
+# registry-resolution design (ADR-0074 §Consequences) to an in-band required field
+# on the envelope itself (Rule R-C.c, Contract Spine Completeness). The registry
+# binding is retained as a COMPATIBILITY ONLY path and MUST NOT substitute for the
+# in-band tenant scope. Java mirror: S2cCallbackEnvelope (now 9 components).
+#
 # Self-enforced by gate Rule 58 (s2c_callback_yaml_present_and_wellformed).
 
 product_claim: "PC-004"
@@ -36,6 +44,10 @@ authority: ADR-0074
 request:
   required_fields:
     - callback_id            # UUID -- primary correlation key (present on every log line)
+    - tenant_id              # string -- REQUIRED in-band tenant scope (Rule R-C.c). Stage 2 migration
+                              # of ADR-0074 §Consequences: tenant rides the envelope, not just the
+                              # out-of-band registry binding (which remains a COMPATIBILITY ONLY path,
+                              # NOT a substitute). Java mirror: S2cCallbackEnvelope.tenantId.
     - server_run_id          # UUID -- correlates back to the suspending Run
     - capability_ref         # string -- declared client capability id (W3 client capability registry)
     - request_payload        # opaque -- validated by the capability-specific schema (W3 placeholder)

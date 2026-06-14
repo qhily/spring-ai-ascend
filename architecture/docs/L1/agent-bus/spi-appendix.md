@@ -15,7 +15,7 @@ status: draft
 | `IngressEnvelope` | `com.huawei.ascend.bus.spi.ingress` | C2S 请求 envelope | `ingress-envelope.v1.yaml` | 已纳入 L1 |
 | `IngressResponse` | `com.huawei.ascend.bus.spi.ingress` | C2S 同步确认 envelope | `ingress-envelope.v1.yaml` | 已纳入 L1 |
 | `S2cCallbackTransport` | `com.huawei.ascend.bus.spi.s2c` | S2C callback transport | `s2c-callback.v1.yaml` | 已纳入 L1 |
-| `S2cCallbackEnvelope` | `com.huawei.ascend.bus.spi.s2c` | S2C 请求 envelope | `s2c-callback.v1.yaml` | 已纳入 L1，tenant 迁移待做 |
+| `S2cCallbackEnvelope` | `com.huawei.ascend.bus.spi.s2c` | S2C 请求 envelope | `s2c-callback.v1.yaml` | 已纳入 L1；tenant 已迁移（Stage 2，Rule R-C.c） |
 | `S2cCallbackResponse` | `com.huawei.ascend.bus.spi.s2c` | S2C 响应 envelope | `s2c-callback.v1.yaml` | 已纳入 L1 |
 | `ReflectionEnvelopeRouter` | `com.huawei.ascend.bus.spi.s2c` | reflection envelope 路由 | `reflection-envelope.v1.yaml` | 已纳入 L1，payload 类型待决策 |
 | `FederationGateway` | `com.huawei.ascend.bus.spi.federation` | 跨部署 federation 路由 | `federation-envelope.v1.yaml` | 已纳入 L1 |
@@ -33,18 +33,16 @@ status: draft
 
 ## 3. S2C tenant 迁移说明
 
-当前 `S2cCallbackEnvelope` 字段包括 `callbackId`、`serverRunId`、`capabilityRef`、`requestPayload`、`traceId`、`idempotencyKey`、`deadline`、`requestAttributes`。
+迁移状态：`已迁移`（Stage 2，2026-06-14，Rule R-C.c）。
 
-目标态需要增加：
+`S2cCallbackEnvelope` 现携带 9 个字段：`callbackId`、`tenantId`、`serverRunId`、`capabilityRef`、`requestPayload`、`traceId`、`idempotencyKey`、`deadline`、`requestAttributes`。
 
-- `tenantId`
+迁移事实：
 
-迁移规则：
-
-- `tenantId` 必须是 required field。
-- 空字符串必须拒绝。
-- YAML 契约、Java record、测试、构造点、文档和模板必须同步。
-- registry 绑定可以作为兼容路径保留，但不能替代 envelope 内的 tenant scope。
+- `tenantId` 是 required field（compact constructor 校验非 null、非 blank）。
+- YAML 契约 `s2c-callback.v1.yaml#request.required_fields`、Java record、`S2cCallbackEnvelopeLibraryTest`、`contract-catalog.md`、治理模板 `contract-catalog.md.j2` 已同步。
+- registry 绑定作为兼容路径保留，但不替代 envelope 内 tenant scope（S2C-TENANT-005）。
+- runtime 侧构造点（`agent-service` / `agent-execution-engine` / `agent-client`）尚未落地，随 runtime 实现波次补齐；Stage 2 只迁移契约与 harness，不改 Task lifecycle 所有权（S2C-TENANT-006）。
 
 ## 4. SPI 纯度
 
@@ -61,7 +59,7 @@ SPI 包应保持纯 Java：
 |---|---|
 | `IngressEnvelope` | required fields、tenant、trace、request type、requestAttributes defensive copy。 |
 | `IngressResponse` | rejected reason、accepted cursor、deferred status。 |
-| `S2cCallbackEnvelope` | `tenantId` 迁移后的 required field 和兼容性。 |
+| `S2cCallbackEnvelope` | `tenantId` required field、null/blank 拒绝、registry 兼容路径——已在 Stage 2 harness 补齐。 |
 | `FederationGateway` | broker-agnostic、只使用 ingress carrier type。 |
 | `ReflectionEnvelopeRouter` | map payload schema validation 或 typed record。 |
 | `EnginePort` | terminal event 唯一且最后发出。 |

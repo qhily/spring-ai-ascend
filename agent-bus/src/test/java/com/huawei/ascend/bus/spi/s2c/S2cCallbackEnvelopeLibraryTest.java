@@ -13,23 +13,29 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Library-mode SPI conformance test for S2cCallbackEnvelope + S2cCallbackResponse
  * (Rule R-M.d + ADR-0074; package move to runtime.s2c.spi in v2.0.0-rc3).
  *
- * <p>Pure JUnit Jupiter — no Spring context, no transport. Asserts the six
- * mandatory-field invariants validated on construction + the W3C 32-char
- * lowercase-hex traceId rule added in v2.0.0-rc3 (cross-constraint audit α-5).
+ * <p>Pure JUnit Jupiter — no Spring context, no transport. Asserts the seven
+ * mandatory-field invariants validated on construction (six original fields +
+ * {@code tenantId} added in the Stage 2 tenant migration, Rule R-C.c) + the
+ * W3C 32-char lowercase-hex traceId rule added in v2.0.0-rc3
+ * (cross-constraint audit α-5).
  *
  * <p>Part of the Rule D-3.b evidence layer + Rule R-D.a.b TCK-promotion holding tank.
  */
 class S2cCallbackEnvelopeLibraryTest {
 
     private static final String VALID_TRACE_ID = "0123456789abcdef0123456789abcdef";  // 32 lowercase hex
+    private static final String VALID_TENANT_ID = "tenant-acme";
+    private static final String VALID_CAPABILITY_REF = "cap.test";
+    private static final Object VALID_PAYLOAD = "payload";
 
     @Test
     void envelope_constructor_rejects_null_callback_id() {
         assertThatThrownBy(() -> new S2cCallbackEnvelope(
                 null,
+                VALID_TENANT_ID,
                 UUID.randomUUID(),
-                "cap.test",
-                "payload",
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
                 VALID_TRACE_ID,
                 UUID.randomUUID(),
                 null,
@@ -39,12 +45,45 @@ class S2cCallbackEnvelopeLibraryTest {
     }
 
     @Test
-    void envelope_constructor_rejects_null_server_run_id() {
+    void envelope_constructor_rejects_null_tenant_id() {
         assertThatThrownBy(() -> new S2cCallbackEnvelope(
                 UUID.randomUUID(),
                 null,
-                "cap.test",
-                "payload",
+                UUID.randomUUID(),
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
+                VALID_TRACE_ID,
+                UUID.randomUUID(),
+                null,
+                null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("tenantId is required");
+    }
+
+    @Test
+    void envelope_constructor_rejects_blank_tenant_id() {
+        assertThatThrownBy(() -> new S2cCallbackEnvelope(
+                UUID.randomUUID(),
+                "   ",
+                UUID.randomUUID(),
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
+                VALID_TRACE_ID,
+                UUID.randomUUID(),
+                null,
+                null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tenantId must not be blank");
+    }
+
+    @Test
+    void envelope_constructor_rejects_null_server_run_id() {
+        assertThatThrownBy(() -> new S2cCallbackEnvelope(
+                UUID.randomUUID(),
+                VALID_TENANT_ID,
+                null,
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
                 VALID_TRACE_ID,
                 UUID.randomUUID(),
                 null,
@@ -57,9 +96,10 @@ class S2cCallbackEnvelopeLibraryTest {
     void envelope_constructor_rejects_blank_capability_ref() {
         assertThatThrownBy(() -> new S2cCallbackEnvelope(
                 UUID.randomUUID(),
+                VALID_TENANT_ID,
                 UUID.randomUUID(),
                 "  ",
-                "payload",
+                VALID_PAYLOAD,
                 VALID_TRACE_ID,
                 UUID.randomUUID(),
                 null,
@@ -73,9 +113,10 @@ class S2cCallbackEnvelopeLibraryTest {
         String shortTrace = "abc123";
         assertThatThrownBy(() -> new S2cCallbackEnvelope(
                 UUID.randomUUID(),
+                VALID_TENANT_ID,
                 UUID.randomUUID(),
-                "cap.test",
-                "payload",
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
                 shortTrace,
                 UUID.randomUUID(),
                 null,
@@ -88,9 +129,10 @@ class S2cCallbackEnvelopeLibraryTest {
     void envelope_constructor_rejects_null_trace_id() {
         assertThatThrownBy(() -> new S2cCallbackEnvelope(
                 UUID.randomUUID(),
+                VALID_TENANT_ID,
                 UUID.randomUUID(),
-                "cap.test",
-                "payload",
+                VALID_CAPABILITY_REF,
+                VALID_PAYLOAD,
                 null,
                 UUID.randomUUID(),
                 null,
@@ -105,10 +147,11 @@ class S2cCallbackEnvelopeLibraryTest {
         UUID sr = UUID.randomUUID();
         UUID idk = UUID.randomUUID();
         S2cCallbackEnvelope env = new S2cCallbackEnvelope(
-                cb, sr, "cap.test", "payload", VALID_TRACE_ID, idk, null, null);
+                cb, VALID_TENANT_ID, sr, VALID_CAPABILITY_REF, VALID_PAYLOAD, VALID_TRACE_ID, idk, null, null);
         assertThat(env.callbackId()).isEqualTo(cb);
+        assertThat(env.tenantId()).isEqualTo(VALID_TENANT_ID);
         assertThat(env.serverRunId()).isEqualTo(sr);
-        assertThat(env.capabilityRef()).isEqualTo("cap.test");
+        assertThat(env.capabilityRef()).isEqualTo(VALID_CAPABILITY_REF);
         assertThat(env.idempotencyKey()).isEqualTo(idk);
         assertThat(env.deadline()).isNull();
         // null requestAttributes is normalised to an empty immutable Map.
@@ -120,7 +163,7 @@ class S2cCallbackEnvelopeLibraryTest {
         java.util.HashMap<String, Object> mutable = new java.util.HashMap<>();
         mutable.put("k1", "v1");
         S2cCallbackEnvelope env = new S2cCallbackEnvelope(
-                UUID.randomUUID(), UUID.randomUUID(), "cap", "p", VALID_TRACE_ID,
+                UUID.randomUUID(), VALID_TENANT_ID, UUID.randomUUID(), "cap", "p", VALID_TRACE_ID,
                 UUID.randomUUID(), Instant.now(), mutable);
         mutable.put("k2", "v2");  // mutate after construction
         assertThat(env.requestAttributes()).containsOnlyKeys("k1");
