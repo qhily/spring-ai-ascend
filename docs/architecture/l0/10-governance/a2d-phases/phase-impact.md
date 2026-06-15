@@ -13,7 +13,7 @@ human_review_density: standard
 3. 初步判定变更级别（Level 0/1/2/3，参考 `change-governance.md`）
 4. 发现需要升级给人类裁决的高风险项
 5. 生成架构影响矩阵
-6. 进入 AI-3 生成版本架构边界
+6. 进入 AI-3 生成版本架构信封
 
 ## 输入
 

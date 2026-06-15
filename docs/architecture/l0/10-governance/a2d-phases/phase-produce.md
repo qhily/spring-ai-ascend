@@ -1,6 +1,6 @@
 ---
 phase: AI-4
-trigger: H1 已确认版本架构边界
+trigger: H1 已确认版本架构信封
 human_review_density: light
 ---
 
@@ -8,9 +8,9 @@ human_review_density: light
 
 ## 应该做什么
 
-在已确认的版本架构边界内，批量生成或更新架构产物。这是 AI 工作量最大的阶段，涵盖从场景建模到模块设计的全部内容。
+在已确认的版本架构信封内，生成或更新本版本进入交付所必需的架构事实。AI-4 不是“补完整架构稿”的阶段；它只稳定第一批施工需要依赖的场景、模块、状态、契约、不变量和 harness 入口。
 
-按顺序执行以下活动（跳过不影响本版本的）：
+按顺序执行以下活动（跳过不影响本版本的）。如果某项内容不能直接支撑后续代码 / harness / schema / contract test / 漂移检查，就不应在本阶段扩写。
 
 ### 活动 1：架构准入判定
 
@@ -70,7 +70,8 @@ Reject                    # 不进入本次设计
 
 - 对需要进入并行开发的模块，生成模块设计包
 - 对旧设计做准入判定：保留、修正、下沉、废弃
-- 生成 4+1 视图、状态模型、流程设计、开发视图、开发切片
+- 生成足以支撑第一批开发切片的 4+1 视图、状态模型、流程设计、开发视图
+- 不要求一次性补完所有 L2/L3 细节；实现暴露的新事实进入实现反馈回灌
 
 产出归档：`04-modules/<module>/` 下各文件
 
@@ -79,7 +80,7 @@ Reject                    # 不进入本次设计
 | 来源 | 路径 |
 |---|---|
 | 版本意图 | `10-governance/version-intents/<version>.md` |
-| 版本架构边界 | `10-governance/architecture-envelopes/<version>.md` |
+| 版本架构信封 | `10-governance/architecture-envelopes/<version>.md` |
 | 架构影响矩阵 | 版本意图文件的附录 |
 | 现有架构基线 | `00-overview/` ~ `09-verification/` |
 | 文档约束 | `10-governance/architecture-documentation-constraints.md` |
@@ -104,13 +105,15 @@ Reject                    # 不进入本次设计
 - 每个跨模块交互有契约或 Open Issue
 - 每个关键场景有 assertions
 - 所有文档遵守 `architecture-documentation-constraints.md`
+- 每个新增架构事实都能说明将如何服务代码、harness、schema、contract test 或漂移检查
 
 ## 何时停下问人
 
-- 触发版本架构边界的升级条件
-- 发现版本架构边界未覆盖的影响
+- 触发版本架构信封的升级条件
+- 发现版本架构信封未覆盖的影响
 - 模块边界冲突无法自行裁决
 - 文档约束发现新的模式问题需要回填
+- 为了继续设计必须扩大架构信封允许范围
 
 ## 反模式
 
@@ -118,3 +121,5 @@ Reject                    # 不进入本次设计
 - 跳过场景建模直接写模块设计
 - 把旧设计全部保留，不做准入判定
 - 在 L0 文档中混入 L2/L3 实现细节
+- 为了追求“架构稿完整”而生成本版本不需要的模块细节
+- 没有代码 / harness 入口，却继续扩写设计文档

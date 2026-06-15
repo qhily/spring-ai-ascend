@@ -20,7 +20,7 @@ human_review_density: light
 | 来源 | 路径 |
 |---|---|
 | 版本意图 | `10-governance/version-intents/<version>.md` |
-| 版本架构边界 | `10-governance/architecture-envelopes/<version>.md` |
+| 版本架构信封 | `10-governance/architecture-envelopes/<version>.md` |
 | 评审包 | `10-governance/review-packets/<version>.md` |
 | 交付视图 | `10-governance/delivery-projections/<version>.md` |
 | 验证汇总 | 评审包的验证章节 |

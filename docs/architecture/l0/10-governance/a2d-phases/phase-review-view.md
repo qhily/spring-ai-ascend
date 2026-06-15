@@ -24,7 +24,7 @@ human_review_density: light
 | 来源 | 路径 |
 |---|---|
 | AI-4 全部产出 | `01-capabilities/` ~ `09-verification/` |
-| 版本架构边界 | `10-governance/architecture-envelopes/<version>.md` |
+| 版本架构信封 | `10-governance/architecture-envelopes/<version>.md` |
 | 上一次基线 | `10-governance/baselines/` 最新版本 |
 | 评审流程 | `10-governance/architecture-review-process.md` |
 | 评审包模板 | `10-governance/review-packets/_TEMPLATE.md` |
