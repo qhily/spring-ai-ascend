@@ -46,7 +46,7 @@ import org.springframework.context.annotation.Import;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({RuntimeAccessProperties.class, TrajectoryProperties.class,
         AgentCardProperties.class})
-@Import(TrajectoryOtelConfiguration.class)
+@Import({TrajectoryOtelConfiguration.class, TrajectoryLogConfiguration.class})
 public class RuntimeAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(RuntimeAutoConfiguration.class);
 

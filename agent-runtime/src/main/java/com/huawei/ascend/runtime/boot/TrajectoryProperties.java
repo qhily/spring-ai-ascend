@@ -13,6 +13,7 @@ public class TrajectoryProperties {
     private boolean enabled = true;
     private final Mask mask = new Mask();
     private final Otel otel = new Otel();
+    private final Log log = new Log();
 
     public boolean isEnabled() { return enabled; }
 
@@ -21,6 +22,8 @@ public class TrajectoryProperties {
     public Mask getMask() { return mask; }
 
     public Otel getOtel() { return otel; }
+
+    public Log getLog() { return log; }
 
     public static class Mask {
         private String keyPattern = TrajectoryMasking.DEFAULT_KEY_PATTERN;
@@ -47,5 +50,14 @@ public class TrajectoryProperties {
         public String getEndpoint() { return endpoint; }
 
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
+    }
+
+    /** Optional NDJSON structured-log export of the trajectory. Off by default. */
+    public static class Log {
+        private boolean enabled = false;
+
+        public boolean isEnabled() { return enabled; }
+
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
     }
 }
