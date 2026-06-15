@@ -6,7 +6,8 @@
 
 ## 快速启动
 
-先准备一个兼容 Mem0 REST API 的服务，然后启动样例：
+先准备一个兼容 Mem0 REST API 的服务，然后启动样例。Mem0 服务启动方式、`oss` / `platform`
+两种 API 模式差异，以及后续 curl 验证步骤见 [TUTORIAL.cn.md](TUTORIAL.cn.md)。
 
 ```bash
 export SAA_SAMPLE_OPENJIUWEN_MODEL_PROVIDER=openai
