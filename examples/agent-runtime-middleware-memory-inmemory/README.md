@@ -1,65 +1,56 @@
-# agent-runtime middleware memory InMemory example
+# Agent Runtime Memory InMemory Example
 
-这个样例验证 `MemoryProvider` 的 InMemory 接入形态。Provider 放在 example
-目录中，说明 Memory 后端可以由业务样例或客户工程自行选择，`agent-runtime`
-公共层只依赖窄 SPI。
+本样例验证“长期记忆 MemoryProvider 解耦”的最小接入方式。用户启动一个常驻 Spring Boot 进程，通过 curl 写入记忆、发起一次用户输入，并从响应中观察记忆是否进入 OpenJiuwen ReActAgent 的真实模型输入。
 
-## 配置方式
+该样例不依赖外部服务，适合测试团队先验证 MemoryProvider 的基本链路。
 
-适用场景：
+## 启动服务
 
-- 本地开发、客户二次开发验证、测试团队构造确定性记忆命中。
-- 不需要真实向量库或外部 Memory 服务。
-- 希望看清楚 `MemoryProvider` 如何接入 OpenJiuwen handler。
-
-核心配置点：
-
-```java
-InMemoryMemoryProvider provider = new InMemoryMemoryProvider();
-
-class MemoryEnabledHandler extends OpenJiuwenAgentRuntimeHandler {
-    @Override
-    protected List<AgentRail> openJiuwenRails(AgentExecutionContext context) {
-        return List.of(memoryRuntimeRail(context, provider));
-    }
-}
-```
-
-`InMemoryMemoryProvider` 是 example-only 实现，按
-`AgentExecutionContext#getAgentStateKey()` 做最小隔离。客户项目可以替换为
-自己的数据库、向量库、RAG 记忆服务或企业内存储。
-
-测试团队检查点：
-
-- 测试先写入一条长期记忆，例如 `the user prefers green tea`。
-- 用户输入进入 `OpenJiuwenAgentRuntimeHandler#execute(...)`。
-- handler 注册 memory rail。
-- rail 在执行前调用 `MemoryProvider.search(...)`。
-- rail 在执行后调用 `MemoryProvider.save(...)` 写回本轮 user/assistant 记录。
-- 不同 `agentStateKey` 的记忆不会互相命中。
-
-## Run
+在仓库根目录执行：
 
 ```bash
-./mvnw -f examples/agent-runtime-middleware-memory-inmemory/pom.xml test
+./mvnw -f examples/agent-runtime-middleware-memory-inmemory/pom.xml spring-boot:run
 ```
 
-## 端到端链路
+服务默认监听：
 
 ```text
-AgentExecutionContext(user input + agentStateKey)
-  -> OpenJiuwenAgentRuntimeHandler.execute(...)
-  -> openJiuwenRails(context)
-  -> memoryRuntimeRail(context, InMemoryMemoryProvider)
-  -> MemoryProvider.search(...)
-  -> OpenJiuwen ModelContext receives memory note
-  -> simulated OpenJiuwen agent response
-  -> MemoryProvider.save(...)
+http://localhost:18081
 ```
 
-## Scope
+## curl 验证
 
-- 无外部依赖。
-- 验证用户接入 `MemoryProvider` 后，执行 `OpenJiuwenAgentRuntimeHandler`
-  会安装 memory rail，并触发 `search` / `save`。
-- 不引入脚本；所有运行方式写在 README 中。
+1. 写入一条长期记忆：
+
+```bash
+curl -s -X POST http://localhost:18081/sample/memory/remember \
+  -H 'Content-Type: application/json' \
+  -d '{"stateKey":"demo-user","text":"the user prefers green tea"}'
+```
+
+2. 模拟用户发起一次请求：
+
+```bash
+curl -s -X POST http://localhost:18081/sample/memory/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"stateKey":"demo-user","text":"green tea"}'
+```
+
+期望响应：
+
+- `modelMessages` 包含 `the user prefers green tea`，说明 memory rail 在调用模型前完成检索和注入。
+- `records` 包含本轮用户输入和 assistant 输出，说明执行后触发了 `MemoryProvider.save(...)`。
+
+说明：本样例的 InMemory provider 使用简单字符串匹配，不做向量语义检索；因此 curl 示例使用 `green tea` 作为 query，确保测试团队能稳定观察到记忆注入。
+
+3. 查询当前 `stateKey` 下的记忆：
+
+```bash
+curl -s 'http://localhost:18081/sample/memory/records?stateKey=demo-user'
+```
+
+## 设计要点
+
+- 样例通过 `SampleMemoryOpenJiuwenHandler#setOpenJiuwenRailFactories(...)` 预设 OpenJiuwen rail。
+- 业务方可以按同样方式把 `memoryRuntimeRail(context, provider)` 设置到自己的 OpenJiuwen handler。
+- `InMemoryMemoryProvider` 只放在 example 中，用于端到端验证；生产环境应替换成企业自己的长期记忆服务。
