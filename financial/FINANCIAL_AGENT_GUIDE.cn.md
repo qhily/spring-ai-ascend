@@ -200,7 +200,7 @@ ReAct 每一轮都会把"系统提示 + 全部历史 + 工具结果"重发给模
 2. **工具输出瘦身**:只返模型真正需要的字段;**重复的免责声明/固定话术放进提示词说一次**,不要塞进每个工具结果(它会被反复重发)。
 3. **right-size `maxIterations`**:按 agent 真实需要设(存款顾问 3、推荐类 5、AML 6),别一律留 8 给"跑飞"留空间。
 4. **`maxTokens` 封顶输出**(基类默认 1024)。
-5. **模型分层**:简单 agent/意图用便宜模型(给 `ModelConnection` 配不同 `modelName`/endpoint),复杂场景才上强模型。
+5. **模型分层(已接线)**:简单 agent 用便宜模型,复杂的用强模型。注册表已给每个 agent 标了档位——`fast`(存款顾问/理财问答/信用卡)、`smart`(零售理财/私行/贷款/AML)。设 `BANK_LLM_MODEL_FAST`、`BANK_LLM_MODEL_SMART` 即生效(如 DeepSeek:fast=`deepseek-chat`、smart=`deepseek-reasoner`);**不设则都回落到 `BANK_LLM_MODEL`,行为不变**。
 6. **上下文窗口**:长多轮对话用 openJiuwen `ReActAgentConfig.configureContextEngine(maxMsgs, windowRounds, ...)` 限历史(避免上下文无限增长)。
 7. **利用 provider 前缀缓存**:DeepSeek/OpenAI 对稳定前缀(系统提示)有缓存折扣——**保持系统提示稳定、把易变内容放后面**,自动省输入 token。
 8. **先量后优**:从 trajectory `Usage` 取 token 数做 metric(见 `OPERATIONS.cn.md` §7),按 agent 看成本再针对性优化。

@@ -33,14 +33,18 @@ public final class FinancialAgentRegistry {
     private static final Map<String, Supplier<AbstractFinancialAgentHandler>> JAVA = new LinkedHashMap<>();
 
     static {
+        // Model tiering for cost: simple Q&A/lookup agents → "fast" (cheaper model);
+        // reasoning-heavy agents → "smart". Tiers map to BANK_LLM_MODEL_FAST / _SMART;
+        // unset → all fall back to BANK_LLM_MODEL (no behavior change).
         JAVA.put("financial-advisor-agent",
-                () -> new FinancialAdvisorAgentHandler(ModelConnection.fromEnv()));
-        JAVA.put(CreditCardServicingAgent.ID, () -> new CreditCardServicingAgent(ModelConnection.fromEnv()));
-        JAVA.put(LoanIntakeAgent.ID, () -> new LoanIntakeAgent(ModelConnection.fromEnv()));
-        JAVA.put(AmlScreeningAgent.ID, () -> new AmlScreeningAgent(ModelConnection.fromEnv()));
-        JAVA.put(RetailWealthAdvisorAgent.ID, RetailWealthAdvisorAgent::create);
-        JAVA.put(PrivateBankingRmCopilotAgent.ID, PrivateBankingRmCopilotAgent::create);
-        JAVA.put(DepositAdvisorAgent.ID, DepositAdvisorAgent::create);
+                () -> new FinancialAdvisorAgentHandler(ModelConnection.forTier("fast")));
+        JAVA.put(CreditCardServicingAgent.ID, () -> new CreditCardServicingAgent(ModelConnection.forTier("fast")));
+        JAVA.put(DepositAdvisorAgent.ID, () -> new DepositAdvisorAgent(ModelConnection.forTier("fast")));
+        JAVA.put(LoanIntakeAgent.ID, () -> new LoanIntakeAgent(ModelConnection.forTier("smart")));
+        JAVA.put(AmlScreeningAgent.ID, () -> new AmlScreeningAgent(ModelConnection.forTier("smart")));
+        JAVA.put(RetailWealthAdvisorAgent.ID, () -> new RetailWealthAdvisorAgent(ModelConnection.forTier("smart")));
+        JAVA.put(PrivateBankingRmCopilotAgent.ID,
+                () -> new PrivateBankingRmCopilotAgent(ModelConnection.forTier("smart")));
     }
 
     private FinancialAgentRegistry() {
