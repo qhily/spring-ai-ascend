@@ -91,6 +91,7 @@ public final class StampingTrajectoryEmitter implements TrajectoryEmitter {
                 draft.retryable(),
                 error,
                 reasoning != null ? String.valueOf(reasoning) : null,
+                draft.finishReason(),
                 TrajectoryEvent.SCHEMA_VERSION));
     }
 
@@ -178,6 +179,6 @@ public final class StampingTrajectoryEmitter implements TrajectoryEmitter {
         }
         Object masked = TrajectoryMasking.mask(error.message(),
                 settings.maskKeyPattern(), settings.truncateChars());
-        return new ErrorInfo(error.code(), masked != null ? String.valueOf(masked) : null);
+        return new ErrorInfo(error.code(), masked != null ? String.valueOf(masked) : null, error.category());
     }
 }

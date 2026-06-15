@@ -27,7 +27,7 @@ class OtelSpanSinkTest {
     private static TrajectoryEvent ev(long seq, Kind kind, long ts, Long dur, String spanId, String parent,
             String name, Usage usage) {
         return new TrajectoryEvent(seq, kind, ts, dur, "task1", spanId, parent, "t1", "ctx1", "task1",
-                "obj", name, null, null, usage, null, null, null, null, "2");
+                "obj", name, null, null, usage, null, null, null, null, null, "2");
     }
 
     @Test
@@ -43,7 +43,7 @@ class OtelSpanSinkTest {
         sink.accept(ev(0, Kind.RUN_START, 1000, null, "run", null, null, null));
         sink.accept(ev(1, Kind.MODEL_CALL_START, 1001, null, "model", "run", null, null));
         sink.accept(ev(2, Kind.REASONING, 1002, null, "r1", "model", null, null));
-        sink.accept(ev(3, Kind.MODEL_CALL_END, 1100, 99L, "model", "run", null, new Usage(10, 20, 5.0, "gemma")));
+        sink.accept(ev(3, Kind.MODEL_CALL_END, 1100, 99L, "model", "run", null, new Usage(10, 20, 5.0, "gemma", null, null)));
         sink.accept(ev(4, Kind.TOOL_CALL_START, 1101, null, "tool", "run", "search", null));
         sink.accept(ev(5, Kind.TOOL_CALL_END, 1150, 49L, "tool", "run", "search", null));
         sink.accept(ev(6, Kind.RUN_END, 1200, 200L, "run", null, null, null));

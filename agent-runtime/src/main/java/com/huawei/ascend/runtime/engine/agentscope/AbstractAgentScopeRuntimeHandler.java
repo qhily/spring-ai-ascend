@@ -6,6 +6,7 @@ import com.huawei.ascend.runtime.engine.spi.AgentExecutionResult;
 import com.huawei.ascend.runtime.engine.spi.StreamAdapter;
 import com.huawei.ascend.runtime.engine.spi.TrajectoryDraft;
 import com.huawei.ascend.runtime.engine.spi.TrajectoryEmitter;
+import com.huawei.ascend.runtime.engine.spi.TrajectoryEvent.ErrorCategory;
 import com.huawei.ascend.runtime.engine.spi.TrajectoryEvent.Kind;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -74,7 +75,8 @@ abstract class AbstractAgentScopeRuntimeHandler extends AbstractAgentRuntimeHand
                 }
             }
             case FAILED -> trajectory.emit(
-                    TrajectoryDraft.error(null, result.errorCode(), result.errorMessage(), null, false));
+                    TrajectoryDraft.error(null, result.errorCode(), result.errorMessage(),
+                            ErrorCategory.UNKNOWN, null, false));
             default -> { }
         }
     }
