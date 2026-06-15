@@ -2,15 +2,16 @@
 level: L1
 view: features
 module: agent-runtime
-status: planning
-updated: 2026-06-14
+status: proposal
+proposal_status: proposed
+updated: 2026-06-15
 authority: "v0.1.0 release checklist ⬜ items + agent-sdk/agent-service module planning"
 covers: [agent-runtime, agent-sdk, agent-service]
 ---
 
 # spring-ai-ascend — 下一迭代特性清单（v0.2.0 候选）
 
-> 本文档规划 v0.2.0 迭代的特性目标，覆盖 agent-runtime、agent-sdk、agent-service 三个模块。
+> 提案状态文档。本文档规划 v0.2.0 迭代的候选特性目标，覆盖 agent-runtime、agent-sdk、agent-service 三个模块；在决策生效前不作为 active 架构事实。
 
 ---
 

@@ -4,7 +4,7 @@ view: architecture-overview
 module: agent-runtime
 status: implemented
 freeze_id: null
-covers_views: [logical, development, process, physical]
+covers_views: [scenarios, logical, development, process, physical]
 spans_levels: [L1]
 authority: "ADR-0159 (agent-runtime consolidation + agent-service serviceization refounding)"
 ---
@@ -23,11 +23,12 @@ authority: "ADR-0159 (agent-runtime consolidation + agent-service serviceization
 
 agent-runtime 的 4+1 视图由 5 个 per-view 文件 + 1 个 SPI 附录组成（与 agent-service 的 per-view 机制对齐，ADR-0152）：
 
-- **架构总览（本文）:** [`ARCHITECTURE.md`](ARCHITECTURE.md) — 模块目的、组件清单、5 层架构、依赖、公共契约、测试、范围
+- **架构总览（本文）:** [`overview.md`](overview.md) — 模块目的、组件清单、5 层架构、依赖、公共契约、测试、范围
+- **场景视图:** [`scenarios.md`](scenarios.md) — 关键用户/系统场景，连接架构视图和功能验证
 - **逻辑视图:** [`logical.md`](logical.md) — 领域模型、内部划分、5 层层间交互
-- **物理视图:** [`physical.md`](physical.md) — 部署平面、拓扑、资源模型
-- **进程视图:** [`process.md`](process.md) — 线程模型、同步/异步边界、执行时序
 - **开发视图:** [`development.md`](development.md) — 包结构树、模块依赖图、SPI 设计原则、自动装配
+- **进程视图:** [`process.md`](process.md) — 线程模型、同步/异步边界、执行时序
+- **物理视图:** [`physical.md`](physical.md) — 部署平面、拓扑、资源模型
 - **SPI 附录:** [`spi-appendix.md`](spi-appendix.md) — 5 个 SPI 接口 + 3 个辅助类的完整契约 + A2A SDK 消费的 10 个外部接口
 
 ## 1. Purpose
