@@ -20,6 +20,7 @@ import org.a2aproject.sdk.jsonrpc.common.wrappers.DeleteTaskPushNotificationConf
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskResponse;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
 import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTaskPushNotificationConfigsRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageResponse;
 import org.a2aproject.sdk.server.ServerCallContext;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
 import org.a2aproject.sdk.server.tasks.BasePushNotificationSender;
@@ -244,6 +245,28 @@ class A2aJsonRpcControllerTest {
     }
 
     @Test
+    void sendMessageBlockingKeepsProtoPayloadWrapperReadableByA2aSdkClient() throws Exception {
+        A2aJsonRpcController controller =
+                new A2aJsonRpcController(new BlockingMessageRequestHandler(), new RuntimeAccessProperties());
+
+        Object response = controller.handle("""
+                {"jsonrpc":"2.0","id":"send-1","method":"SendMessage","params":{"message":{"role":"ROLE_USER","parts":[{"text":"ping"}],"messageId":"message-1"}}}
+                """, null);
+
+        String json = (String) ((ResponseEntity<?>) response).getBody();
+        JsonNode root = readTree(json);
+        assertThat(root.path("id").asText()).isEqualTo("send-1");
+        assertThat(root.path("result").path("message").path("messageId").asText()).isEqualTo("message-2");
+        assertThat(root.path("result").has("message")).isTrue();
+        assertThat(root.path("result").has("id"))
+                .as("SendMessage returns proto SendMessageResponse oneof payload, not a naked Message")
+                .isFalse();
+
+        SendMessageResponse parsed = (SendMessageResponse) JSONRPCUtils.parseResponseBody(json, "SendMessage");
+        assertThat(((Message) parsed.getResult()).messageId()).isEqualTo("message-2");
+    }
+
+    @Test
     void midStreamFailureEndsWithJsonRpcErrorFrame() throws Exception {
         A2aJsonRpcController controller = new A2aJsonRpcController(new FailAfterFirstEventRequestHandler(), new RuntimeAccessProperties());
         A2ARequest<?> request = JSONRPCUtils.parseRequestBody("""
@@ -391,6 +414,17 @@ class A2aJsonRpcControllerTest {
                     .contextId("ctx-1")
                     .status(new TaskStatus(TaskState.TASK_STATE_COMPLETED))
                     .metadata(Map.of("source", "test"))
+                    .build();
+        }
+    }
+
+    private static final class BlockingMessageRequestHandler extends SingleEventRequestHandler {
+        @Override
+        public EventKind onMessageSend(MessageSendParams params, ServerCallContext context) {
+            return Message.builder()
+                    .role(Message.Role.ROLE_AGENT)
+                    .messageId("message-2")
+                    .parts(List.<Part<?>>of(new TextPart("pong")))
                     .build();
         }
     }
