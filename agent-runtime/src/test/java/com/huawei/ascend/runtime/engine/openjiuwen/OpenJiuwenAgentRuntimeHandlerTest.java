@@ -32,11 +32,14 @@ import com.openjiuwen.core.foundation.llm.schema.UserMessage;
 import com.openjiuwen.core.foundation.llm.schema.VideoGenerationResponse;
 import com.openjiuwen.core.foundation.tool.Tool;
 import com.openjiuwen.core.foundation.tool.schema.ToolInfo;
+import com.openjiuwen.core.session.interaction.InteractionOutput;
 import com.openjiuwen.core.session.AgentSessionApi;
 import com.openjiuwen.core.session.Session;
+import com.openjiuwen.core.session.stream.OutputSchema;
 import com.openjiuwen.core.session.stream.StreamMode;
 import com.openjiuwen.core.singleagent.BaseAgent;
 import com.openjiuwen.core.singleagent.ReActAgent;
+import com.openjiuwen.core.singleagent.interrupt.ToolCallInterruptRequest;
 import com.openjiuwen.core.singleagent.agents.ReActAgentConfig;
 import com.openjiuwen.core.singleagent.rail.AgentCallbackContext;
 import com.openjiuwen.core.singleagent.rail.AgentRail;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -63,14 +67,17 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
         AgentExecutionContext context = context(Map.of(AgentExecutionContext.AGENT_STATE_KEY_VARIABLE, "order-42"));
 
-        List<?> rawResults = handler.execute(context).toList();
+        List<Object> rawResults = handler.execute(context).map(Object.class::cast).toList();
 
-        assertThat(rawResults).isEqualTo(List.of(Map.of("result_type", "answer", "output", "pong")));
+        assertThat(rawResults).containsExactly(
+                new OutputSchema("llm_output", 0, Map.of("result_type", "answer", "content", "pong")),
+                new OutputSchema("answer", 0, Map.of("result_type", "answer", "output", "done")));
         assertThat(handler.agent.registeredRails).isEmpty();
         assertThat(handler.capturedConversationId).isEqualTo("order-42");
         assertThat(handler.capturedInput)
                 .containsEntry("query", "ping")
                 .containsEntry("conversation_id", "order-42");
+        assertThat(handler.agent.streamModes).containsExactly(StreamMode.OUTPUT);
     }
 
     @Test
@@ -351,12 +358,17 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     }
 
     @Test
-    void executeMapsOpenJiuwenFailuresToErrorResultMap() {
+    void executeMapsOpenJiuwenFailuresToFailedResult() {
         FailingOpenJiuwenHandler handler = new FailingOpenJiuwenHandler();
 
         List<?> rawResults = handler.execute(context(Map.of())).toList();
 
-        assertThat(rawResults).isEqualTo(List.of(Map.of("result_type", "error", "output", "boom")));
+        assertThat(rawResults).singleElement()
+                .isInstanceOfSatisfying(AgentExecutionResult.class, result -> {
+                    assertThat(result.type()).isEqualTo(AgentExecutionResult.Type.FAILED);
+                    assertThat(result.errorCode()).isEqualTo("OPENJIUWEN_RUN_ERROR");
+                    assertThat(result.errorMessage()).isEqualTo("boom");
+                });
     }
 
     @Test
@@ -402,6 +414,104 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     }
 
     @Test
+    void executeMarksIteratorBackedStreamsAsOrdered() {
+        StreamingOpenJiuwenHandler handler = new StreamingOpenJiuwenHandler();
+
+        try (Stream<?> rawResults = handler.execute(context(Map.of()))) {
+            assertThat(rawResults.spliterator().hasCharacteristics(Spliterator.ORDERED)).isTrue();
+        }
+    }
+
+    @Test
+    void resultAdapterMapsOpenJiuwenStreamingOutputChunks() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("llm_output", 0, Map.of("result_type", "answer", "content", "first ")),
+                new OutputSchema("llm_output", 1, Map.of("result_type", "answer", "content", "second")),
+                new OutputSchema("answer", 0, Map.of("result_type", "answer", "output", "final")))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(
+                        AgentExecutionResult.Type.OUTPUT,
+                        AgentExecutionResult.Type.OUTPUT,
+                        AgentExecutionResult.Type.COMPLETED);
+        assertThat(results).extracting(AgentExecutionResult::outputContent)
+                .containsExactly("first ", "second", "final");
+    }
+
+    @Test
+    void resultAdapterMapsScalarAnswerChunkAsCompletion() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("answer", 0, "done"))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(AgentExecutionResult.Type.COMPLETED);
+        assertThat(results).extracting(AgentExecutionResult::outputContent)
+                .containsExactly("done");
+    }
+
+    @Test
+    void resultAdapterMapsOpenJiuwenStreamingErrorsAndInteractions() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("llm_usage", 0, Map.of("tokens", 1)),
+                new OutputSchema("error", 0, Map.of("result_type", "error", "output", "boom")),
+                new OutputSchema("__interaction__", 0, new InteractionOutput("question", "need input")))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(AgentExecutionResult.Type.FAILED, AgentExecutionResult.Type.INTERRUPTED);
+        assertThat(results.get(0).errorMessage()).isEqualTo("boom");
+        assertThat(results.get(1).prompt()).isEqualTo("need input");
+    }
+
+    @Test
+    void resultAdapterMapsOpenJiuwenInteractionMarkerToRemoteInvocation() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+        ToolCallInterruptRequest request = remoteInterruptRequest();
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("__interaction__", 0,
+                        new InteractionOutput("tool-call-1", request)))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(AgentExecutionResult.Type.INTERRUPTED);
+        assertThat(results.get(0).remoteInvocation().remoteAgentId()).isEqualTo("remote-agent");
+        assertThat(results.get(0).remoteInvocation().arguments()).containsEntry("remoteInput", "hello remote");
+    }
+
+    @Test
+    void resultAdapterMapsPlainInterruptRequestToPromptMessage() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+        ToolCallInterruptRequest request = new ToolCallInterruptRequest();
+        request.setMessage("need approval");
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("__interaction__", 0,
+                        new InteractionOutput("tool-call-1", request)))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(AgentExecutionResult.Type.INTERRUPTED);
+        assertThat(results.get(0).prompt()).isEqualTo("need approval");
+    }
+
+    @Test
+    void resultAdapterFailsUnsupportedInteractionPayloads() {
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+
+        List<AgentExecutionResult> results = handler.resultAdapter().adapt(Stream.of(
+                new OutputSchema("__interaction__", 0,
+                        new InteractionOutput("tool-call-1", Map.of("unexpected", true))))).toList();
+
+        assertThat(results).extracting(AgentExecutionResult::type)
+                .containsExactly(AgentExecutionResult.Type.FAILED);
+        assertThat(results.get(0).errorMessage()).contains("Unsupported openjiuwen interaction payload");
+    }
+
+    @Test
     void resultAdapterPassesThroughAgentExecutionResult() {
         TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
 
@@ -418,6 +528,23 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     private static AgentExecutionContext context(Map<String, Object> variables) {
         return new AgentExecutionContext(new RuntimeIdentity("tenant", "user", "session", "task", "agent"),
                 "USER_MESSAGE", List.of(RuntimeMessage.user("ping")), variables);
+    }
+
+    private static ToolCallInterruptRequest remoteInterruptRequest() {
+        ToolCallInterruptRequest request = new ToolCallInterruptRequest();
+        request.setInterruptId("tool-call-1");
+        request.setToolCallId("tool-call-1");
+        request.setToolName("remote-agent");
+        request.setContext(Map.of(
+                "runtime.remote.kind", "REMOTE_AGENT_INVOCATION",
+                "runtime.remote.agentId", "remote-agent",
+                "runtime.remote.toolName", "remote-agent",
+                "runtime.remote.toolCallId", "tool-call-1",
+                "runtime.remote.parentTaskId", "task-1",
+                "runtime.remote.parentContextId", "ctx-1",
+                "runtime.remote.localConversationId", "conversation-1",
+                "runtime.remote.arguments", Map.of("remoteInput", "hello remote")));
+        return request;
     }
 
     private static void ensureMemoryModelFactoryRegistered() {
@@ -456,10 +583,11 @@ class OpenJiuwenAgentRuntimeHandlerTest {
 
         @Override
         @SuppressWarnings("unchecked")
-        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
+        protected Iterator<Object> runOpenJiuwenAgentStreaming(BaseAgent agent, Object input, String conversationId,
+                List<StreamMode> streamModes) {
             capturedInput = (Map<String, Object>) input;
             capturedConversationId = conversationId;
-            return Map.of("result_type", "answer", "output", "pong");
+            return agent.stream(input, new AgentSessionApi(conversationId), streamModes);
         }
     }
 
@@ -474,7 +602,8 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         }
 
         @Override
-        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
+        protected Iterator<Object> runOpenJiuwenAgentStreaming(BaseAgent agent, Object input, String conversationId,
+                List<StreamMode> streamModes) {
             throw new IllegalStateException("boom");
         }
     }
@@ -490,8 +619,9 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         }
 
         @Override
-        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
-            return Stream.of("first", "second");
+        protected Iterator<Object> runOpenJiuwenAgentStreaming(BaseAgent agent, Object input, String conversationId,
+                List<StreamMode> streamModes) {
+            return List.<Object>of("first", "second").iterator();
         }
     }
 
@@ -511,7 +641,13 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     /** Fires openJiuwen's native model-call callbacks mid-run through the registered trajectory rail. */
     private static final class ModelCallingHandler extends TestOpenJiuwenHandler {
         @Override
-        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
+        protected Iterator<Object> runOpenJiuwenAgentStreaming(BaseAgent agent, Object input, String conversationId,
+                List<StreamMode> streamModes) {
+            emitModelCallTrajectory(agent);
+            return super.runOpenJiuwenAgentStreaming(agent, input, conversationId, streamModes);
+        }
+
+        private void emitModelCallTrajectory(BaseAgent agent) {
             for (AgentRail rail : ((RecordingAgent) agent).registeredRails) {
                 if (rail instanceof OpenJiuwenTrajectoryRail trajectoryRail) {
                     trajectoryRail.beforeModelCall(AgentCallbackContext.builder()
@@ -522,7 +658,6 @@ class OpenJiuwenAgentRuntimeHandlerTest {
                             .build());
                 }
             }
-            return Map.of("result_type", "answer", "output", "pong");
         }
     }
 
@@ -549,9 +684,10 @@ class OpenJiuwenAgentRuntimeHandlerTest {
         }
 
         @Override
-        protected Object runOpenJiuwenAgent(BaseAgent agent, Object input, String conversationId) {
+        protected Iterator<Object> runOpenJiuwenAgentStreaming(BaseAgent agent, Object input, String conversationId,
+                List<StreamMode> streamModes) {
             installedBeforeRun = runtimeToolInstalled;
-            return super.runOpenJiuwenAgent(agent, input, conversationId);
+            return super.runOpenJiuwenAgentStreaming(agent, input, conversationId, streamModes);
         }
     }
 
@@ -798,7 +934,13 @@ class OpenJiuwenAgentRuntimeHandlerTest {
 
         @Override
         public Iterator<Object> stream(Object input, Session session, List<StreamMode> streamModes) {
-            return List.of().iterator();
+            this.streamModes = List.copyOf(streamModes);
+            return List.<Object>of(
+                    new OutputSchema("llm_output", 0, Map.of("result_type", "answer", "content", "pong")),
+                    new OutputSchema("answer", 0, Map.of("result_type", "answer", "output", "done")))
+                    .iterator();
         }
+
+        private List<StreamMode> streamModes = List.of();
     }
 }
