@@ -67,6 +67,16 @@
 
 **跨线关联**:`A2aWorker` 把任务 id 设到 A2A 消息的 `contextId`(整条重派血缘内稳定),让远端运行时与链路追踪能把远端执行回连到本端任务;令牌(tokenId/idempotencyKey)随 `Message.metadata` 走。
 
+## 组网与路由(`WorkerRegistry` + 熔断)
+
+路由从静态 `List<Worker>` 升级为可运行时增删的 `WorkerRegistry`(**每次分发实时解析成员**):
+
+- `InMemoryWorkerRegistry`:进程内 `register`/`deregister`,保持插入序(轮询确定性)、copy-on-write(并发安全)。worker 可在分发之间加入/离开。
+- **健康路由**:`Worker.healthy()`(默认 true)为 false 时被 `pick()` 跳过;全挂时回退到全集"尽力一试"而非误报 NO_WORKER。
+- **熔断 failure-aware 路由**:`CoordinatorConfig.withCircuitBreaker(阈值, 冷却ms)` 打开后,某 worker 连续失败达阈值即被摘出轮询冷却一段时间,**负载甩给健康节点**而非死命重试挂掉的节点;成功即恢复。默认关闭(评测确定性)。
+
+> **需架构定方向(本片未做)**:跨进程**服务发现**、分布式状态、分片/分区、一致性哈希、gossip。这些与被冻结的 agent-bus 方向耦合,需先定架构再实现。`WorkerRegistry` 接口就是给未来发现后端预留的插入点——换实现即可,`Coordinator` 不动。
+
 ## 构建
 
 ```bash

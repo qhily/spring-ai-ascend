@@ -23,13 +23,19 @@ import java.util.function.IntUnaryOperator;
  *   <li><b>dedupeResults</b> — reuse a COMPLETED result for an identical
  *       {@code (capability, payload)} sub-task within the batch instead of re-dispatching,
  *       so duplicate work in a fan-out costs zero extra tokens.</li>
+ *   <li><b>circuitFailureThreshold / circuitCooldownMs</b> — failure-aware routing for a
+ *       fleet: after this many consecutive failures a worker is skipped for the cooldown,
+ *       shedding load onto healthy peers instead of hammering a dead node. {@code <=0} =
+ *       disabled.</li>
  * </ul>
  */
 public record CoordinatorConfig(
         IntUnaryOperator backoffMs,
         int maxDispatches,
         int maxConcurrency,
-        boolean dedupeResults) {
+        boolean dedupeResults,
+        int circuitFailureThreshold,
+        long circuitCooldownMs) {
 
     public CoordinatorConfig {
         if (backoffMs == null) {
@@ -38,23 +44,32 @@ public record CoordinatorConfig(
     }
 
     public static CoordinatorConfig defaults() {
-        return new CoordinatorConfig(attempt -> 0, 0, 0, false);
+        return new CoordinatorConfig(attempt -> 0, 0, 0, false, 0, 0);
     }
 
     public CoordinatorConfig withBackoff(IntUnaryOperator backoff) {
-        return new CoordinatorConfig(backoff, maxDispatches, maxConcurrency, dedupeResults);
+        return new CoordinatorConfig(backoff, maxDispatches, maxConcurrency, dedupeResults,
+                circuitFailureThreshold, circuitCooldownMs);
     }
 
     public CoordinatorConfig withMaxDispatches(int n) {
-        return new CoordinatorConfig(backoffMs, n, maxConcurrency, dedupeResults);
+        return new CoordinatorConfig(backoffMs, n, maxConcurrency, dedupeResults,
+                circuitFailureThreshold, circuitCooldownMs);
     }
 
     public CoordinatorConfig withMaxConcurrency(int n) {
-        return new CoordinatorConfig(backoffMs, maxDispatches, n, dedupeResults);
+        return new CoordinatorConfig(backoffMs, maxDispatches, n, dedupeResults,
+                circuitFailureThreshold, circuitCooldownMs);
     }
 
     public CoordinatorConfig withDedupe(boolean dedupe) {
-        return new CoordinatorConfig(backoffMs, maxDispatches, maxConcurrency, dedupe);
+        return new CoordinatorConfig(backoffMs, maxDispatches, maxConcurrency, dedupe,
+                circuitFailureThreshold, circuitCooldownMs);
+    }
+
+    public CoordinatorConfig withCircuitBreaker(int failureThreshold, long cooldownMs) {
+        return new CoordinatorConfig(backoffMs, maxDispatches, maxConcurrency, dedupeResults,
+                failureThreshold, cooldownMs);
     }
 
     /** Exponential backoff {@code base * 2^(attempt-1)} capped at {@code capMs}. */

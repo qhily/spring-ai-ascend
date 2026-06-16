@@ -18,6 +18,15 @@ public interface Worker {
         return capabilities().contains(capability);
     }
 
+    /**
+     * Whether this worker is currently fit to receive work. The coordinator skips
+     * unhealthy workers when a healthy one is available. Default: always healthy
+     * (a self-reporting worker, e.g. one tracking its own remote endpoint, may override).
+     */
+    default boolean healthy() {
+        return true;
+    }
+
     /** Execute the task under the issued token; echo the token back on the result. */
     WorkResult execute(SubTask task, TaskToken token);
 }
