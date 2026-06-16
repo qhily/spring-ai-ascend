@@ -2,6 +2,7 @@ package com.huawei.ascend.a2a.memory.memopt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +37,7 @@ class MemOptExperienceStoreTest {
     private String baseUrl;
     private final AtomicReference<String> lastSaveBody = new AtomicReference<>();
     private final AtomicReference<String> lastSearchBody = new AtomicReference<>();
+    private final AtomicReference<String> lastAuthHeader = new AtomicReference<>();
     private volatile int status = 200;
     private volatile String searchResponse = "{\"hits\":[]}";
 
@@ -54,6 +56,7 @@ class MemOptExperienceStoreTest {
     }
 
     private void respond(HttpExchange ex, AtomicReference<String> capture, String body) throws IOException {
+        lastAuthHeader.set(ex.getRequestHeaders().getFirst("Authorization"));
         capture.set(new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
         byte[] out = body.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, out.length);
@@ -99,6 +102,21 @@ class MemOptExperienceStoreTest {
         MemOptExperienceStore store = new MemOptExperienceStore(baseUrl,
                 new MemOptExperienceStore.Options(java.time.Duration.ofSeconds(2), false, 5, 30_000L));
         assertThrows(RuntimeException.class, () -> store.recall("bank", SIG, 5));
+    }
+
+    @Test
+    void sendsBearerTokenWhenConfigured() {
+        MemOptExperienceStore store = new MemOptExperienceStore(baseUrl,
+                new MemOptExperienceStore.Options(java.time.Duration.ofSeconds(2), true, 5, 30_000L, "s3cret"));
+        store.record("bank", SIG, List.of(new Lesson("x", "a", 1L)));
+        assertEquals("Bearer s3cret", lastAuthHeader.get(), "containerised MemOpt: bearer token forwarded");
+    }
+
+    @Test
+    void omitsAuthHeaderByDefault() {
+        MemOptExperienceStore store = new MemOptExperienceStore(baseUrl); // no token
+        store.record("bank", SIG, List.of(new Lesson("x", "a", 1L)));
+        assertNull(lastAuthHeader.get(), "no token configured => no Authorization header");
     }
 
     @Test

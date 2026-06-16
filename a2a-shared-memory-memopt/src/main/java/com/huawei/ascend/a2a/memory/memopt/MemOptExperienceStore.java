@@ -23,12 +23,16 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MemOpt-backed {@link ExperienceStore}: persists the A2A cross-run experience
- * layer on the MemOpt engine via its existing framework-neutral HTTP facade —
+ * layer on the MemOpt engine via its framework-neutral HTTP facade —
  * {@code /v1/memory/save} (record) and {@code /v1/memory/search} (recall) — so
- * experience gains MemOpt's persistent, semantic (GAM) memory. The kit middleware
- * is plain source (JDK HttpClient + Jackson); no container, no MemOpt types, and
- * it touches ONLY the additive facade — never the engine's native NATS / OpenClaw
- * paths, so a running OpenClaw is unaffected.
+ * experience gains MemOpt's persistent, semantic (GAM) memory.
+ *
+ * <p>MemOpt is delivered as a <b>closed container image</b> (customers run the
+ * image, not the Python source); this kit is the thin HTTP <i>client</i> to it —
+ * plain JDK {@link HttpClient} + Jackson, no MemOpt types. It speaks only the
+ * versioned {@code /v1} contract, never the engine's native NATS / OpenClaw paths.
+ * For a networked image, set {@link Options#authToken()} to send a bearer token
+ * and use an {@code https://} base URL for TLS.
  *
  * <p>Memory is a side service: this store <b>fails open</b> by default (a slow/down
  * engine yields empty recall and skipped record, never an exception on the agent's
@@ -48,10 +52,21 @@ public final class MemOptExperienceStore implements ExperienceStore {
     private static final String SAVE_PATH = "/v1/memory/save";
     private static final String SEARCH_PATH = "/v1/memory/search";
 
-    /** Timeout / fail-open / circuit tunables. */
-    public record Options(Duration timeout, boolean failOpen, int circuitFailureThreshold, long circuitOpenMs) {
+    /**
+     * Timeout / fail-open / circuit tunables, plus an optional bearer token for
+     * reaching a containerised MemOpt across a network boundary ({@code authToken}
+     * null/blank ⇒ no {@code Authorization} header, for localhost / network-isolated
+     * deployments). For TLS, pass an {@code https://} base URL.
+     */
+    public record Options(Duration timeout, boolean failOpen, int circuitFailureThreshold, long circuitOpenMs,
+                          String authToken) {
         public static Options defaults() {
-            return new Options(Duration.ofSeconds(2), true, 5, 30_000L);
+            return new Options(Duration.ofSeconds(2), true, 5, 30_000L, null);
+        }
+
+        /** Back-compat: no bearer token. */
+        public Options(Duration timeout, boolean failOpen, int circuitFailureThreshold, long circuitOpenMs) {
+            this(timeout, failOpen, circuitFailureThreshold, circuitOpenMs, null);
         }
     }
 
@@ -176,10 +191,15 @@ public final class MemOptExperienceStore implements ExperienceStore {
 
     private Map<String, Object> post(String path, Map<String, Object> body) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))
                     .timeout(options.timeout())
                     .header("Accept", "application/json")
-                    .header("Content-Type", "application/json")
+                    .header("Content-Type", "application/json");
+            String token = options.authToken();
+            if (token != null && !token.isBlank()) {
+                builder.header("Authorization", "Bearer " + token.trim());
+            }
+            HttpRequest request = builder
                     .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(body), StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));

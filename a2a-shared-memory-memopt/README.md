@@ -1,25 +1,26 @@
 # a2a-shared-memory-memopt
 
-A **kit middleware** (source, not a container) that backs the
-[`a2a-shared-memory`](../a2a-shared-memory) experience layer with the **MemOpt**
-cognitive memory engine, so cross-run A2A experience gains *persistent, semantic*
-memory instead of living only in process.
+The **HTTP client** that backs the [`a2a-shared-memory`](../a2a-shared-memory)
+experience layer with the **MemOpt** cognitive memory engine, so cross-run A2A
+experience gains *persistent, semantic* memory instead of living only in process.
+
+**MemOpt is delivered as a closed container image** — customers run the image, not
+the Python source. This module is the thin Java client that speaks MemOpt's
+versioned `/v1` HTTP contract; it contains no MemOpt code.
 
 ## What it is
 
 `a2a-shared-memory` defines two memory layers:
 
-| Layer | Lifetime | Default backend |
+| Layer | Lifetime | Backend |
 |---|---|---|
 | **Blackboard** (run-scoped) | one collaboration run | in-memory (ephemeral by design) |
-| **Experience** (cross-run) | spans runs | in-memory (lost on restart) |
+| **Experience** (cross-run) | spans runs | **MemOpt image** via this client |
 
 This module replaces *only* the **experience** backend with MemOpt. It is a single
-class — `MemOptExperienceStore` — that implements the kit's
+class — `MemOptExperienceStore` — implementing the kit's
 [`ExperienceStore`](../a2a-shared-memory/src/main/java/com/huawei/ascend/a2a/memory/experience/ExperienceStore.java)
-SPI over MemOpt's framework-neutral **HTTP facade**. The run-scoped blackboard is
-intentionally left alone: it is ephemeral by design and does not need a durable
-engine.
+SPI over the MemOpt image's HTTP facade:
 
 ```
 record(...)  ──▶  POST /v1/memory/save     (lesson + provenance metadata)
@@ -27,40 +28,47 @@ recall(...)  ──▶  POST /v1/memory/search   (signature query → distilled 
 reinforce(.) ──▶  POST /v1/memory/save     (re-confirm a recurring lesson)
 ```
 
-## Why a kit, not a container
+## Delivery model: image, not source
 
-- **Source, debuggable.** Pure JDK `HttpClient` + Jackson. No MemOpt Java types,
-  no gRPC, no container image — drop the jar in and read every line.
-- **Zero engine coupling.** It speaks only the versioned `/v1` HTTP contract
-  ([`MEMORY_HTTP_CONTRACT.md`](https://gitcode.com/KRider/doushuaigong)), never
-  MemOpt internals. Either side may evolve independently.
-- **OpenClaw-safe.** It touches *only* MemOpt's additive HTTP facade — never the
-  engine's native NATS / OpenClaw paths. A MemOpt instance already serving a
-  local OpenClaw is unaffected.
+MemOpt's cognitive engine is the IP, so it ships as a **closed Docker image**; the
+customer never receives the Python source. Build/run is documented in the MemOpt
+repo (`docs/DEPLOY_CONTAINER.md`): a `Dockerfile` + `docker-compose.yml` bring up
+the engine container + its NATS bus, exposing only `/v1/memory/*`.
+
+This Java module is the **client** to that image:
+
+- pure JDK `HttpClient` + Jackson, no MemOpt types;
+- speaks only the versioned `/v1` contract (engine internals can evolve freely);
+- talks to the image over the network — point `baseUrl` at the container
+  (`http://memopt-host:8077`), use `https://` when TLS is terminated upstream, and
+  set an optional **bearer token** when the image enables `MEMOPT_FACADE_AUTH_TOKEN`.
+
+```java
+ExperienceStore experience = new MemOptExperienceStore("http://memopt-host:8077");
+
+// networked image with auth + tuned resilience:
+ExperienceStore secured = new MemOptExperienceStore(
+        "https://memopt.internal:8077",
+        new MemOptExperienceStore.Options(
+                Duration.ofSeconds(2), /*failOpen*/ true, 5, 30_000L,
+                System.getenv("MEMOPT_FACADE_AUTH_TOKEN")));  // null/blank => no header
+```
 
 ## Resilience (memory is a side service)
 
-Memory must never drag down an agent's main path, so the store is defensive:
+Memory must never drag down an agent's main path, so the client is defensive:
 
 | Concern | Behavior |
 |---|---|
-| Slow / down engine | **fails open** — `recall` returns empty, `record` is skipped; no exception on the agent path |
-| Repeated failures | a fail-open **circuit** trips after N consecutive errors and short-circuits for `circuitOpenMs` (no wasted round-trips), then probes again |
+| Slow / down image | **fails open** — `recall` returns empty, `record` is skipped; no exception on the agent path |
+| Repeated failures | a fail-open **circuit** trips after N consecutive errors and short-circuits for `circuitOpenMs`, then probes again |
 | Timeouts | per-request connect + read timeout (default 2s) |
 | Strict callers | set `Options.failOpen=false` to surface errors instead |
 
-```java
-ExperienceStore experience = new MemOptExperienceStore("http://localhost:8077");
-// or tuned:
-ExperienceStore strict = new MemOptExperienceStore(
-        "http://localhost:8077",
-        new MemOptExperienceStore.Options(Duration.ofSeconds(2), /*failOpen*/ false, 5, 30_000L));
-```
-
 ## Partitioning & provenance
 
-Each `(tenant, capability-set + task-type)` keeps its own lessons. The kit derives
-a stable MemOpt partition (sent as `user_id`):
+Each `(tenant, capability-set + task-type)` keeps its own lessons. The client
+derives a stable MemOpt partition (sent as `user_id`):
 
 ```
 a2a-exp::<tenantId>::<sorted-capabilities>|<taskType>
@@ -74,7 +82,7 @@ Capabilities are sorted, so set order never changes the key. Per-lesson provenan
 > ingested turns into facts. On recall, hit `metadata` is retriever-shaped
 > (`paths`/`tags`/`source`), so per-lesson `sourceAgentId`/`reinforcement` are
 > **best-effort** — they may not echo back. The lesson **text** is the durable
-> payload; the kit degrades gracefully (null source, 0 reinforcement) when
+> payload; the client degrades gracefully (null source, 0 reinforcement) when
 > provenance is absent.
 
 ## Build & test
@@ -88,5 +96,5 @@ export JAVA_HOME=/path/to/jdk-21
 ```
 
 Tests stub MemOpt's facade with a JDK `HttpServer`, so they run fully offline — no
-engine, no network — and verify the save/search mapping, lesson parsing, fail-open,
-strict mode, and stable partitioning.
+image, no network — and verify the save/search mapping, lesson parsing, fail-open,
+strict mode, the bearer-token header, and stable partitioning.
