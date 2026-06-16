@@ -21,7 +21,7 @@ package com.huawei.ascend.bus.forwarding.spi;
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding} (Failure Modes);
  * {@code ICD-Agent-Bus-Forwarding-Runtime};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §7}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §7}.
  */
 public enum ForwardingFailureCode {
     ROUTE_NOT_FOUND("route_not_found", Classification.NON_RETRYABLE),

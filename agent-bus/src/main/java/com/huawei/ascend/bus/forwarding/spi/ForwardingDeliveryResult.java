@@ -19,8 +19,8 @@ import java.util.Objects;
  * The compact constructor pins the failure-code / next-attempt invariants per
  * outcome so the worker can switch on {@link #outcome()} without re-validating.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1/§7};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §5}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1/§7};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §5}.
  */
 public record ForwardingDeliveryResult(Outcome outcome, ForwardingFailureCode failureCode,
                                        long nextAttemptAtMillisEpoch) {

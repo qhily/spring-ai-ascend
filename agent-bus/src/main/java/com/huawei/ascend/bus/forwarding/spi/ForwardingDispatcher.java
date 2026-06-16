@@ -17,7 +17,7 @@ package com.huawei.ascend.bus.forwarding.spi;
  * <p>The gateway never bypasses {@link ForwardingRouteHandle} to a physical
  * endpoint and never writes Task execution state.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §3/§8}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §3/§8}.
  */
 public interface ForwardingDispatcher {
 

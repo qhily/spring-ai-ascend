@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * shipped forwarding surface, not the in-memory test doubles.
  *
  * <p>Authority: Stage 7 plan §3 slice 4 boundary;
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §3}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §3}.
  */
 class AgentBusForwardingSpiPurityTest {
 

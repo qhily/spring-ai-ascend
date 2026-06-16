@@ -28,8 +28,8 @@ package com.huawei.ascend.bus.forwarding.spi;
  * record always holds a live lease.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1/§8};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §4/§5}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1/§8};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §4/§5}.
  */
 public interface ForwardingOutboxPort {
 

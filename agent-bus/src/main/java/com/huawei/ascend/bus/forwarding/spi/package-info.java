@@ -11,7 +11,7 @@
  * {@code AgentBusForwardingSpiPurityTest}.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §8};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §8};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md}.
  */
 package com.huawei.ascend.bus.forwarding.spi;

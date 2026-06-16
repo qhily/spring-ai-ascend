@@ -17,7 +17,7 @@ import java.util.Objects;
  * envelope construction.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding} (HD4 Route Handle);
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §6}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §6}.
  */
 // scope: forwarding substrate — opaque discovery handle + tenant scope
 public record ForwardingRouteHandle(String value, String tenantScope) {

@@ -11,7 +11,7 @@ import java.util.Objects;
  * one. The compact constructor enforces this invariant.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding} (Delivery Model);
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §8}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §8}.
  */
 // scope: forwarding substrate — synchronous ack receipt
 public record ForwardingReceipt(

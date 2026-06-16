@@ -17,8 +17,8 @@ package com.huawei.ascend.bus.forwarding.spi;
  * {@code ForwardingLeaseException} as "skip this record"; the record's true owner
  * (or the next reclaim) drives it forward.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §4/§5};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §4/§5};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1}.
  */
 public class ForwardingLeaseException extends IllegalStateException {
 

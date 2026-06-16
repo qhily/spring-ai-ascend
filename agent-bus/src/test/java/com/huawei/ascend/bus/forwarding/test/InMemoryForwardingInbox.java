@@ -20,7 +20,7 @@ import java.util.Objects;
  * duplicate arrival returns {@code DUPLICATE_SUPPRESSED} without mutating the
  * stored entry.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.2}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.2}.
  */
 // non-production — test fixture only; real persistence is Stage 8
 public final class InMemoryForwardingInbox implements ForwardingInboxPort {

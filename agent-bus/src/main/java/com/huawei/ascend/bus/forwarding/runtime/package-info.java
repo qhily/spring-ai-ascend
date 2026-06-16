@@ -9,7 +9,7 @@
  * lease port and the delivery port; a real polling cadence, threading,
  * backpressure and a concrete delivery binding are deferred to a later stage.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §5}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §5}.
  */
 package com.huawei.ascend.bus.forwarding.runtime;

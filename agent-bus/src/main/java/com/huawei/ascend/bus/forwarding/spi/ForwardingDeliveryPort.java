@@ -12,8 +12,8 @@ package com.huawei.ascend.bus.forwarding.spi;
  * port so the worker can be exercised end-to-end (ACK / RETRY / DLQ / EXPIRED)
  * without any network dependency.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §3};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §5}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §3};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §5}.
  */
 public interface ForwardingDeliveryPort {
 

@@ -17,7 +17,7 @@ import com.huawei.ascend.bus.forwarding.spi.ForwardingStatus;
  * {@link InboxEvent#ARRIVE_NEW} / {@link InboxEvent#ARRIVE_DUPLICATE}) accept a
  * {@code null} current.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4}
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4}
  * (outbox / inbox migration tables — the single source of truth); mirror the
  * L2 tables exactly when editing.
  */

@@ -29,8 +29,8 @@ import java.util.Objects;
  * reference path.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime} (outbox record fields);
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §3}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §3}.
  */
 // scope: forwarding substrate — durable outbox record; never a payload body
 public record ForwardingOutboxRecord(

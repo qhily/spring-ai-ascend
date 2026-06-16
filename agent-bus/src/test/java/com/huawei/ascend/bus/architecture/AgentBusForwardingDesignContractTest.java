@@ -43,7 +43,7 @@ class AgentBusForwardingDesignContractTest {
 
     private static final Path ICD = Path.of(
             "../docs/architecture/l0/05-contracts/human-readable/ICD-agent-bus-forwarding.md");
-    private static final Path L1_README = Path.of("../architecture/docs/L1/agent-bus/README.md");
+    private static final Path L1_README = Path.of("../architecture/L1-High-Level-Design/agent-bus/README.md");
 
     private static String icdText;
     private static String readmeText;

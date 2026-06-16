@@ -21,7 +21,7 @@ import java.util.Objects;
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding} (HD4);
  * {@code ICD-Agent-Bus-Forwarding-Runtime};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §5/§6}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §5/§6}.
  */
 // scope: forwarding substrate — control + payloadRef only; never a payload body
 public record ForwardingEnvelope(

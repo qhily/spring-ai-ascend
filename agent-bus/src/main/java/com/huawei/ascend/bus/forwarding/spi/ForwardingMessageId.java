@@ -8,7 +8,7 @@ import java.util.Objects;
  * <p>Opaque stable value allocated by the forwarding substrate. Participates in
  * the outbox unique key {@code (tenantId, messageId)} and the inbox dedup key
  * {@code (tenantId, messageId, consumerServiceId)} — see
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §5}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §5}.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime} (Stage 7);
  * CLAUDE.md Rule R-C sub-clause .c.

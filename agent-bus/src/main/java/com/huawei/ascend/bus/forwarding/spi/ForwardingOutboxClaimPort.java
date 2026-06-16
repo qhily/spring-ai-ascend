@@ -28,8 +28,8 @@ import java.util.List;
  * and never writes Task execution state. A real JDBC implementation is deferred
  * (decision §6.1); Stage 8 ships this interface plus an in-memory lease harness.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1/§8};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §4}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1/§8};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §4}.
  */
 public interface ForwardingOutboxClaimPort {
 

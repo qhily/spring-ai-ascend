@@ -11,8 +11,8 @@
  * delivery port, worker skeleton, schema / migration draft and an in-memory
  * lease harness, but no production database dependency (decision §6.1).
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md};
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md};
  * {@code ICD-Agent-Bus-Forwarding-Runtime}.
  */
 package com.huawei.ascend.bus.forwarding;

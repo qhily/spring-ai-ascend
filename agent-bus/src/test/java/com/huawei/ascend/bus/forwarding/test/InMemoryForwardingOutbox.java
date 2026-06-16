@@ -32,8 +32,8 @@ import java.util.Objects;
  * miss for a cross-tenant lookup surfaces as "not found" (explicit failure),
  * never a cross-tenant read.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §4}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §4}.
  */
 // non-production — test fixture only; real persistence is Stage 8
 public final class InMemoryForwardingOutbox

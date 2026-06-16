@@ -14,8 +14,8 @@ import java.util.Objects;
  * outbox record; it carries no payload body, no token stream, no Task execution
  * state, no physical endpoint.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.1};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §4}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.1};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §4}.
  */
 // scope: forwarding substrate — claim ownership metadata only
 public record ForwardingLease(String leaseOwner, long leaseUntilMillisEpoch) {

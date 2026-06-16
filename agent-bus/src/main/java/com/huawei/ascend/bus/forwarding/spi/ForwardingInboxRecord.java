@@ -24,8 +24,8 @@ import java.util.Objects;
  * body, no token stream, no Task execution state, no physical endpoint.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime} (inbox record fields);
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.2};
- * {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §3}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.2};
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §3}.
  */
 // scope: forwarding substrate — dedup / audit inbox record; never a payload body
 public record ForwardingInboxRecord(

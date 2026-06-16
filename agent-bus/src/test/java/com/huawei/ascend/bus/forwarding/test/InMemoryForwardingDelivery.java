@@ -17,7 +17,7 @@ import java.util.Objects;
  * fake consumes only the {@link ForwardingOutboxRecord} — it never touches a
  * physical endpoint and never writes Task execution state.
  *
- * <p>Authority: {@code architecture/docs/L2/agent-bus/forwarding-persistence.md §5}.
+ * <p>Authority: {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-persistence.md §5}.
  */
 // non-production — test fixture only; real transport binding is a later stage
 public final class InMemoryForwardingDelivery implements ForwardingDeliveryPort {

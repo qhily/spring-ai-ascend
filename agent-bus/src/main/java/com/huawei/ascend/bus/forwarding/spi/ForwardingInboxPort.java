@@ -9,7 +9,7 @@ package com.huawei.ascend.bus.forwarding.spi;
  * back) and MUST call {@code ForwardingStateMachine} to validate transitions.
  *
  * <p>Authority: {@code ICD-Agent-Bus-Forwarding-Runtime};
- * {@code architecture/docs/L2/agent-bus/forwarding-outbox-inbox.md §4.2/§8}.
+ * {@code architecture/L2-Low-Level-Design/agent-bus/forwarding-outbox-inbox.md §4.2/§8}.
  */
 public interface ForwardingInboxPort {
 
