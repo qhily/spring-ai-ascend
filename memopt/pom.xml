@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    MemOpt — an independent enterprise memory engine in the kit paradigm, sibling
+    to agent-runtime (orphan, not in root <modules>). Two roles:
+      1. per-user long-term memory (scope-isolated, fail-open + circuit, cost cap);
+      2. a pluggable BACKEND for the a2a-shared-memory kit — it implements that
+         kit's SharedMemoryStore SPI, so MemOpt can serve the A2A shared
+         blackboard. The in-process form ships here; the closed Java engine
+         (form C: on-prem container + gRPC memopt.v1, source never leaves) is the
+         deployment form, deferred (ADR-0162).
+    Depends on a2a-shared-memory for the SPI + neutral obs; does NOT depend on
+    agent-runtime.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.0.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.huawei.ascend</groupId>
+  <artifactId>memopt</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>memopt</name>
+  <description>MemOpt — enterprise memory engine (kit): per-user long-term memory + a pluggable backend for the a2a-shared-memory kit.</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- The A2A shared-memory kit: MemOpt implements its SharedMemoryStore SPI
+         and reuses its neutral MemoryObserver. Brings slf4j + micrometer too. -->
+    <dependency>
+      <groupId>com.huawei.ascend</groupId>
+      <artifactId>a2a-shared-memory</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

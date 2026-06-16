@@ -1,10 +1,12 @@
 # A2A 共享记忆 五维复检(鲁棒 / 弹性 / 韧性 / Ops·性能 / 经济)
 
-> **已重构(2026-06-16)**:范围更新为独立中间件模块 **`a2a-shared-memory/`**(A2A 共享记忆 kit)。per-user 记忆 与 MemOpt 闭源引擎/gRPC 退到**后端阶段**,不在本期。下文按此口径,旧的 "memopt/" 路径以 `a2a-shared-memory/` 为准。
+> **已重构(2026-06-16)**:两层 kit —— **`a2a-shared-memory/`**(A2A 共享记忆中间件 kit)+ **`memopt/`**(独立记忆引擎 kit:per-user 长期记忆 + 作为前者 `SharedMemoryStore` 的可插拔后端)。MemOpt 闭源引擎的**部署形态**(form C 容器 + gRPC + mTLS)仍在后端阶段。
 
-日期:2026-06-16 · 范围:`a2a-shared-memory/` 模块(A2A 共享记忆:run 内黑板 + 跨 run 经验)· 关联 [ADR-0162](../../adr/0162-a2a-shared-memory.yaml)
+日期:2026-06-16 · 范围:`a2a-shared-memory/`(run 内黑板 + 跨 run 经验 + A2A contextId 绑定)+ `memopt/`(per-user 引擎 + A2A 共享后端)· 关联 [ADR-0162](../../adr/0162-a2a-shared-memory.yaml)
 
-诚实前提:本模块是 **in-process 后端的 kit + SPI**(可离线评测);企业级持久/语义后端(MemOpt 闭源引擎,form C + gRPC)在**后端阶段**、本期未做。下面把**已在 kit 落地并测过**的 与 **属后端侧、本期未做** 的分开标。**A2A 共享记忆模块 27/27 通过。**
+诚实前提:两模块均为 **in-process Java 形态**(可离线评测);企业级持久/语义/远程(MemOpt 闭源引擎,form C + gRPC)是**部署形态**、本期未做。下面把**已落地并测过**的 与 **属部署侧、本期未做** 的分开标。**整体 38 测试通过(a2a-shared-memory 27 + memopt 11)。**
+
+MemOpt 补充(per-user 引擎 + 后端):鲁棒 = fail-open + 熔断(`resilience/Circuit`,`UserMemoryKitTest` 验证 fail-open/严格/熔断短路);弹性 = scope 分区单存储(非每用户一表);经济 = 批内 dedupe + per-scope 上限淘汰;后端角色 = `MemOptSharedMemoryStore` 实现 a2a kit 的 `SharedMemoryStore` SPI,a2a kit 不改一行跑在 MemOpt 上(`MemOptBackedSharedMemoryTest`:共享/所有权/观测)。SPI 让"进程内 delegate → gRPC 闭源引擎"的替换对 agent 不可见。
 
 ## 记分卡
 
@@ -23,4 +25,4 @@
 - 经验"任务签名"调优、并发写的更强一致策略(当前 append-log + 所有权已够)。
 
 ## 结论
-A2A 共享记忆中间件 kit 在五个维度上都有**已测**的落地(鲁棒/弹性/韧性-kit 侧/可观测/经济),规模到**2000 并发协作**已验证,agent 间按 contextId 共享 + 所有权用真实 agent-runtime context 验证。剩余强项(高性能持久/召回、服务端反压)按设计**属后端**(redis / MemOpt 闭源引擎),边界清晰、已在 ADR-0162 标注。全套 **27/27** 测试通过。
+A2A 共享记忆中间件 kit + MemOpt 引擎 kit 在五个维度上都有**已测**的落地(鲁棒/弹性/韧性-客户端/可观测/经济),规模到**2000 并发协作**已验证,agent 间按 contextId 共享 + 所有权用真实 agent-runtime context 验证,MemOpt 作为可插拔后端验证(a2a kit 不改一行跑在其上)。剩余强项(高性能持久/召回、服务端反压、gRPC 远程)按设计**属 MemOpt 部署形态**(form C 容器),边界清晰、已在 ADR-0162 标注。**整体 38 测试通过(a2a-shared-memory 27 + memopt 11)。**
