@@ -62,7 +62,7 @@
 | 实现 | 作用 |
 |---|---|
 | `MicrometerCollaborationObserver` | 指标:`collab.tasks{outcome}` / `collab.task.latency` / `collab.events{type}`(绑定 MeterRegistry 时出现在 `/actuator/prometheus`,评测里 no-op) |
-| `Slf4jCollaborationObserver` | 结构化 ops 轨迹:每个决策/完成打到 `collab` logger,带 MDC(`taskId`/`event`/`outcome`/`workerId`/`durationMs`),日志管道可按 taskId 索引关联;MDC 在 finally 清理,**不泄漏**到工作线程 |
+| `Slf4jCollaborationObserver` | 结构化 ops 轨迹,带 MDC(`taskId`/`event`/`outcome`/`workerId`/`durationMs`),可按 taskId 索引;MDC 在 finally 清理**不泄漏**。**分开发态/运行态**(同一埋点、强度可调):逐决策日志默认 **DEBUG**(运行态精简,fleet 规模不刷屏)、`verbose()` 模式提到 **INFO**(开发态全看);问题事件(FAIL/NO_WORKER)恒 **WARN**;任务落定每任务一条 INFO/WARN。所有路由级日志**先判 `isEnabled` 守卫**——级别关时零 MDC、零字符串构造,**热路径近零开销** |
 | `CompositeCollaborationObserver` | 把多个 observer 扇出(指标 + 日志同时上);**单个 delegate 抛错被吞掉**,不拖垮其他 observer 或协作本身 |
 
 **跨线关联**:`A2aWorker` 把任务 id 设到 A2A 消息的 `contextId`(整条重派血缘内稳定),让远端运行时与链路追踪能把远端执行回连到本端任务;令牌(tokenId/idempotencyKey)随 `Message.metadata` 走。
