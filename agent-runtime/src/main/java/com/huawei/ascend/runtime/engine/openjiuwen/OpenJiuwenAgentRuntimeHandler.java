@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
 
     private final OpenJiuwenMessageAdapter messageConverter;
     private final OpenJiuwenStreamAdapter resultMapper;
-    private OpenJiuwenRemoteToolInstaller runtimeToolInstaller;
+    private final List<OpenJiuwenRuntimeToolInstaller> runtimeToolInstallers = new CopyOnWriteArrayList<>();
 
     protected OpenJiuwenAgentRuntimeHandler(String agentId) {
         this(agentId, new OpenJiuwenMessageAdapter());
@@ -145,13 +146,22 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
      * agent implementation.
      */
     protected void installRuntimeTools(BaseAgent agent, AgentExecutionContext context) {
-        if (runtimeToolInstaller != null) {
-            runtimeToolInstaller.install(agent, context);
+        for (OpenJiuwenRuntimeToolInstaller installer : runtimeToolInstallers) {
+            installer.install(agent, context);
         }
     }
 
     public final void setRuntimeToolInstaller(OpenJiuwenRemoteToolInstaller runtimeToolInstaller) {
-        this.runtimeToolInstaller = runtimeToolInstaller;
+        runtimeToolInstallers.removeIf(OpenJiuwenRemoteToolInstaller.class::isInstance);
+        if (runtimeToolInstaller != null) {
+            addRuntimeToolInstaller(runtimeToolInstaller);
+        }
+    }
+
+    public final void addRuntimeToolInstaller(OpenJiuwenRuntimeToolInstaller runtimeToolInstaller) {
+        if (runtimeToolInstaller != null && !runtimeToolInstallers.contains(runtimeToolInstaller)) {
+            runtimeToolInstallers.add(runtimeToolInstaller);
+        }
     }
 
     /**

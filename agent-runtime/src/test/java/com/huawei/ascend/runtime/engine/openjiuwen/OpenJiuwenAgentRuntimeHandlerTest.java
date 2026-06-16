@@ -107,6 +107,21 @@ class OpenJiuwenAgentRuntimeHandlerTest {
     }
 
     @Test
+    void executeRunsRegisteredRuntimeToolInstallersInOrder() {
+        AgentRail firstRuntimeRail = new AgentRail() {
+        };
+        AgentRail secondRuntimeRail = new AgentRail() {
+        };
+        TestOpenJiuwenHandler handler = new TestOpenJiuwenHandler();
+        handler.addRuntimeToolInstaller((agent, context) -> agent.registerRail(firstRuntimeRail));
+        handler.addRuntimeToolInstaller((agent, context) -> agent.registerRail(secondRuntimeRail));
+
+        handler.execute(context(Map.of())).toList();
+
+        assertThat(handler.agent.registeredRails).containsExactly(firstRuntimeRail, secondRuntimeRail);
+    }
+
+    @Test
     void memoryMessageAdapterConvertsOpenJiuwenMessagesBothWays() {
         OpenJiuwenMemoryMessageAdapter adapter = new OpenJiuwenMemoryMessageAdapter();
 
