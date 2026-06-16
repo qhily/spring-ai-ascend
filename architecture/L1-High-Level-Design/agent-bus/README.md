@@ -122,6 +122,7 @@ DB / migration 归属未由人类确认 → **路径 B**：不引入 JDBC / Flyw
 - Stage 6 评审与 Stage 7 大批次计划：[`../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage6-review-and-stage7-plan.md`](../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage6-review-and-stage7-plan.md)。
 - Stage 7 评审与 Stage 8 计划：[`../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage7-review-and-stage8-plan.md`](../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage7-review-and-stage8-plan.md)。
 - Stage 8 评审与 Stage 9 计划：[`../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage8-review-and-stage9-plan.md`](../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage8-review-and-stage9-plan.md)。
+- Stage 9 评审与 Stage 10 计划：[`../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage9-review-and-stage10-plan.md`](../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage9-review-and-stage10-plan.md)。
 
 ## 后续工作
 
@@ -133,3 +134,4 @@ DB / migration 归属未由人类确认 → **路径 B**：不引入 JDBC / Flyw
 - Stage 7 C3 转发运行态最小骨架已落地（领域模型 + 端口 + 状态机 + in-memory 测试替身 + harness）；115 tests green。
 - Stage 8 C3 持久化准备已落地：record 模型 + claim / lease 端口 + dispatcher worker skeleton + 抽象 delivery 端口 + schema / migration 草案（DDL 草稿未执行）+ in-memory lease harness；收口 MI8-001..005；122 tests green。真实 JDBC adapter / Flyway migration / 真实投递绑定 deferred Stage 9+（§6 护栏：数据库产品 / migration 归属未确认前不引入生产数据库依赖）。计划见上方「阶段记录」。
 - Stage 9 C3 lease-safe / persistence-ready 已落地（MI9-001..006）：lease-owner guarded mutation、lease 生命周期闭环、record 条件不变量（Java + DDL CHECK + harness）、failure-code classification、claim / state-update SQL contract；DB / migration 归属未确认 → 路径 B（不引入 JDBC / Flyway）；129 tests green。计划见上方「阶段记录」。
+- Stage 10 建议进入 dispatch-loop runtime：worker lease 异常恢复（catch `ForwardingLeaseException` + skip）、lease 续约契约、`DispatchTickResult` 可观测（skipped）、dispatch 调度责任定义，并裁决 DB / migration 归属（路径 A 真实 JDBC 或继续路径 B）；计划见 [`stage9-review-and-stage10-plan`](../../../docs/architecture/l0/10-governance/delivery-projections/agent-bus-stage9-review-and-stage10-plan.md)。
