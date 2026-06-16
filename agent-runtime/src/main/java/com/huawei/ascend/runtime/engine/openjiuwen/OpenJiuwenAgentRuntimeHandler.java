@@ -375,7 +375,13 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
             ModelContext modelContext = callbackContext == null ? null : callbackContext.getContext();
             if (modelContext != null) {
                 mergeMemoryIntoSystemMessage(modelContext, memoryBlock);
+                return;
             }
+            LOGGER.warn("openjiuwen memory inject skipped tenantId={} sessionId={} taskId={} reason=no_react_agent_or_model_context callbackAgentType={}",
+                    executionContext.getScope().tenantId(),
+                    executionContext.getScope().sessionId(),
+                    executionContext.getScope().taskId(),
+                    callbackAgentType(callbackContext));
         }
 
         private MemoryProvider.MemoryRecord toLongTermMemoryRecord(BaseMessage message) {
@@ -436,6 +442,11 @@ public abstract class OpenJiuwenAgentRuntimeHandler extends AbstractAgentRuntime
         private static ReActAgent reactAgent(AgentCallbackContext callbackContext) {
             Object agent = callbackContext == null ? null : callbackContext.getAgent();
             return agent instanceof ReActAgent reactAgent ? reactAgent : null;
+        }
+
+        private static String callbackAgentType(AgentCallbackContext callbackContext) {
+            Object agent = callbackContext == null ? null : callbackContext.getAgent();
+            return agent == null ? "null" : agent.getClass().getName();
         }
 
         private static String runtimeMemoryBlock(String memoryBlock) {
