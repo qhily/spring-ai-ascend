@@ -43,6 +43,24 @@ CollaborationMemoryHook hook = new DefaultCollaborationMemoryHook(experienceKit,
 hook.onCollaborationEnd(signature, board);
 ```
 
+## per-user 长期记忆(`user/`)
+
+跨会话的用户软记忆(偏好/风险态度/对话结论)。**持仓等权威数据走 SoR,不进记忆**(把记忆压到极小是成本第一性)。
+
+```java
+UserMemoryKit mem = UserMemoryKit.forUser(store, MemoryScope.ofUser("bank", "u-42"));
+mem.remember(List.of(new MemoryRecord("prefers short-term low-risk wealth", "preference")));
+mem.recall("client preference", 5);   // 引擎挂了返回空,不抛、不拖垮主响应
+mem.forget();                          // 被遗忘权,一行
+```
+
+- **scope 隔离**:`MemoryScope` 默认 `tenantId + userId`(用户记忆在其各 agent 间共享);`agentId` 可选子命名空间。单一共享存储**按 scope 分区,不是每用户一张表**。
+- **fail-open + 熔断**(`resilience/Circuit`):记忆是旁路服务,失败 recall 返空、remember 静默跳过;连续失败熔断、期间不走后端。`Options(failOpen=false)` 可切严格模式。
+- **成本**:批内 `dedupe` + 存储 `maxFactsPerScope` 上限淘汰最旧(语义蒸馏由闭源引擎做)。
+- `UserMemoryStore` 后端 SPI;`InMemoryUserMemoryStore`(关键词检索 + per-scope 上限)供评测。
+
+> 接入 agent-runtime:由薄的 `memopt-runtime-adapter` 实现平台 `MemoryProvider` SPI、委托给 `UserMemoryKit`(`examples/...doushuai` 已示范同款桥接模式)。保持 memopt 自身不反依赖 agent-runtime。
+
 ## 构建 & 测试
 
 ```bash
@@ -50,7 +68,7 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home \
   ./mvnw -f memopt/pom.xml test
 ```
 
-孤儿模块(parent = spring-boot-starter-parent,不在根 reactor),独立构建;Phase 1 **18/18** 测试通过(所有权/交接/append-log/并发、经验脱敏/召回/租户隔离、PII redactor、run-end hook)。
+孤儿模块(parent = spring-boot-starter-parent,不在根 reactor),独立构建;**26/26** 测试通过(A2A 共享:所有权/交接/append-log/并发、经验脱敏/召回/租户隔离、PII redactor、run-end hook;per-user:recall/remember/forget、scope 隔离、fail-open、熔断、dedupe/上限)。
 
 ## 路线(ADR-0162)
 
