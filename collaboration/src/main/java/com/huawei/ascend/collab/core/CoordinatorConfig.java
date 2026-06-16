@@ -22,7 +22,10 @@ import java.util.function.IntUnaryOperator;
  *       {@code <=0} = use the parallelism argument.</li>
  *   <li><b>dedupeResults</b> — reuse a COMPLETED result for an identical
  *       {@code (capability, payload)} sub-task within the batch instead of re-dispatching,
- *       so duplicate work in a fan-out costs zero extra tokens.</li>
+ *       so duplicate work in a fan-out costs zero extra tokens. Guaranteed for sequential
+ *       {@code run(...)}; best-effort under {@code runConcurrent(...)} (the cache is written at
+ *       completion, so identical tasks already in flight each dispatch). See the
+ *       {@code Coordinator} class doc "Dedupe scope".</li>
  *   <li><b>circuitFailureThreshold / circuitCooldownMs</b> — failure-aware routing for a
  *       fleet: after this many consecutive failures a worker is skipped for the cooldown,
  *       shedding load onto healthy peers instead of hammering a dead node. {@code <=0} =

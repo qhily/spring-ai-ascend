@@ -28,7 +28,7 @@
 | `withBackoff(exponentialBackoff(base, cap))` | reclaim 重试前指数退避 | **负反馈**:agent 故障时不被零间隔重试打爆 |
 | `withMaxDispatches(n)` | 整批次 (重)分发次数上限 | **token 经济**:每次分发都驱动真实 LLM,无界重派直接放大花销;预算耗尽后剩余任务**快速失败**而非各烧满 maxAttempts |
 | `withMaxConcurrency(n)` | `runConcurrent` 在途任务硬上限(有界队列 + caller-runs) | **反压**:生产者超出线程池时被节流,而非把无界任务堆到堆上 |
-| `withDedupe(true)` | 同 `(capability,payload)` 的重复子任务复用已完成结果 | **token 经济**:fan-out 里的重复工作零额外 token |
+| `withDedupe(true)` | 同 `(capability,payload)` 的重复子任务复用已完成结果 | **token 经济**:重复工作零额外 token。**保证仅对顺序 `run(...)` 成立**;`runConcurrent(...)` 下为尽力而为——在首个任务完成前已并发在途的相同任务仍会各自分发(去重缓存按完成态写入,见 `Coordinator` 类注释)|
 
 `A2aWorker` 的阻塞调用受 `timeoutMs` 约束(HTTP connect 超时 + 每次调用限时等待):远端卡死返回 `TIMEOUT` 由协调器回收,不会永久阻塞。**因 reclaim 会重派同一工作,远端 agent 必须用 `task.token.idempotencyKey` 去重以防双执行。**
 
@@ -79,7 +79,8 @@
 
 ## 构建
 
+需要 JDK 21(`JAVA_HOME` 指向 JDK 21,或确保 `PATH` 上的 `java` 为 21;Linux/WSL 优先):
+
 ```bash
-JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home \
-  ./mvnw -f collaboration/pom.xml -DskipTests package
+./mvnw -f collaboration/pom.xml -DskipTests package
 ```

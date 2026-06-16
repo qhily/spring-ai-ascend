@@ -2,7 +2,7 @@ package com.huawei.ascend.collab.e2e;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.huawei.ascend.collab.a2a.A2aWorker;
 import com.huawei.ascend.collab.core.CollaborationResult;
@@ -22,6 +22,16 @@ import org.springframework.context.ConfigurableApplicationContext;
  * port and drives {@link A2aWorker} against it over the actual A2A JSON-RPC wire —
  * proving the engine→A2A bridge works end to end, deterministically, no API key.
  * Whole a2a-sdk stack aligned to 1.0.0.Final (matching the platform).
+ *
+ * <p><b>Token echo over A2A.</b> The coordinator's token check requires the remote to
+ * echo the issued token on its response metadata. A runtime-hosted agent cannot do that
+ * today: {@code AgentExecutionResult} carries only text, and the runtime emits a text
+ * artifact (no response-metadata channel), so {@code DeterministicEchoAgent} does NOT echo
+ * the token. The real-wire test therefore proves the <i>rejection</i> path (a non-echoing
+ * agent is rejected — the security fix); the compliant-agent <i>accept</i> path is covered
+ * offline in {@code A2aWorkerTokenEchoTest} with a transport that echoes. Completing a
+ * token-validated task with a runtime agent over the wire needs a platform SPI to echo
+ * response metadata (follow-up, not in this module).
  */
 class A2aWorkerE2eTest {
 
@@ -38,7 +48,7 @@ class A2aWorkerE2eTest {
     }
 
     @Test
-    void a2aWorkerCompletesOverTheWire() {
+    void a2aWorkerReachesRealAgentOverTheWire() {
         try (ConfigurableApplicationContext ctx = boot()) {
             A2aWorker worker = new A2aWorker("echo-worker", Set.of("echo"), baseUrl(ctx));
 
@@ -46,14 +56,19 @@ class A2aWorkerE2eTest {
                     UUID.randomUUID(), 30_000, System.currentTimeMillis());
             WorkResult r = worker.execute(SubTask.of("t1", "echo", "hello world"), token);
 
+            // Transport / card / JSON-RPC round-trip works: the worker reaches the agent and
+            // maps its terminal Task to COMPLETED with output.
             assertEquals(WorkResult.Status.COMPLETED, r.status(),
                     "remote echo agent completes; detail=" + r.detail() + " output=" + r.output());
             assertNotNull(r.output(), "output present");
+            // The runtime agent has no way to echo the token (text-only response), so the
+            // worker parses no echoed token — which is why the coordinator rejects it below.
+            assertNull(r.echoedToken(), "runtime agent cannot echo token metadata -> no echo parsed");
         }
     }
 
     @Test
-    void coordinatorOrchestratesARealA2aAgent() {
+    void coordinatorRejectsRealAgentThatDoesNotEchoToken() {
         try (ConfigurableApplicationContext ctx = boot()) {
             A2aWorker worker = new A2aWorker("echo-worker", Set.of("echo"), baseUrl(ctx));
             Coordinator coordinator = new Coordinator(List.of(worker));
@@ -62,7 +77,12 @@ class A2aWorkerE2eTest {
                     SubTask.of("t1", "echo", "task one"),
                     SubTask.of("t2", "echo", "task two")));
 
-            assertTrue(result.allCompleted(), "both tasks complete via real A2A: " + result.outcomes());
+            // Token validation is now enforced on the real bridge: an agent that does not
+            // echo the issued token is rejected (no longer auto-trusted). See class doc.
+            assertEquals(WorkResult.Status.REJECTED, result.outcomes().get("t1"),
+                    "non-echoing real agent rejected: " + result.outcomes());
+            assertEquals(WorkResult.Status.REJECTED, result.outcomes().get("t2"),
+                    "non-echoing real agent rejected: " + result.outcomes());
         }
     }
 }

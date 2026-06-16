@@ -26,6 +26,13 @@ public final class EvalMain {
 
     public static void main(String[] args) throws Exception {
         String cmd = args.length > 0 ? args[0] : "all";
+        if (!cmd.equals("generate") && !cmd.equals("run") && !cmd.equals("all")) {
+            // A mistyped command (e.g. "EvalMain typo") must not silently exit 0 and
+            // look like a clean run — fail loudly so the harness/operator notices.
+            System.err.println("unknown command: " + cmd);
+            System.err.println("usage: eval.sh [generate|run|all]   (default: all)");
+            System.exit(2);
+        }
         ObjectMapper om = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
         if (cmd.equals("generate") || cmd.equals("all")) {

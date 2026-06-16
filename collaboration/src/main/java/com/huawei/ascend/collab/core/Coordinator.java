@@ -34,6 +34,14 @@ import java.util.function.LongSupplier;
  * (don't hammer a failing agent), a per-batch dispatch budget (cap token spend), bounded
  * concurrency (cap in-flight load), and result dedupe (skip re-running identical work).
  *
+ * <p><b>Dedupe scope.</b> The dedupe cache keys on {@code (capability, payload)} and is written
+ * only when a task <i>completes</i>. It therefore guarantees zero-extra-token reuse for
+ * sequential {@link #run} (the second identical task sees the first's completion). Under
+ * {@link #runConcurrent} it is <b>best-effort</b>: identical tasks already in flight before the
+ * first completes each dispatch (no per-key in-flight join — kept simple so a failing leader
+ * never wrongly dedupes its followers). Need strict concurrent dedupe? Pre-group identical
+ * payloads before submitting, or run them sequentially.
+ *
  * <p>{@link #run} executes tasks sequentially; {@link #runConcurrent} distributes them in
  * parallel (each task is independent — its own token lineage, attempts, and event log).
  * Deterministic given the workers and a clock with the default config, which is what makes
