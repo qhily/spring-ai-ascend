@@ -48,7 +48,7 @@ class ResearchReportResilienceTest {
     void failingModel_stillProducesCompleteReport() {
         ResearchReport r = runWithFailingModel();
         // All sections present despite every generation failing.
-        assertEquals(6, r.sections().size());
+        assertEquals(7, r.sections().size());
         for (ReportSection s : r.sections()) {
             assertFalse(s.body().isBlank(), "section blank: " + s.id());
         }

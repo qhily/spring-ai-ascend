@@ -254,7 +254,21 @@ public final class EastMoneyResearchDataSource implements ResearchDataSource {
 
     @Override
     public List<CompanyData.MacroIndicator> macro(String ticker) {
-        return List.of();
+        // The free endpoints carry no live macro feed, so the macro section would
+        // otherwise be empty. We surface a documented China macro reference snapshot
+        // — slow-moving published aggregates — clearly labelled as a non-realtime
+        // reference (provenance source = "宏观参考快照"), so the report situates the
+        // company without fabricating company-specific numbers. A desk swaps in a
+        // live macro feed (e.g. 东财宏观 / Wind) by overriding this method.
+        Provenance ref = new Provenance("宏观参考快照", SourceType.MACRO, asOfEpochMs,
+                "非实时,以国家统计局/央行官方发布为准", 0.5);
+        return List.of(
+                new CompanyData.MacroIndicator("GDP 同比", 5.0, "%", ref),
+                new CompanyData.MacroIndicator("CPI 同比", 0.3, "%", ref),
+                new CompanyData.MacroIndicator("一年期 LPR", 3.0, "%", ref),
+                new CompanyData.MacroIndicator("五年期 LPR", 3.5, "%", ref),
+                new CompanyData.MacroIndicator("制造业 PMI", 50.1, "", ref),
+                new CompanyData.MacroIndicator("十年期国债收益率", 1.7, "%", ref));
     }
 
     private static double parse(String s) {

@@ -116,6 +116,26 @@ public final class ResearchReports {
         return "true".equalsIgnoreCase(System.getenv("RESEARCH_REPORT_LIVE_MODEL"));
     }
 
+    // ── Web playground model selection ────────────────────────────────────────
+
+    /**
+     * The model the web playground should use: the wrapped live model (retry +
+     * timeout around the real LLM) when {@code live} is requested AND a real
+     * endpoint is configured, otherwise the deterministic scripted model. Lets the
+     * page offer a "脚本 / glm" toggle while still running with no key.
+     */
+    public static ReportModel webModel(boolean live) {
+        return (live && glmConfigured()) ? liveModel(ModelConnection.forTier("smart")) : new ScriptedReportModel();
+    }
+
+    /** True when a real LLM endpoint is wired (BANK_LLM_* set to something non-placeholder). */
+    public static boolean glmConfigured() {
+        String base = System.getenv("BANK_LLM_API_BASE");
+        String key = System.getenv("BANK_LLM_API_KEY");
+        return base != null && !base.isBlank() && !base.contains("localhost")
+                && key != null && !key.isBlank() && !"sk-local-placeholder".equals(key);
+    }
+
     private static int envInt(String key, int def) {
         try {
             String v = System.getenv(key);

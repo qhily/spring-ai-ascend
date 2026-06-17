@@ -1,6 +1,5 @@
 package com.bank.financial.research.agent;
 
-import com.bank.financial.research.data.CompanyData;
 import com.bank.financial.research.engine.Bb;
 import com.bank.financial.research.engine.ReportContext;
 import com.bank.financial.research.model.ReportModel;
@@ -44,7 +43,8 @@ public final class WriterAgent implements ReportSubAgent {
         if (ctx.tryModelCall()) {
             try {
                 body = ctx.model().generate(new ReportModel.ModelTask(
-                        "writer", "撰写「" + title + "」章节,机构口径、结论先行、论点回链。", brief, 600));
+                        "writer", com.bank.financial.research.model.WriterPrompts.section(title, wordsFor(id), anchorFor(id)),
+                        brief, 900));
             } catch (RuntimeException e) {
                 // Live model failed/timed out — degrade this section to facts so the
                 // report stays complete instead of aborting the whole run.
@@ -63,12 +63,33 @@ public final class WriterAgent implements ReportSubAgent {
     public static String titleOf(String id) {
         return switch (id) {
             case "summary" -> "摘要与评级";
+            case "macro" -> "宏观经济环境";
+            case "industry" -> "行业格局与竞争态势";
             case "thesis" -> "投资论点";
             case "model" -> "盈利预测与模型";
             case "valuation" -> "估值";
             case "scenario" -> "情景与风险";
             case "sector" -> "行业、宏观与外部信息影响";
             default -> id;
+        };
+    }
+
+    /** Soft length target per section — the analytical sections run longer. */
+    private static int wordsFor(String id) {
+        return switch (id) {
+            case "summary" -> 400;
+            case "macro", "industry", "thesis", "scenario" -> 600;
+            default -> 500;
+        };
+    }
+
+    /** What each section must link its conclusion back to. */
+    private static String anchorFor(String id) {
+        return switch (id) {
+            case "macro" -> "公司所处需求与利润率环境,并为后续行业与盈利判断铺垫";
+            case "industry" -> "公司的竞争位置与盈利能力,并指向投资论点";
+            case "valuation", "model", "scenario" -> "总体投资评级与目标价";
+            default -> "总体投资论点与评级";
         };
     }
 
@@ -82,6 +103,18 @@ public final class WriterAgent implements ReportSubAgent {
                 facts.put("现价", ctx.latest(Bb.CURRENT_PRICE).orElse("n/a"));
                 facts.put("潜在空间(%)", ctx.latest(Bb.UPSIDE_PCT).map(v -> Bb.pct(parse(v))).orElse("n/a"));
                 facts.put("收敛判定", ctx.latest(Bb.CONVERGENCE_VERDICT).orElse("n/a"));
+            }
+            case "macro" -> {
+                facts.put("宏观指标", ctx.latest(Bb.MACRO_DIGEST).orElse("n/a"));
+                facts.put("货币与利率环境", ctx.latest(Bb.MACRO_DIGEST).isPresent()
+                        ? "结合上列指标判断需求与融资成本的方向" : "n/a");
+                facts.put("对本公司的传导", "宏观环境如何影响本公司的需求端与利润率(定性,不新增数字)");
+            }
+            case "industry" -> {
+                facts.put("行业与竞争", ctx.latest(Bb.INDUSTRY_DIGEST).orElse("n/a"));
+                facts.put("外部信息收入影响", ctx.latest(Bb.REVENUE_IMPACT_PCT)
+                        .map(v -> Bb.pct(parse(v))).orElse("n/a"));
+                facts.put("外部信息EPS影响", ctx.latest(Bb.EPS_IMPACT).orElse("n/a"));
             }
             case "thesis" -> {
                 facts.put("投资论点", ctx.latest(Bb.THESIS).orElse(""));
@@ -111,20 +144,6 @@ public final class WriterAgent implements ReportSubAgent {
                 facts.put("中性每股", ctx.latest(Bb.SCENARIO_BASE).orElse("n/a"));
                 facts.put("悲观每股", ctx.latest(Bb.SCENARIO_BEAR).orElse("n/a"));
                 facts.put("概率加权期望每股", ctx.latest(Bb.SCENARIO_EXPECTED).orElse("n/a"));
-            }
-            case "sector" -> {
-                facts.put("外部信息收入影响", ctx.latest(Bb.REVENUE_IMPACT_PCT)
-                        .map(v -> Bb.pct(parse(v))).orElse("n/a"));
-                facts.put("外部信息EPS影响", ctx.latest(Bb.EPS_IMPACT).orElse("n/a"));
-                CompanyData.Dataset ds = ctx.dataset();
-                int i = 1;
-                for (CompanyData.MacroIndicator m : ds.macro()) {
-                    facts.put("宏观#" + i++, m.name() + "=" + Bb.fmt(m.value()) + m.unit());
-                }
-                i = 1;
-                for (CompanyData.TextItem n : ds.news()) {
-                    facts.put("资讯#" + i++, n.title());
-                }
             }
             default -> {
             }

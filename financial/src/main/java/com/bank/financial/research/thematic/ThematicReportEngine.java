@@ -108,35 +108,38 @@ public final class ThematicReportEngine {
             ctx.degraded("experience:recall", e.getMessage());
         }
 
-        safe(ctx, new ThematicPlannerAgent(), progress);
-        safe(ctx, new MacroIngestionAgent(), progress);
+        safe(ctx, new ThematicPlannerAgent(), progress, 1);
+        safe(ctx, new MacroIngestionAgent(), progress, 2);
         ctx.memory("data").recordHandover("sector-impact", "macro factors ingested → scoring");
         // Dependency edge: the scorer reads the macro factors it scores against (records READ sector-impact→data).
         ctx.memory("sector-impact").get(ThematicBb.FACTORS_SUMMARY);
-        safe(ctx, new SectorImpactAgent(), progress);
+        safe(ctx, new SectorImpactAgent(), progress, 3);
         ctx.memory("sector-impact").recordHandover("lead-manager", "sub-sector scores set → strategy");
         // Dependency edge: the strategist reads the overall score before forming the view (records READ lead-manager→sector-impact).
         ctx.memory("lead-manager").get(ThematicBb.OVERALL_SCORE);
-        safe(ctx, new StrategyManagerAgent(), progress);
+        safe(ctx, new StrategyManagerAgent(), progress, 4);
         ctx.memory("lead-manager").recordHandover("writer", "sector view set");
 
         ThematicWriterAgent writer = new ThematicWriterAgent();
         ThematicCriticAgent critic = new ThematicCriticAgent();
         ctx.memory("writer").recordHandover("critic", "draft written → review");
-        safe(ctx, writer, progress);
+        safe(ctx, writer, progress, 5);
+        emit(progress, "critic", "running", 6);
         List<String> criticBefore = new ArrayList<>(ctx.blackboardKeys());
         List<String> findings = reviewSafe(ctx, critic);
+        emit(progress, "critic", "done", 6);
         emitDone(progress, ctx, "critic", criticBefore);
         int rounds = 0;
         while (!findings.isEmpty() && rounds < request.budget().maxCriticRounds() && ctx.withinTime()) {
             rounds++;
-            safe(ctx, writer, progress);
+            safeNoEmit(ctx, writer);
             findings = reviewSafe(ctx, critic);
         }
 
         ThematicComplianceAgent compliance = new ThematicComplianceAgent();
         List<String> notes;
         List<String> gaps;
+        emit(progress, "compliance", "running", 7);
         List<String> complianceBefore = new ArrayList<>(ctx.blackboardKeys());
         try {
             notes = compliance.notes(ctx);
@@ -147,6 +150,7 @@ public final class ThematicReportEngine {
             notes = List.of("披露生成失败,需人工补充。");
             gaps = List.of();
         }
+        emit(progress, "compliance", "done", 7);
         emitDone(progress, ctx, "compliance", complianceBefore);
 
         ThematicReport report = assemble(ctx, rounds, findings, notes, gaps);
@@ -165,7 +169,8 @@ public final class ThematicReportEngine {
         return report;
     }
 
-    private void safe(ThematicContext ctx, ThematicSubAgent agent, PipelineProgress progress) {
+    private void safe(ThematicContext ctx, ThematicSubAgent agent, PipelineProgress progress, int index) {
+        emit(progress, agent.role(), "running", index);
         long t0 = ctx.now();
         List<String> before = new ArrayList<>(ctx.blackboardKeys());
         try {
@@ -175,7 +180,26 @@ public final class ThematicReportEngine {
         } catch (RuntimeException e) {
             ctx.degraded(agent.role(), e.getMessage());
         }
+        emit(progress, agent.role(), "done", index);
         emitDone(progress, ctx, agent.role(), before);
+    }
+
+    /** Re-run an agent (revision loop) without re-emitting the chip transition. */
+    private void safeNoEmit(ThematicContext ctx, ThematicSubAgent agent) {
+        try {
+            agent.contribute(ctx);
+        } catch (RuntimeException e) {
+            ctx.degraded(agent.role(), e.getMessage());
+        }
+    }
+
+    /** Emit one progress transition (running/done). Fault-isolated. */
+    private void emit(PipelineProgress progress, String role, String state, int index) {
+        try {
+            progress.onAgent(role, state, index, 7);
+        } catch (RuntimeException ignored) {
+            // progress reporting must never affect the run
+        }
     }
 
     /** Diff the blackboard against {@code before} and report newly-written key→value pairs. Fault-isolated. */

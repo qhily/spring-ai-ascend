@@ -52,6 +52,12 @@ public final class Bb {
     public static final String REVENUE_IMPACT_PCT = "impact.revenuePct";
     public static final String EPS_IMPACT = "impact.eps";
 
+    // ── Macro / industry narrative material (owned by sector-macro) ────────────
+    // Digests written to the blackboard so they are one shared source the writer
+    // narrates from (and so they surface in the shared-memory view).
+    public static final String MACRO_DIGEST = "macro.digest";
+    public static final String INDUSTRY_DIGEST = "industry.digest";
+
     // ── Narrative / structure ─────────────────────────────────────────────────
     public static final String OUTLINE = "outline";
     public static final String SECTION_PREFIX = "section.";

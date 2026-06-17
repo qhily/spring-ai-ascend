@@ -36,7 +36,9 @@ public final class FundWriterAgent implements FundSubAgent {
         if (ctx.tryModelCall()) {
             try {
                 body = ctx.model().generate(new ReportModel.ModelTask(
-                        "writer", "撰写「" + title + "」章节,约 300-500 字:结论先行、回链评级、只用简报中的规范数字。", brief, 500));
+                        "writer",
+                        com.bank.financial.research.model.WriterPrompts.section(title, 450, "基金总体评级与适配人群"),
+                        brief, 800));
             } catch (RuntimeException e) {
                 ctx.degraded("writer:" + id, e.getMessage());
                 body = "(本节模型生成失败,降级为事实摘要)\n" + brief;

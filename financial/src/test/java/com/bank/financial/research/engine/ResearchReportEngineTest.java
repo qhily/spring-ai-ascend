@@ -45,11 +45,23 @@ class ResearchReportEngineTest {
     @Test
     void allOutlineSectionsPresentAndNonTrivial() {
         ResearchReport r = runDemo();
-        assertEquals(6, r.sections().size());
+        assertEquals(7, r.sections().size());
         for (ReportSection s : r.sections()) {
             assertFalse(s.body().isBlank(), "section blank: " + s.id());
             assertTrue(s.length() > 50, "section too short: " + s.id());
         }
+    }
+
+    @Test
+    void hasDedicatedMacroAndIndustrySections() {
+        ResearchReport r = runDemo();
+        List<String> ids = r.sections().stream().map(ReportSection::id).toList();
+        assertTrue(ids.contains("macro"), () -> "missing macro section: " + ids);
+        assertTrue(ids.contains("industry"), () -> "missing industry section: " + ids);
+        // The macro/industry material is grounded in the ingested digests.
+        String md = r.toMarkdown();
+        assertTrue(md.contains("GDP"), "macro indicators should appear in the macro section");
+        assertTrue(md.contains("可比公司") || md.contains("PEER"), "industry section should carry the peer landscape");
     }
 
     @Test

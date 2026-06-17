@@ -12,8 +12,13 @@ import com.bank.financial.research.engine.ReportContext;
  */
 public final class PlannerAgent implements ReportSubAgent {
 
-    /** Canonical equity-report section order (the thesis-as-spine skeleton). */
-    public static final String OUTLINE = "summary,thesis,model,valuation,scenario,sector";
+    /**
+     * Canonical equity-report section order (the thesis-as-spine skeleton). The
+     * report situates the company top-down — macro backdrop, then industry/competitive
+     * landscape — before the company-specific thesis, model, valuation and scenarios,
+     * the way a sell-side initiation reads.
+     */
+    public static final String OUTLINE = "summary,macro,industry,thesis,model,valuation,scenario";
 
     @Override
     public String role() {
