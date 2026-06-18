@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.ascend.agentsdk.spec.tool.HttpExecutionHandle;
 import com.huawei.ascend.agentsdk.support.ToolExecutionException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -45,9 +46,9 @@ public final class HttpToolExecutor {
 
     public Object execute(HttpExecutionHandle handle, Map<String, Object> inputs) {
         HttpRequest request = buildRequest(handle, inputs == null ? Map.of() : inputs);
-        HttpResponse<byte[]> response;
+        HttpResponse<InputStream> response;
         try {
-            response = client(handle).send(request, HttpResponse.BodyHandlers.ofByteArray());
+            response = client(handle).send(request, HttpResponse.BodyHandlers.ofInputStream());
         } catch (IOException e) {
             throw new ToolExecutionException(
                     "HTTP tool request failed: " + handle.method() + " " + handle.url(), e);
@@ -114,15 +115,30 @@ public final class HttpToolExecutor {
         }
     }
 
-    private static String decodeBody(byte[] bytes, int maxResponseBytes) {
-        byte[] body = bytes == null ? new byte[0] : bytes;
-        if (body.length > maxResponseBytes) {
-            throw new ToolExecutionException("HTTP tool response exceeds maxResponseBytes=" + maxResponseBytes);
+    private static String decodeBody(InputStream stream, int maxResponseBytes) {
+        if (stream == null) {
+            return "";
         }
-        return new String(body, StandardCharsets.UTF_8);
+        try (InputStream body = stream) {
+            byte[] buffer = new byte[8192];
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream(Math.min(maxResponseBytes, 8192));
+            int total = 0;
+            int read;
+            while ((read = body.read(buffer)) != -1) {
+                total += read;
+                if (total > maxResponseBytes) {
+                    throw new ToolExecutionException(
+                            "HTTP tool response exceeds maxResponseBytes=" + maxResponseBytes);
+                }
+                out.write(buffer, 0, read);
+            }
+            return out.toString(StandardCharsets.UTF_8);
+        } catch (IOException error) {
+            throw new ToolExecutionException("HTTP tool response read failed", error);
+        }
     }
 
-    private static Object decode(HttpResponse<byte[]> response, String body) {
+    private static Object decode(HttpResponse<?> response, String body) {
         String contentType = response.headers().firstValue("content-type").orElse("");
         if (contentType.toLowerCase(java.util.Locale.ROOT).contains("json") && !body.isBlank()) {
             try {

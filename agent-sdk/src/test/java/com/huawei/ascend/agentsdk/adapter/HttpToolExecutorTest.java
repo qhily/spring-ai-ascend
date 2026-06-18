@@ -13,6 +13,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,6 +25,8 @@ class HttpToolExecutorTest {
     private static final AtomicReference<String> lastBody = new AtomicReference<>();
     private static final AtomicReference<String> lastQuery = new AtomicReference<>();
     private static final AtomicReference<String> lastContentType = new AtomicReference<>();
+    private static final AtomicInteger largeBytesWritten = new AtomicInteger();
+    private static final int LARGE_RESPONSE_BYTES = 5 * 1024 * 1024;
 
     @BeforeAll
     static void startServer() throws IOException {
@@ -65,6 +68,20 @@ class HttpToolExecutorTest {
             exchange.sendResponseHeaders(200, payload.length);
             try (OutputStream out = exchange.getResponseBody()) {
                 out.write(payload);
+            }
+        });
+        server.createContext("/very-large", exchange -> {
+            largeBytesWritten.set(0);
+            byte[] chunk = "x".repeat(8192).getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(200, LARGE_RESPONSE_BYTES);
+            try (OutputStream out = exchange.getResponseBody()) {
+                while (largeBytesWritten.get() < LARGE_RESPONSE_BYTES) {
+                    out.write(chunk);
+                    largeBytesWritten.addAndGet(chunk.length);
+                }
+            } catch (IOException ignored) {
+                // The client is expected to close the stream once maxResponseBytes is exceeded.
             }
         });
         server.start();
@@ -148,6 +165,18 @@ class HttpToolExecutorTest {
         assertThatThrownBy(() -> new HttpToolExecutor().execute(handle, Map.of()))
                 .isInstanceOf(ToolExecutionException.class)
                 .hasMessageContaining("maxResponseBytes");
+    }
+
+    @Test
+    void responseLargerThanConfiguredLimitStopsReadingStream() {
+        HttpExecutionHandle handle = new HttpExecutionHandle(
+                uri("/very-large"), "GET", Map.of(), Duration.ofSeconds(5),
+                false, 1024, false);
+
+        assertThatThrownBy(() -> new HttpToolExecutor().execute(handle, Map.of()))
+                .isInstanceOf(ToolExecutionException.class)
+                .hasMessageContaining("maxResponseBytes");
+        assertThat(largeBytesWritten.get()).isLessThan(LARGE_RESPONSE_BYTES);
     }
 
     @Test

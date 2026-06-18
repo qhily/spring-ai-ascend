@@ -5,7 +5,6 @@ import com.huawei.ascend.agentsdk.support.ValidationException;
 import com.openjiuwen.core.singleagent.rail.AgentCallbackContext;
 import com.openjiuwen.core.singleagent.rail.AgentCallbackEvent;
 import com.openjiuwen.core.singleagent.rail.AgentRail;
-import com.openjiuwen.harness.rails.DeepAgentRail;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -21,6 +20,7 @@ public final class OpenJiuwenRailMapper {
     }
 
     public AgentRail toDeepAgentRail(RailSpec spec) {
+        // DeepAgent currently accepts AgentRail instances; keep a separate entry point for future DeepAgent-only checks.
         AgentRail rail = toRail(spec, AgentRail.class);
         applyPriority(spec, rail);
         return rail;

@@ -44,15 +44,8 @@ public final class OpenJiuwenReactAgentBuilder {
                 .sysOperationId(options.sysOperationId())
                 .build()
                 .configurePromptTemplate(List.of(Map.of("role", "system", "content", spec.promptSpec().system())))
-                .configureMaxIterations(options.maxIterations())
-                .configureModelClient(
-                        spec.modelSpec().provider(),
-                        spec.modelSpec().apiKey(),
-                        spec.modelSpec().baseUrl(),
-                        spec.modelSpec().name(),
-                        spec.modelSpec().sslVerify(),
-                        null,
-                        spec.modelSpec().headers());
+                .configureMaxIterations(options.maxIterations());
+        configureModelFields(config, spec);
         config.setModelClientConfig(modelMapper.toModelClientConfig(spec.modelSpec()));
         config.setModelConfigObj(modelMapper.toModelRequestConfig(spec.modelSpec().requestSpec()));
         agent.configure(config);
@@ -69,6 +62,14 @@ public final class OpenJiuwenReactAgentBuilder {
                 .forEach(agent::registerRail);
         rails.forEach(agent::registerRail);
         return agent;
+    }
+
+    private static void configureModelFields(ReActAgentConfig config, AgentSpec spec) {
+        config.setModelProvider(spec.modelSpec().provider());
+        config.setApiKey(spec.modelSpec().apiKey());
+        config.setApiBase(spec.modelSpec().baseUrl());
+        config.setModelName(spec.modelSpec().name());
+        config.setCustomHeaders(spec.modelSpec().headers());
     }
 
     private ResolvedTool resolveTool(ToolSpec toolSpec) {
