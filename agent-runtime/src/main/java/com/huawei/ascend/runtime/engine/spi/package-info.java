@@ -13,6 +13,8 @@
  * framework adapter. {@code MemoryProvider} is a reserved narrow SPI for
  * frameworks that need runtime-provided memory init/search/save integration.
  * Frameworks with native checkpointing can use their own checkpointer
- * configuration without going through these optional surfaces.
+ * configuration without going through these optional surfaces. {@code McpProvider}
+ * is the matching narrow SPI for MCP tool discovery and tool invocation; concrete
+ * framework adapters own how those tools are installed.
  */
 package com.huawei.ascend.runtime.engine.spi;
