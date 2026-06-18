@@ -162,40 +162,7 @@ public final class ResearchWebServer {
             final OutputStream out = os;
 
             long now = System.currentTimeMillis();
-
-            // progress callback: one SSE line per agent transition (+ optional pacing),
-            // plus an "agent-detail" line carrying the keys this agent wrote to the blackboard
-            PipelineProgress progress = new PipelineProgress() {
-                @Override
-                public void onAgent(String role, String state, int index, int total) {
-                    Map<String, Object> data = new LinkedHashMap<>();
-                    data.put("role", role);
-                    data.put("state", state);
-                    data.put("index", index);
-                    data.put("total", total);
-                    send(out, "agent", data);
-                    if ("running".equals(state) && pace > 0) {
-                        try {
-                            Thread.sleep(pace);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                }
-
-                @Override
-                public void onAgentDone(String role, Map<String, String> wrote) {
-                    Map<String, Object> data = new LinkedHashMap<>();
-                    data.put("role", role);
-                    data.put("wrote", wrote);
-                    send(out, "agent-detail", data);
-                }
-
-                @Override
-                public void onInteractions(List<Map<String, String>> edges) {
-                    send(out, "interactions", Map.of("edges", edges));
-                }
-            };
+            final long paceF = pace;
 
             // Heartbeat: a model call can block for tens of seconds with no events, which
             // looks frozen. A daemon thread ticks elapsed-time every 2s so the UI stays alive.
@@ -224,21 +191,18 @@ public final class ResearchWebServer {
                 send(out, "done", Map.of());
                 return;
             }
-            send(out, "pipeline", Map.of("agents", roster));
 
             if ("compare".equals(modelId)) {
                 // Three-way model comparison: same composed report, three models, side by side.
                 String[][] tiers = {{"glm-air", "GLM-4.5-air"}, {"deepseek", "DeepSeek-V4-Flash"}, {"script", "桩(离线)"}};
                 List<Map<String, Object>> results = new java.util.ArrayList<>();
-                boolean first = true;
                 for (String[] t : tiers) {
-                    ReportModel m = ResearchReports.modelChoice(t[0]);
+                    ReportModel cm = ResearchReports.modelChoice(t[0]);
                     long t0 = System.currentTimeMillis();
                     com.bank.financial.research.composite.CompositeReport cr =
                             new com.bank.financial.research.composite.CompositeReportEngine(
-                                    m, webExp("composite"), MemoryObserver.NOOP, () -> now, now, real)
-                                    .generate(subject, code, lensesF, first ? progress : PipelineProgress.NOOP);
-                    first = false;
+                                    cm, webExp("composite"), MemoryObserver.NOOP, () -> now, now, real)
+                                    .generate(subject, code, lensesF);
                     Map<String, Object> r = new LinkedHashMap<>();
                     r.put("model", t[1]);
                     r.put("live", ResearchReports.isLive(t[0]));
@@ -254,25 +218,62 @@ public final class ResearchWebServer {
                 return;
             }
 
-            // Single model.
+            // Single model — staged presentation: subject base report first (its agents +
+            // blackboard + memory), then each lens as a supplement below.
             if (!"script".equals(modelId) && !ResearchReports.isLive(modelId)) {
                 sendNote(out, "未检测到该模型的配置(" + modelId + "),本次回退脚本模型;在 play-web.sh 注入对应凭据后可用真实模型。");
             }
             ReportModel m = ResearchReports.modelChoice(modelId);
+            com.bank.financial.research.composite.CompositeReportEngine.StageSink sink =
+                    new com.bank.financial.research.composite.CompositeReportEngine.StageSink() {
+                        @Override
+                        public void stage(String key, String title, List<Map<String, String>> agents) {
+                            send(out, "stage", Map.of("key", key, "title", title, "agents", agents));
+                        }
+
+                        @Override
+                        public void agent(String role, String state, int index, int total) {
+                            send(out, "agent", Map.of("role", role, "state", state, "index", index, "total", total));
+                            if ("running".equals(state) && paceF > 0) {
+                                try {
+                                    Thread.sleep(paceF);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void agentDone(String role, Map<String, String> wrote) {
+                            send(out, "agent-detail", Map.of("role", role, "wrote", wrote));
+                        }
+
+                        @Override
+                        public void interactions(List<Map<String, String>> edges) {
+                            send(out, "interactions", Map.of("edges", edges));
+                        }
+
+                        @Override
+                        public void experience(List<Map<String, Object>> lessons) {
+                            send(out, "experience", Map.of("lessons", lessons));
+                        }
+
+                        @Override
+                        public void report(String title, String markdown) {
+                            send(out, "stage-report", Map.of("title", title, "html", MdHtml.render(markdown)));
+                        }
+                    };
             com.bank.financial.research.composite.CompositeReport cr =
                     new com.bank.financial.research.composite.CompositeReportEngine(
                             m, webExp("composite"), MemoryObserver.NOOP, () -> now, now, real)
-                            .generate(subject, code, lensesF, progress);
-            Map<String, Object> report = new LinkedHashMap<>();
-            report.put("html", MdHtml.render(cr.toMarkdown()));
-            report.put("rating", cr.subtitle());
-            report.put("metric1", "模块 " + cr.modules().size() + " 个");
-            report.put("metric2", "模型 " + cr.metadata().modelName());
-            report.put("metric3", real ? "数据 真实/快照" : "数据 离线");
-            report.put("modelCalls", cr.metadata().modelCalls());
-            report.put("criticRounds", 0);
-            report.put("degradations", cr.metadata().degradations().size());
-            send(out, "report", report);
+                            .generate(subject, code, lensesF, sink);
+            send(out, "summary", Map.of(
+                    "subtitle", cr.subtitle(),
+                    "modules", cr.modules().size(),
+                    "model", cr.metadata().modelName(),
+                    "modelCalls", cr.metadata().modelCalls(),
+                    "degradations", cr.metadata().degradations().size(),
+                    "real", real));
             send(out, "done", Map.of());
         } catch (Exception e) {
             if (os != null) {
@@ -498,7 +499,7 @@ public final class ResearchWebServer {
                   <label class="opt"><input type="radio" name="subject" value="fund" checked/> 基金 / FOF</label>
                   <label class="opt"><input type="radio" name="subject" value="bond"/> 债券 / 固收</label>
                   <label class="opt"><input type="radio" name="subject" value="none"/> 无特定标的(纯宏观·策略)</label>
-                  <input type="text" id="code" value="110011" autocomplete="off" style="margin-top:6px"/>
+                  <input type="text" id="code" value="110020" autocomplete="off" style="margin-top:6px"/>
                   <div id="codehint" style="font-size:11px;color:var(--muted);margin-top:5px;"></div>
                 </div>
                 <div class="field">
@@ -570,8 +571,8 @@ public final class ResearchWebServer {
 
             <script>
             (function(){
-              var DEFCODE={fund:"110011",bond:"DEMOBOND",none:""};
-              var CODEHINT={fund:"真实基金用 6 位代码(如 110011);离线源任意",
+              var DEFCODE={fund:"110020",bond:"DEMOBOND",none:""};
+              var CODEHINT={fund:"真实基金用 6 位代码(默认 110020);离线源任意",
                             bond:"债券为合成样例(免费实时债券数据难取)",
                             none:"无需代码;直接出纯宏观 / 策略组合"};
               function subjectVal(){ return document.querySelector('input[name=subject]:checked').value; }
@@ -601,16 +602,29 @@ public final class ResearchWebServer {
                     '<td class="v">'+esc(trunc(e.detail||''))+'</td></tr>';
                 }).join('')+'</tbody></table>';
               }
-              function buildChips(agents){
-                var c=document.getElementById('chips'); c.innerHTML=''; chipEl={}; total=agents.length;
+              function addStage(title,agents){
+                var c=document.getElementById('chips');
+                var h=document.createElement('div'); h.style.flexBasis='100%';
+                h.style.cssText+=';width:100%;font-size:12px;color:var(--muted);margin:10px 0 2px';
+                h.textContent='▸ '+title;
+                c.appendChild(h);
                 agents.forEach(function(a){
+                  var short=a.role.indexOf('/')>=0?a.role.split('/')[1]:a.role;
                   var d=document.createElement('div'); d.className='chip'; d.dataset.role=a.role;
-                  d.innerHTML='<span class="dot"></span><span class="rolename">'+esc(a.role)+
+                  d.innerHTML='<span class="dot"></span><span class="rolename">'+esc(short)+
                     '</span> · '+esc(a.label);
                   d.addEventListener('click',function(){ toggleChip(a.role); });
-                  c.appendChild(d); chipEl[a.role]=d;
+                  c.appendChild(d); chipEl[a.role]=d; total++;
                 });
                 recount();
+              }
+              function appendStageReport(title,html){
+                var p=document.getElementById('preview');
+                var empty=p.querySelector('.empty'); if(empty) p.innerHTML='';
+                var w=document.createElement('div');
+                w.innerHTML='<h2 style="border-top:1px solid var(--border);padding-top:12px;margin-top:18px">'+
+                  esc(title)+'</h2>'+html;
+                p.appendChild(w);
               }
               function toggleChip(role){
                 var c=document.getElementById('chips');
@@ -714,7 +728,22 @@ public final class ResearchWebServer {
                   var s=Math.round((JSON.parse(e.data).elapsedMs||0)/1000);
                   go.textContent='生成中… '+s+'s'; document.title='('+s+'s) 研报生成';
                 });
-                es.addEventListener('pipeline',function(e){ buildChips(JSON.parse(e.data).agents); });
+                es.addEventListener('stage',function(e){
+                  var d=JSON.parse(e.data); addStage(d.title||d.key, d.agents||[]);
+                });
+                es.addEventListener('stage-report',function(e){
+                  var d=JSON.parse(e.data); appendStageReport(d.title||'报告', d.html||'');
+                });
+                es.addEventListener('summary',function(e){
+                  var d=JSON.parse(e.data), degClass=(d.degradations>0)?'badge warn':'badge';
+                  document.getElementById('badges').innerHTML=
+                    '<span class="badge">'+esc(d.subtitle)+'</span>'+
+                    '<span class="badge">模块 <b>'+d.modules+'</b></span>'+
+                    '<span class="badge">模型 <b>'+esc(d.model)+'</b></span>'+
+                    '<span class="badge">调用 <b>'+d.modelCalls+'</b></span>'+
+                    '<span class="badge">'+(d.real?'真实/快照数据':'离线数据')+'</span>'+
+                    '<span class="'+degClass+'">降级 <b>'+d.degradations+'</b></span>';
+                });
                 es.addEventListener('agent',function(e){
                   var d=JSON.parse(e.data), el=chipEl[d.role]; if(!el) return;
                   el.classList.remove('running','done');

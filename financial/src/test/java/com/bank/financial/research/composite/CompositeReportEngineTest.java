@@ -21,7 +21,7 @@ class CompositeReportEngineTest {
 
     @Test
     void composesSubjectPlusLensesIntoOneReport() {
-        CompositeReport r = engine().generate("fund", "DEMOFUND", Set.of("macro", "global"), null);
+        CompositeReport r = engine().generate("fund", "DEMOFUND", Set.of("macro", "global"));
         List<String> keys = r.modules().stream().map(CompositeReport.Module::key).toList();
         assertTrue(keys.contains("fund"), keys.toString());
         assertTrue(keys.contains("macro"), keys.toString());
@@ -35,7 +35,7 @@ class CompositeReportEngineTest {
 
     @Test
     void industryAndSectorCollapseToOneSectorModule() {
-        CompositeReport r = engine().generate("none", "", Set.of("industry", "sector"), null);
+        CompositeReport r = engine().generate("none", "", Set.of("industry", "sector"));
         long sectorModules = r.modules().stream().filter(m -> m.key().equals("sector")).count();
         assertEquals(1, sectorModules, "industry+sector → one 行业与板块策略 module");
     }
@@ -49,7 +49,7 @@ class CompositeReportEngineTest {
 
     @Test
     void noneSubjectWithMacroProducesMacroOnly() {
-        CompositeReport r = engine().generate("none", "", Set.of("macro"), null);
+        CompositeReport r = engine().generate("none", "", Set.of("macro"));
         assertEquals(1, r.modules().size());
         assertEquals("macro", r.modules().get(0).key());
         assertFalse(r.toMarkdown().isBlank());
